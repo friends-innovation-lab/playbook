@@ -4,6 +4,16 @@
 
 ---
 
+## TL;DR
+
+One command to launch a new project:
+
+```bash
+spinup project-slug "Client Name"
+```
+
+---
+
 ## Automated Setup (Recommended)
 
 New projects are created with a single command that handles GitHub, Supabase, Vercel, and DNS automatically:
