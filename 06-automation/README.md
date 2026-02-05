@@ -7,13 +7,13 @@ Fully automated project creation that sets up GitHub, Supabase, Vercel, and DNS 
 ### Usage
 
 ```bash
-./spinup.sh project-slug "Client Display Name"
+spinup project-slug "Client Display Name"
 ```
 
 ### Example
 
 ```bash
-./spinup.sh acme-crm "Acme Corp CRM"
+spinup acme-crm "Acme Corp CRM"
 ```
 
 This creates:
