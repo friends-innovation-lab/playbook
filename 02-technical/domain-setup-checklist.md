@@ -1,72 +1,101 @@
-# Adding a New Subdomain (Checklist)
+# Domain Setup for Projects
 
-*Use this every time you deploy a new project to `[project].lab.cityfriends.tech`*
-
----
-
-## Step 1: Vercel (Add Domain)
-
-1. Go to **vercel.com**
-2. Click on your project (e.g., candlelight-trading)
-3. Click **Settings** (top right tabs)
-4. Click **Domains** (left sidebar)
-5. Click **Add Domain** button
-6. Type: `[projectname].lab.cityfriends.tech`
-7. Make sure "Connect to an environment" → **Production** is selected
-8. Click **Save**
-9. You'll see a yellow "DNS Change Recommended" warning - **this is normal**
-10. Copy the CNAME value Vercel shows you (something like `642419c215da309a.vercel-dns-016.com`)
+*Deploy new projects to `[project].lab.cityfriends.tech`*
 
 ---
 
-## Step 2: tech.domains (Add DNS Record)
+## Automated Setup (Recommended)
 
-1. Go to **tech.domains**
-2. Log in
-3. Find **cityfriends.tech** → DNS settings
-4. Click **CNAME Records** tab
-5. Add new record:
-   - **Host Name:** `[projectname].lab` *(just that part, not the full domain)*
-   - **Value:** paste the value from Vercel
-   - **TTL:** `7200`
-6. Click **Add Record**
+New projects are created with a single command that handles GitHub, Supabase, Vercel, and DNS automatically:
 
----
+```bash
+cd ~/Projects/playbook/06-automation && ./spinup.sh project-slug "Project Name"
+```
 
-## Step 3: Verify
+Example:
+```bash
+./spinup.sh acme-crm "Acme Corp CRM"
+# Creates: https://acme-crm.lab.cityfriends.tech
+```
 
-1. Go back to **Vercel**
-2. Click **Refresh** next to your domain
-3. Wait 1-5 minutes (sometimes up to an hour for DNS to propagate)
-4. Once it shows ✅ **Valid Configuration**, you're done!
-5. Visit your URL to confirm: `https://[projectname].lab.cityfriends.tech`
+**That's it.** The script handles everything including domain configuration.
+
+See [06-automation/README.md](../06-automation/README.md) for full documentation.
 
 ---
 
-## Troubleshooting
+## How It Works
 
-**Still showing "Invalid Configuration" after an hour?**
-- Double-check the CNAME value matches exactly what Vercel shows
-- Make sure there's no typo in the Host Name
-- Check if there's a conflicting A record for the same subdomain
+### DNS Architecture
 
-**Site loads but shows wrong project?**
-- Make sure you added the domain to the correct project in Vercel
+- **Nameservers**: `ns1.vercel-dns.com`, `ns2.vercel-dns.com`
+- **Wildcard SSL**: `*.lab.cityfriends.tech` is automatically covered
+- **No manual DNS**: Vercel manages all DNS records for the domain
 
-**SSL certificate error?**
-- Wait a few more minutes - Vercel auto-provisions SSL but it can take time
+When the spinup script runs `vercel domains add`, the subdomain is instantly available because Vercel controls the nameservers.
 
----
+### What Gets Created
 
-## Quick Reference
-
-| Where | What to enter |
-|-------|---------------|
-| Vercel domain field | `projectname.lab.cityfriends.tech` (full) |
-| tech.domains Host Name | `projectname.lab` (partial) |
-| tech.domains Value | Copy from Vercel's recommendation |
-| tech.domains TTL | `7200` |
+| Resource | Location |
+|----------|----------|
+| GitHub repo | `github.com/friends-innovation-lab/[project-slug]` |
+| Supabase project | `[project-ref].supabase.co` |
+| Vercel deployment | Auto-deployed on push |
+| Live URL | `https://[project-slug].lab.cityfriends.tech` |
 
 ---
 
-*Last updated: January 13, 2025*
+## Manual Domain Addition (If Needed)
+
+If you need to add a domain to an existing Vercel project:
+
+```bash
+cd [project-directory]
+vercel domains add [project-slug].lab.cityfriends.tech
+```
+
+The domain will be active within 1-2 minutes. No DNS configuration required.
+
+---
+
+## Email/MX Records (Reference)
+
+Email for `cityfriends.tech` is configured and working. No action needed for new projects.
+
+| Type | Host | Value | Priority |
+|------|------|-------|----------|
+| MX | @ | `mx1.privateemail.com` | 10 |
+| MX | @ | `mx2.privateemail.com` | 10 |
+| TXT | @ | SPF record | - |
+| CNAME | mail | `privateemail.com` | - |
+
+---
+
+## Deprecated: Manual DNS via Get.tech/tech.domains
+
+> **Note**: The following instructions are deprecated. Domain DNS is now managed entirely through Vercel nameservers. These steps are preserved for historical reference only.
+
+<details>
+<summary>Old manual workflow (no longer needed)</summary>
+
+### Step 1: Vercel (Add Domain)
+1. Go to vercel.com → Project → Settings → Domains
+2. Add `[projectname].lab.cityfriends.tech`
+3. Copy the CNAME value Vercel shows
+
+### Step 2: tech.domains (Add DNS Record)
+1. Go to tech.domains → cityfriends.tech → DNS settings
+2. Add CNAME record:
+   - Host Name: `[projectname].lab`
+   - Value: paste from Vercel
+   - TTL: `7200`
+
+### Step 3: Verify
+1. Refresh in Vercel, wait for ✅ Valid Configuration
+2. Visit `https://[projectname].lab.cityfriends.tech`
+
+</details>
+
+---
+
+*Last updated: February 2025*
