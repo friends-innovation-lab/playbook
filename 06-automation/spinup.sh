@@ -2,8 +2,8 @@
 
 # Friends Innovation Lab - Project Spinup Script v2.0
 # Fully automated: GitHub + Supabase + Vercel + DNS
-# Usage: ./spinup.sh project-name "Client Display Name"
-# Example: ./spinup.sh acme-crm "Acme Corp CRM"
+# Usage: spinup project-name "Client Display Name"
+# Example: spinup acme-crm "Acme Corp CRM"
 
 set -e
 
@@ -22,8 +22,8 @@ SUPABASE_REGION="us-east-1"               # Default region
 
 # Check arguments
 if [ -z "$1" ] || [ -z "$2" ]; then
-    echo -e "${RED}Usage: ./spinup.sh project-name \"Client Display Name\"${NC}"
-    echo -e "Example: ./spinup.sh acme-crm \"Acme Corp CRM\""
+    echo -e "${RED}Usage: spinup project-name \"Client Display Name\"${NC}"
+    echo -e "Example: spinup acme-crm \"Acme Corp CRM\""
     exit 1
 fi
 
