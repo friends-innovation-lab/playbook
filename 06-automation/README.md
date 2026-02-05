@@ -2,7 +2,7 @@
 
 ## spinup.sh - Project Spinup Script
 
-Fully automated project creation that sets up GitHub, Supabase, Vercel, and DNS in one command.
+Fully automated project creation that sets up GitHub, Vercel, and DNS in one command. Optionally creates a Supabase database.
 
 ### Usage
 
@@ -16,12 +16,20 @@ spinup project-slug "Client Display Name"
 spinup acme-crm "Acme Corp CRM"
 ```
 
-This creates:
-- **GitHub repo**: `friends-innovation-lab/acme-crm` (from project-template)
-- **Supabase project**: `acme-crm` with auto-generated credentials
+The script will prompt:
+```
+Create Supabase database? (y/N):
+```
+
+Press Enter for no database, or `y` for Supabase.
+
+### What Gets Created
+
+- **GitHub repo**: `friends-innovation-lab/[project-slug]` (from project-template)
 - **Vercel deployment**: With environment variables configured
-- **Custom domain**: `acme-crm.lab.cityfriends.tech`
+- **Custom domain**: `[project-slug].lab.cityfriends.tech`
 - **GitHub issues**: Weekly milestone issues for the 4-week sprint
+- **Supabase project** (optional): With auto-generated credentials
 
 ### Prerequisites
 
@@ -36,7 +44,7 @@ gh auth login
 npm install -g vercel
 vercel login
 
-# Supabase CLI
+# Supabase CLI (only needed if using database)
 brew install supabase/tap/supabase
 supabase login
 ```
@@ -46,8 +54,8 @@ supabase login
 | Step | Action |
 |------|--------|
 | 1 | Creates GitHub repo from `project-template` |
-| 2 | Creates Supabase project with secure DB password |
-| 3 | Configures `.env.local` with Supabase credentials |
+| 2 | Creates Supabase project (if selected) |
+| 3 | Configures `.env.local` |
 | 4 | Installs npm dependencies |
 | 5 | Deploys to Vercel with environment variables |
 | 6 | Creates GitHub issues for weekly milestones |
@@ -61,7 +69,7 @@ After completion, you'll have:
 Project:   Acme Corp CRM
 Repo:      https://github.com/friends-innovation-lab/acme-crm
 Live URL:  https://acme-crm.lab.cityfriends.tech
-Supabase:  https://[project-ref].supabase.co
+Supabase:  https://[project-ref].supabase.co  (if database enabled)
 
 Local dev: cd acme-crm && npm run dev
 ```

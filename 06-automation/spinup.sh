@@ -2,9 +2,8 @@
 
 # Friends Innovation Lab - Project Spinup Script v2.1
 # Fully automated: GitHub + Vercel + DNS (+ optional Supabase)
-# Usage: spinup project-name "Client Display Name" [--db]
-# Example: spinup acme-crm "Acme Corp CRM"          # No database
-# Example: spinup acme-crm "Acme Corp CRM" --db    # With Supabase database
+# Usage: spinup project-name "Client Display Name"
+# Example: spinup acme-crm "Acme Corp CRM"
 
 set -e
 
@@ -21,23 +20,15 @@ TEMPLATE_REPO="project-template"
 SUPABASE_ORG_ID="esiwooovlhcuifbbkodk"  # Friends Innovation Lab
 SUPABASE_REGION="us-east-1"               # Default region
 
-# Parse arguments
-WITH_DB=false
+# Check arguments
 if [ -z "$1" ] || [ -z "$2" ]; then
-    echo -e "${RED}Usage: spinup project-name \"Client Display Name\" [--db]${NC}"
-    echo -e "Example: spinup acme-crm \"Acme Corp CRM\"          # No database"
-    echo -e "Example: spinup acme-crm \"Acme Corp CRM\" --db    # With Supabase database"
+    echo -e "${RED}Usage: spinup project-name \"Client Display Name\"${NC}"
+    echo -e "Example: spinup acme-crm \"Acme Corp CRM\""
     exit 1
 fi
 
 PROJECT_SLUG=$1
 PROJECT_NAME=$2
-
-# Check for --db flag
-if [ "$3" = "--db" ]; then
-    WITH_DB=true
-fi
-
 DOMAIN="${PROJECT_SLUG}.lab.cityfriends.tech"
 
 echo ""
@@ -48,10 +39,16 @@ echo ""
 echo -e "  Project:  ${GREEN}${PROJECT_NAME}${NC}"
 echo -e "  Repo:     ${GREEN}${GITHUB_ORG}/${PROJECT_SLUG}${NC}"
 echo -e "  Domain:   ${GREEN}${DOMAIN}${NC}"
-if [ "$WITH_DB" = true ]; then
+echo ""
+
+# Ask about database
+read -p "Create Supabase database? (y/N): " DB_ANSWER
+if [[ "$DB_ANSWER" =~ ^[Yy]$ ]]; then
+    WITH_DB=true
     echo -e "  Database: ${GREEN}Supabase (enabled)${NC}"
 else
-    echo -e "  Database: ${YELLOW}None (use --db to enable)${NC}"
+    WITH_DB=false
+    echo -e "  Database: ${YELLOW}None${NC}"
 fi
 echo ""
 
