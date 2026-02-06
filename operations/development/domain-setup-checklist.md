@@ -19,18 +19,18 @@ spinup project-slug "Client Name"
 New projects are created with a single command that handles GitHub, Supabase, Vercel, and DNS automatically:
 
 ```bash
-cd ~/Projects/playbook/06-automation && ./spinup.sh project-slug "Project Name"
+spinup project-slug "Project Name"
 ```
 
 Example:
 ```bash
-./spinup.sh acme-crm "Acme Corp CRM"
+spinup acme-crm "Acme Corp CRM"
 # Creates: https://acme-crm.lab.cityfriends.tech
 ```
 
 **That's it.** The script handles everything including domain configuration.
 
-See [06-automation/README.md](../06-automation/README.md) for full documentation.
+See [automation/README.md](../automation/README.md) for full documentation.
 
 ---
 

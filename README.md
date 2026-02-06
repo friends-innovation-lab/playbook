@@ -6,36 +6,40 @@ The operational manual for running the Innovation Lab.
 
 ```
 playbook/
-├── 00-progress/              # Progress journal & roadmap
-├── 01-foundation/            # Vision, positioning, business model
-├── 02-technical/             # Architecture, code standards, guides
-├── 03-design/                # UI/UX, components, patterns
-├── 04-client-ops/            # Client journey, communications, templates
-├── 05-business-ops/          # Pricing, contracts, project management
-├── 06-automation/            # Scripts, workflows, integrations
-├── 07-products/              # Product specs (TrueBid, PP AI, etc.)
-└── templates/                # Reusable templates & starter files
+├── methodology/              # PIM - client-facing methodology
+│   ├── overview.md           # Public Impact Method documentation
+│   ├── ground/               # Phase 1: Legitimacy & constraints
+│   ├── sense/                # Phase 2: Understanding & systems
+│   ├── shape/                # Phase 3: Viable options
+│   ├── test/                 # Phase 4: Real proof
+│   └── embed/                # Phase 5: Durable change
+│
+├── operations/               # Internal - how we run the lab
+│   ├── sales/                # Intake, proposals, pricing
+│   ├── contracts/            # SOW templates, terms
+│   ├── automation/           # Scripts (spinup.sh)
+│   ├── development/          # Code standards, architecture
+│   └── design/               # UI/UX standards, components
+│
+├── products/                 # Standalone products
+│   └── truebid/              # TrueBid documentation
+│
+└── templates/                # Reusable files
 ```
 
 ## Quick Links
 
-**Getting Started**
-- [Progress Journal](00-progress/progress-journal.md)
-- [Why We Exist](01-foundation/why-we-exist.md)
+**Methodology**
+- [Public Impact Method](methodology/overview.md)
+- [Why We Exist](methodology/why-we-exist.md)
 
-**Building**
-- [Solutions Architecture](02-technical/solutions-architecture.md)
-- [UI/UX Guide](03-design/ui-ux-guide.md)
-- [Code Standards](02-technical/code-standards.md)
-
-**Client Work**
-- [Client Journey](04-client-ops/client-journey.md)
-- [Proposal Templates](templates/proposals/)
+**Operations**
+- [Spinup Script](operations/automation/README.md) - Launch new projects
+- [Domain Setup](operations/development/domain-setup-checklist.md)
+- [UI/UX Guide](operations/design/ui-ux-guide.md)
 
 **Products**
-- [Product Suite Overview](07-products/suite-overview.md)
-- [TrueBid Spec](07-products/truebid.md)
-- [Past Performance AI Spec](07-products/past-performance-ai.md)
+- [TrueBid](products/truebid/README.md)
 
 ---
 
