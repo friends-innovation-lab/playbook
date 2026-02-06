@@ -1,4 +1,4 @@
-# Public Impact Method
+# Public Impact Method (PIM)
 
 *A civic innovation methodology designed to move ideas into durable public outcomes.*
 
