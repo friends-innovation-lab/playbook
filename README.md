@@ -29,6 +29,9 @@ playbook/
 
 ## Quick Links
 
+**Start Here**
+- [Getting Started Guide](operations/getting-started-guide.md) - First 30 days: contract to project underway
+
 **Methodology**
 - [Public Impact Method](methodology/overview.md)
 - [Why We Exist](methodology/why-we-exist.md)
