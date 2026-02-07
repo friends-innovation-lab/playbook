@@ -54,6 +54,121 @@ If it only works in demo conditions, it doesn't work.
 
 ## Week-by-Week Activities
 
+### Week 0: Build Brief (1-2 days)
+
+**Goal:** Distill Shape outputs into a CC-ready format.
+
+Before building, create a Build Brief that captures everything the Builder (and Claude Code) needs. This is the bridge between Shape and Test.
+
+| Input | Source |
+|-------|--------|
+| Approved option | Shape: Solution Options |
+| Design | Figma prototype |
+| Constraints | Ground: Constraint Map |
+| Technical decisions | Shape: Feasibility Assessment |
+| Success criteria | Shape: Recommendation Brief |
+
+---
+
+## Build Brief Template
+
+```markdown
+# Build Brief
+
+**Project:** [Name]
+**Phase:** Test (Pilot Build)
+**Date:** [Date]
+
+---
+
+## What We're Building
+
+[2-3 sentences: What is this? What problem does it solve?]
+
+## Selected Option
+
+[From Shape: which option was approved and why]
+
+---
+
+## Pilot Scope
+
+### In Scope (MVP)
+- [ ] [Feature/capability 1]
+- [ ] [Feature/capability 2]
+- [ ] [Feature/capability 3]
+
+### Out of Scope (Future)
+- [Feature deferred]
+- [Feature deferred]
+
+---
+
+## Design
+
+**Figma:** [Link]
+**Prototype:** [Link if different]
+
+Key screens:
+1. [Screen name] — [purpose]
+2. [Screen name] — [purpose]
+
+---
+
+## Technical Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Auth | [Supabase Auth / None / etc.] | [Why] |
+| Database | [Yes - Supabase / No] | [Why] |
+| External APIs | [List] | [Why] |
+| Hosting | Vercel | Standard |
+
+---
+
+## Constraints
+
+From Ground/Sense phases:
+- [Constraint 1 — e.g., must work offline]
+- [Constraint 2 — e.g., no PII stored]
+- [Constraint 3 — e.g., must integrate with X]
+
+---
+
+## Data
+
+| Data | Source | Notes |
+|------|--------|-------|
+| [Data type] | [Where it comes from] | [Format, access, sensitivity] |
+
+---
+
+## Success Criteria
+
+| Metric | Target |
+|--------|--------|
+| [Metric 1] | [Target] |
+| [Metric 2] | [Target] |
+
+---
+
+## Open Questions
+
+- [ ] [Question that needs resolution before/during build]
+
+---
+
+## Links
+
+- [GitHub Repo](link)
+- [Figma](link)
+- [FigJam (system map, journey)](link)
+- [Shape: Solution Options](link)
+- [Ground: Constraints](link)
+```
+
+---
+
 ### Week 1-2: Build Pilot
 
 **Goal:** Get something real into users' hands.
