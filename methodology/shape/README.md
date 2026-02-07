@@ -207,26 +207,97 @@ Generate HMW questions from Sense findings:
 
 ## Feasibility Assessment
 
-### Builder's Checklist for Each Option
+The Builder assesses each option to determine what's realistic. This takes 1-2 hours per option.
+
+### Step 1: Answer These Questions
+
+| Question | How to Answer |
+|----------|---------------|
+| Can we build with current stack? | Review option requirements against your tech (Next.js, Supabase, Vercel) |
+| New systems/integrations needed? | List external APIs, databases, services required |
+| Data migration complexity? | Identify what data moves, from where, in what format |
+| Security/compliance concerns? | Check against client's requirements (FedRAMP, ATO, PII handling) |
+| Realistic build timeline? | Break into tasks, estimate each, add 20% buffer |
+| Skills needed? | List roles/expertise — do we have them or need to hire/contract? |
+| Maintenance burden? | What needs ongoing attention after launch? |
+| What could go wrong? | Technical risks, dependencies, unknowns |
+
+### Step 2: Rate Each Option
+
+| Rating | Criteria |
+|--------|----------|
+| 🟢 **High Feasibility** | Uses known tech, no new integrations, team has skills, <4 weeks build |
+| 🟡 **Medium Feasibility** | Some unknowns, 1-2 new integrations, may need support, 4-8 weeks |
+| 🔴 **Low Feasibility** | Significant unknowns, complex integrations, missing skills, 8+ weeks or uncertain |
+
+### Step 3: Document Each Option
+
+```markdown
+## Feasibility Assessment: Option [A/B/C]
+
+**Assessed by:** [Builder name]
+**Date:** [Date]
+
+### Overall Rating: 🟢/🟡/🔴
+
+### Technical Approach
+[2-3 sentences: How would we build this?]
+
+### Stack Fit
+| Component | Our Stack | Fit | Notes |
+|-----------|-----------|-----|-------|
+| Frontend | Next.js | ✅/⚠️/❌ | |
+| Backend | Supabase | ✅/⚠️/❌ | |
+| Hosting | Vercel | ✅/⚠️/❌ | |
+| Auth | [TBD] | ✅/⚠️/❌ | |
+
+### Integrations Required
+| System | Purpose | Complexity | Risk |
+|--------|---------|------------|------|
+| [System] | [Why needed] | Low/Med/High | [What could go wrong] |
+
+### Data Considerations
+- **Data sources:** [Where data comes from]
+- **Migration needed:** Yes/No — [Details]
+- **PII/sensitive data:** Yes/No — [Implications]
+
+### Build Estimate
+| Component | Effort | Notes |
+|-----------|--------|-------|
+| [Component 1] | [X days] | |
+| [Component 2] | [X days] | |
+| Integration/testing | [X days] | |
+| Buffer (20%) | [X days] | |
+| **Total** | **[X days]** | |
+
+### Skills Required
+| Skill | Have It? | Gap Plan |
+|-------|----------|----------|
+| [Skill] | Yes/No | [Hire/Learn/Contract] |
+
+### Risks
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| [Risk] | H/M/L | H/M/L | [Plan] |
+
+### Dependencies
+| Dependency | Owner | Status | Risk if Unavailable |
+|------------|-------|--------|---------------------|
+| [API access, data, decision] | [Who] | [Status] | [Impact] |
+
+### Recommendation
+[1-2 sentences: Should we pursue this option? Any conditions?]
+```
+
+### Step 4: Compare Options
 
 | Question | Option A | Option B | Option C |
 |----------|----------|----------|----------|
-| Can we build this with current tech stack? | | | |
-| What new systems/integrations needed? | | | |
-| What's the data migration complexity? | | | |
-| Are there security/compliance concerns? | | | |
-| What's the realistic build timeline? | | | |
-| What skills do we need? | | | |
-| What's the ongoing maintenance burden? | | | |
-| What could go wrong technically? | | | |
-
-### Feasibility Rating
-
-| Rating | Meaning |
-|--------|---------|
-| 🟢 **High** | Straightforward, well-understood, low risk |
-| 🟡 **Medium** | Achievable but has unknowns or complexity |
-| 🔴 **Low** | Significant technical risk, may not be possible |
+| **Overall Rating** | 🟢/🟡/🔴 | 🟢/🟡/🔴 | 🟢/🟡/🔴 |
+| Build timeline | [X weeks] | [X weeks] | [X weeks] |
+| New integrations | [Count] | [Count] | [Count] |
+| Skill gaps | [Count] | [Count] | [Count] |
+| Top risk | [Risk] | [Risk] | [Risk] |
 
 ---
 
