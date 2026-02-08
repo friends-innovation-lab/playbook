@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Friends Innovation Lab - Project Spinup Script v2.1
+# Friends Innovation Lab - Project Spinup Script v2.2
 # Usage: spinup project-name "Client Display Name" [--db]
 # Example: spinup acme-crm "Acme Corp CRM"
 # Example: spinup acme-crm "Acme Corp CRM" --db  (includes Supabase)
@@ -37,7 +37,7 @@ fi
 
 echo ""
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.1${NC}"
+echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.2${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "  Project:  ${GREEN}${PROJECT_NAME}${NC}"
@@ -116,11 +116,11 @@ echo ""
 # ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 3: Creating milestones...${NC}"
 
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="1. Ground" -f description="Establish legitimacy and constraints" -f state="open" 2>/dev/null || true
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="2. Sense" -f description="Develop shared understanding of users and systems" -f state="open" 2>/dev/null || true
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="3. Shape" -f description="Design viable pathways" -f state="open" 2>/dev/null || true
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="4. Test" -f description="Validate in real conditions" -f state="open" 2>/dev/null || true
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="5. Embed" -f description="Ensure work lasts beyond the project" -f state="open" 2>/dev/null || true
+gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="1. Ground" -f description="Establish legitimacy and constraints" -f state="open" >/dev/null 2>&1 || true
+gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="2. Sense" -f description="Develop shared understanding of users and systems" -f state="open" >/dev/null 2>&1 || true
+gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="3. Shape" -f description="Design viable pathways" -f state="open" >/dev/null 2>&1 || true
+gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="4. Test" -f description="Validate in real conditions" -f state="open" >/dev/null 2>&1 || true
+gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="5. Embed" -f description="Ensure work lasts beyond the project" -f state="open" >/dev/null 2>&1 || true
 
 echo -e "${GREEN}✓ Milestones created${NC}"
 echo ""
@@ -829,19 +829,19 @@ echo ""
 # ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 10: Deploying to Vercel...${NC}"
 
-# Link to Vercel
-vercel link --yes
+# Link to Vercel (decline upgrade prompts)
+echo "n" | vercel link --yes 2>/dev/null || vercel link --yes
 
 # Set environment variables in Vercel
-vercel env add NEXT_PUBLIC_APP_URL production <<< "https://${DOMAIN}"
+vercel env add NEXT_PUBLIC_APP_URL production <<< "https://${DOMAIN}" 2>/dev/null || true
 
 if [ "$CREATE_DB" = true ] && [ -n "$SUPABASE_URL" ] && [ "$SUPABASE_URL" != "(not configured)" ]; then
-    vercel env add NEXT_PUBLIC_SUPABASE_URL production <<< "${SUPABASE_URL}"
-    vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production <<< "${SUPABASE_KEY}"
+    vercel env add NEXT_PUBLIC_SUPABASE_URL production <<< "${SUPABASE_URL}" 2>/dev/null || true
+    vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production <<< "${SUPABASE_KEY}" 2>/dev/null || true
 fi
 
-# Deploy
-vercel --prod
+# Deploy with --force to avoid hanging uploads
+echo "n" | vercel --prod --force 2>/dev/null || vercel --prod --force
 
 echo -e "${GREEN}✓ Deployed to Vercel${NC}"
 echo ""
@@ -851,9 +851,8 @@ echo ""
 # ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 11: Adding custom domain...${NC}"
 
-vercel domains add "${DOMAIN}"
+vercel domains add "${DOMAIN}" 2>/dev/null || true
 
-echo ""
 echo -e "${GREEN}✓ Domain added${NC}"
 echo ""
 
