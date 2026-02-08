@@ -2,6 +2,8 @@
 
 Standard issues created for every project, organized by PIM phase.
 
+> **Note:** This document contains detailed issue templates for reference. The `spinup.sh` script creates a simplified version of these issues automatically. Use this document when you need to manually create issues or want to understand the full scope of work for each phase.
+
 ---
 
 ## Labels (Created First)

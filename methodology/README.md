@@ -1,6 +1,8 @@
 # Methodology
 
-The Public Impact Method (PIM) - our client-facing innovation methodology.
+The Public Impact Method (PIM) — our client-facing innovation methodology for building solutions that survive scrutiny, politics, and time.
+
+PIM addresses why most public sector innovation fails: ideas that ignore the systems they're meant to change. We start with constraints and legitimacy, not creativity, so solutions have a real chance of lasting.
 
 ## Contents
 

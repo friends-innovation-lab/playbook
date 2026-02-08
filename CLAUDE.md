@@ -1,13 +1,13 @@
 # Friends Innovation Lab - Playbook Standards
 
-> This file defines how Claude Code should work on Friends Innovation Lab projects.
-> It includes code standards, review personas, and quality gates.
+> This file defines coding standards, review personas, and quality gates for Friends Innovation Lab.
+> It serves as the reference for the playbook repo and as a template for project repos.
 
 ---
 
 ## Project Context
 
-This is a **Friends Innovation Lab** playbook. We build fast, high-quality prototypes for small businesses and government agencies. Our standards:
+**Friends Innovation Lab** builds fast, high-quality prototypes for small businesses and government agencies. Our standards:
 
 - **Speed matters** — We ship in weeks, not months
 - **Quality matters more** — Clients judge us on first impressions
@@ -270,9 +270,9 @@ Before marking any feature complete:
 
 ## Playbook Navigation
 
-- **Methodology**: See `methodology/` for PIM phases
-- **Operations**: See `operations/` for project management
-- **Development**: See `development/` for technical standards
+- **Methodology**: See [methodology/](methodology/) for PIM phases
+- **Operations**: See [operations/](operations/) for project management
+- **Development**: See [development/](development/) for technical standards
 
 ---
 

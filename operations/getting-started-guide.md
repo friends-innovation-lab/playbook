@@ -237,12 +237,12 @@ Before moving to Sense, you should have:
 | Phase | Project Lead | UX Strategist | UX/UI Designer | Builder |
 |-------|--------------|---------------|----------------|---------|
 | **Ground** | Client alignment, risk management | Stakeholder research, constraint mapping | UX audit, pain points | Technical discovery |
-| **Sense** | Decision facilitation | User research, systems mapping | Journey maps, personas | Data analysis, feastic |
+| **Sense** | Decision facilitation | User research, systems mapping | Journey maps, personas | Data analysis, feasibility |
 | **Shape** | Option review, recommendation | Solution framing, tradeoffs | Wireframes, concepts | Technical feasibility |
 | **Test** | Go/no-go decisions | Pilot design, feedback synthesis | UI implementation | Build prototype |
 | **Embed** | Handoff management | Knowledge transfer, documentation | Design system handoff | Deployment, training |
 
-*Detailed phase guides coming in methodology/[phase] folders.*
+*See methodology/[phase] folders for detailed phase guides.*
 
 ---
 

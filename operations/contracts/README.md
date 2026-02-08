@@ -2,6 +2,8 @@
 
 SOW templates and terms.
 
+> **Status:** Coming soon. Templates are in development.
+
 ## What Belongs Here
 
 - Statement of Work templates

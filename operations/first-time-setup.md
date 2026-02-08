@@ -101,8 +101,16 @@ Once all tools are installed and configured:
 
 ```bash
 cd ~/projects  # or wherever you keep projects
-./spinup.sh project-name "Project Display Name"
+# Run spinup from the playbook's automation folder
+~/playbook/operations/automation/spinup.sh project-slug "Project Display Name"
 ```
+
+Or create an alias in your shell profile:
+```bash
+alias spinup="~/playbook/operations/automation/spinup.sh"
+```
+
+Then you can simply run: `spinup project-slug "Project Display Name"`
 
 See [Getting Started Guide](getting-started-guide.md) for the full project walkthrough.
 

@@ -298,9 +298,10 @@ npx shadcn@latest add -a        # Add all components
 
 | Area | Guide |
 |------|-------|
+| **Architecture** | [Solutions Architecture](solutions-architecture.md) |
 | **Frontend** | [React](frontend/react.md) · [Next.js](frontend/nextjs.md) · [Styling & shadcn/ui](frontend/styling.md) · [Accessibility](frontend/accessibility.md) |
 | **Backend** | [API Routes](backend/api.md) · [Database](backend/database.md) · [Auth](backend/auth.md) |
-| **Testing** | [Unit](testing/unit.md) · [Integration](testing/integration.md) · [E2E](testing/e2e.md) · [QA Checklist](testing/qa-checklist.md) |
+| **Testing** | [Overview](testing/overview.md) · [Unit](testing/unit.md) · [Integration](testing/integration.md) · [E2E](testing/e2e.md) · [QA Checklist](testing/qa-checklist.md) |
 | **Quality** | [Code Review](quality/code-review.md) · [Linting](quality/linting.md) · [PR Template](quality/pr-template.md) |
 | **Security** | [Secrets](security/secrets.md) · [Validation](security/input-validation.md) · [Compliance](security/compliance.md) |
 | **Performance** | [Optimization](performance/optimization.md) · [Cold Start](performance/cold-start.md) · [Monitoring](performance/monitoring.md) |

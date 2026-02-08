@@ -1,6 +1,8 @@
 # Friends Innovation Lab - Playbook
 
-The operational manual for running the Innovation Lab.
+The operational manual for running the Innovation Lab. This playbook contains everything our team needs: methodology for working with clients, operational processes, and technical standards for building software.
+
+**Who is this for?** Friends Innovation Lab team members — Project Leads, UX Strategists, Designers, and Builders.
 
 ## Structure
 
@@ -58,6 +60,12 @@ playbook/
 - [Testing](development/testing/) - Unit, integration, E2E, QA checklist
 - [Security](development/security/) - Secrets, input validation, compliance
 - [Deployment](development/deployment/) - Environments, CI/CD, rollback
+
+**Products** - Standalone product documentation
+- [TrueBid](products/truebid/) - TrueBid product docs
+
+**Templates** - Reusable files
+- [Templates](templates/) - Project templates, proposals, communications
 
 ---
 
