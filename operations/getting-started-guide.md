@@ -2,6 +2,8 @@
 
 *What happens from contract signed to project underway.*
 
+> **First time?** Complete [First-Time Setup](first-time-setup.md) before continuing.
+
 ---
 
 ## Overview
