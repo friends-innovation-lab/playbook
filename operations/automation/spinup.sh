@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Friends Innovation Lab - Project Spinup Script v2.0
+# Friends Innovation Lab - Project Spinup Script v2.1
 # Usage: spinup project-name "Client Display Name" [--db]
 # Example: spinup acme-crm "Acme Corp CRM"
 # Example: spinup acme-crm "Acme Corp CRM" --db  (includes Supabase)
@@ -36,9 +36,9 @@ if [ "$3" == "--db" ]; then
 fi
 
 echo ""
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.0${NC}"
-echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.1${NC}"
+echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "  Project:  ${GREEN}${PROJECT_NAME}${NC}"
 echo -e "  Repo:     ${GREEN}${GITHUB_ORG}/${PROJECT_SLUG}${NC}"
@@ -70,9 +70,9 @@ fi
 echo -e "${GREEN}✓ All requirements met${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Step 1: Create GitHub repo from template
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 1: Creating GitHub repository...${NC}"
 
 gh repo create "${GITHUB_ORG}/${PROJECT_SLUG}" \
@@ -85,9 +85,9 @@ cd "${PROJECT_SLUG}"
 echo -e "${GREEN}✓ Repository created and cloned${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Step 2: Create labels
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 2: Creating labels...${NC}"
 
 # Phase labels (blue)
@@ -111,9 +111,9 @@ gh label create "client-review" --color "FBCA04" --description "Waiting on clien
 echo -e "${GREEN}✓ Labels created${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Step 3: Create milestones
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 3: Creating milestones...${NC}"
 
 gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="1. Ground" -f description="Establish legitimacy and constraints" -f state="open" 2>/dev/null || true
@@ -125,9 +125,9 @@ gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="5. Embed" -f des
 echo -e "${GREEN}✓ Milestones created${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Step 4: Create GitHub Project board
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 4: Creating GitHub Project board...${NC}"
 
 # Create project and capture the URL
@@ -140,9 +140,9 @@ else
 fi
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Step 5: Create starter issues
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 5: Creating starter issues...${NC}"
 
 # ─────────────────────────────────────────────────────────────
@@ -248,16 +248,11 @@ gh issue create --title "G8: Ground phase client sign-off" \
 Present Ground phase findings to client and get sign-off to proceed to Sense.
 
 ## Acceptance Criteria
-- [ ] Findings presented to client
-- [ ] Client feedback incorporated
-- [ ] Problem statement agreed upon
+- [ ] Client presentation scheduled
+- [ ] Deliverables presented
+- [ ] Feedback incorporated
 - [ ] Sign-off received
-- [ ] Ready to proceed to Sense
-
-## Deliverables to Present
-- Stakeholder alignment snapshot
-- Constraint and opportunity map
-- Problem statement" \
+- [ ] Phase documented in /docs/ground/" \
     --label "phase:ground" --label "type:internal" --label "client-review" --milestone "1. Ground"
 
 # ─────────────────────────────────────────────────────────────
@@ -265,99 +260,85 @@ Present Ground phase findings to client and get sign-off to proceed to Sense.
 # ─────────────────────────────────────────────────────────────
 echo -e "${CYAN}  Creating Sense phase issues...${NC}"
 
-gh issue create --title "S1: Define research questions" \
+gh issue create --title "S1: Plan user research" \
     --body "## Task
-Define research questions tied to specific decisions. No research for research's sake.
+Design research plan including methods, participants, and timeline.
 
 ## Acceptance Criteria
-- [ ] Research questions documented
-- [ ] Each question tied to a decision it will inform
-- [ ] Methods selected for each question
-- [ ] Sample size determined" \
+- [ ] Research questions defined
+- [ ] Methods selected (interviews, observation, surveys)
+- [ ] Participant criteria defined
+- [ ] Recruitment plan created
+- [ ] Timeline established" \
     --label "phase:sense" --label "type:research" --milestone "2. Sense"
 
 gh issue create --title "S2: Recruit research participants" \
     --body "## Task
-Identify and recruit 5-8 participants per user segment.
+Recruit 8-12 participants representing key user segments.
 
 ## Acceptance Criteria
-- [ ] User segments defined
-- [ ] Recruitment criteria set
-- [ ] Participants recruited (5-8 per segment)
+- [ ] Screener created
+- [ ] Outreach completed
+- [ ] 8-12 participants confirmed
 - [ ] Sessions scheduled
-- [ ] Incentives arranged (if applicable)
+- [ ] Incentives arranged (if applicable)" \
+    --label "phase:sense" --label "type:internal" --milestone "2. Sense"
 
-## User Segments to Consider
-- Primary users
-- Power users
-- Edge cases
-- Internal users
-- Failed users" \
-    --label "phase:sense" --label "type:research" --milestone "2. Sense"
-
-gh issue create --title "S3: Conduct user research" \
+gh issue create --title "S3: Conduct user research sessions" \
     --body "## Task
-Conduct user interviews, observations, or other research methods. Capture notes in \`/notes/interviews/\`.
+Conduct research sessions (interviews, observation, usability tests).
 
 ## Acceptance Criteria
 - [ ] All sessions completed
-- [ ] Notes captured for each session
-- [ ] Daily debriefs held
-- [ ] Key insights flagged
-- [ ] Quotes captured" \
+- [ ] Notes/recordings captured
+- [ ] Key observations highlighted
+- [ ] Synthesis notes started" \
     --label "phase:sense" --label "type:research" --milestone "2. Sense"
 
-gh issue create --title "S4: Create journey map" \
+gh issue create --title "S4: Map current state journey" \
     --body "## Task
-Map the current user journey in FigJam, including pain points and bright spots.
+Document how users currently accomplish their goals (pain points, workarounds).
 
 ## Acceptance Criteria
-- [ ] All journey stages mapped
-- [ ] Touchpoints identified
-- [ ] Pain points marked (🔴)
-- [ ] Bright spots marked (🟢)
-- [ ] Emotional journey captured
-- [ ] Exported to \`/assets/\`" \
+- [ ] Current journey mapped end-to-end
+- [ ] Pain points identified
+- [ ] Workarounds documented
+- [ ] Touchpoints mapped
+- [ ] Emotions/frustrations captured" \
     --label "phase:sense" --label "type:deliverable" --milestone "2. Sense"
 
-gh issue create --title "S5: Create system map" \
+gh issue create --title "S5: Document system architecture" \
     --body "## Task
-Map how the current system works: user journey, service delivery, and technology layers.
+Map the technical landscape (systems, data flows, integrations).
 
 ## Acceptance Criteria
-- [ ] User journey layer complete
-- [ ] Service delivery layer complete
-- [ ] Technology layer complete
-- [ ] Handoffs and wait times marked
-- [ ] Constraints annotated
-- [ ] Reviewed with Builder
-- [ ] Exported to \`/assets/\`" \
-    --label "phase:sense" --label "type:deliverable" --label "type:technical" --milestone "2. Sense"
+- [ ] Systems inventory complete
+- [ ] Data flows documented
+- [ ] Integration points mapped
+- [ ] Technical debt identified
+- [ ] Constraints documented" \
+    --label "phase:sense" --label "type:technical" --milestone "2. Sense"
 
-gh issue create --title "S6: Draft research findings" \
+gh issue create --title "S6: Synthesize research findings" \
     --body "## Task
-Synthesize research into findings with decision implications.
+Analyze research data to identify themes, insights, and opportunities.
 
 ## Acceptance Criteria
-- [ ] Key findings documented (3-5)
-- [ ] Each finding has evidence
-- [ ] Each finding has decision implication
-- [ ] User segments described
-- [ ] Journey pain points summarized
-- [ ] Equity considerations documented
-- [ ] Internal review completed" \
-    --label "phase:sense" --label "type:deliverable" --milestone "2. Sense"
+- [ ] All data reviewed
+- [ ] Themes identified
+- [ ] Key insights articulated
+- [ ] Opportunities prioritized
+- [ ] Evidence documented" \
+    --label "phase:sense" --label "type:research" --milestone "2. Sense"
 
-gh issue create --title "S7: Draft risk/impact register" \
+gh issue create --title "S7: Create user archetypes" \
     --body "## Task
-Document current state risks, change risks, equity risks, and dependencies.
+Develop archetypes representing key user segments (not fictional personas).
 
 ## Acceptance Criteria
-- [ ] Current state risks documented
-- [ ] Change risks documented
-- [ ] Equity risks documented
-- [ ] Dependencies identified
-- [ ] Mitigations proposed
+- [ ] Key segments identified
+- [ ] Archetypes documented with goals/challenges
+- [ ] Validated with research data
 - [ ] Internal review completed" \
     --label "phase:sense" --label "type:deliverable" --milestone "2. Sense"
 
@@ -366,17 +347,11 @@ gh issue create --title "S8: Sense phase client sign-off" \
 Present Sense phase findings to client and get sign-off to proceed to Shape.
 
 ## Acceptance Criteria
-- [ ] Findings presented to client
-- [ ] Client feedback incorporated
-- [ ] Agreement on key insights
-- [ ] Sign-off received
-- [ ] Ready to proceed to Shape
-
-## Deliverables to Present
-- Research findings
-- Journey map
-- System map
-- Risk/impact register" \
+- [ ] Client presentation scheduled
+- [ ] Research findings presented
+- [ ] Journey maps shared
+- [ ] Feedback incorporated
+- [ ] Sign-off received" \
     --label "phase:sense" --label "type:internal" --label "client-review" --milestone "2. Sense"
 
 # ─────────────────────────────────────────────────────────────
@@ -384,102 +359,99 @@ Present Sense phase findings to client and get sign-off to proceed to Shape.
 # ─────────────────────────────────────────────────────────────
 echo -e "${CYAN}  Creating Shape phase issues...${NC}"
 
-gh issue create --title "SH1: Run ideation session" \
+gh issue create --title "SH1: Generate solution concepts" \
     --body "## Task
-Facilitate ideation session to generate solution concepts.
+Brainstorm multiple approaches to address identified opportunities.
 
 ## Acceptance Criteria
-- [ ] Session scheduled (2-3 hours)
-- [ ] Team reviewed Sense findings beforehand
-- [ ] HMW questions prepared
-- [ ] Session facilitated
-- [ ] Concepts clustered into approaches
-- [ ] Notes captured" \
+- [ ] Divergent brainstorm completed
+- [ ] 5-10 concepts generated
+- [ ] Each concept sketched/described
+- [ ] Team review completed" \
     --label "phase:shape" --label "type:research" --milestone "3. Shape"
 
-gh issue create --title "SH2: Develop solution options" \
+gh issue create --title "SH2: Evaluate concepts against constraints" \
     --body "## Task
-Develop 2-3 viable options from ideation output.
-
-## Acceptance Criteria
-- [ ] 2-3 options selected
-- [ ] Each option documented (summary, how it works, UX, ops impact)
-- [ ] Effort and timeline estimated
-- [ ] Risks identified
-- [ ] Tradeoffs named" \
-    --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
-
-gh issue create --title "SH3: Feasibility assessment" \
-    --body "## Task
-Builder assesses technical feasibility of each option.
-
-## Acceptance Criteria
-- [ ] Each option assessed (1-2 hours each)
-- [ ] Stack fit evaluated
-- [ ] Integrations identified
-- [ ] Build estimate created
-- [ ] Skills gaps identified
-- [ ] Risks documented
-- [ ] Options compared" \
-    --label "phase:shape" --label "type:technical" --milestone "3. Shape"
-
-gh issue create --title "SH4: Create prototypes" \
-    --body "## Task
-Create low-to-medium fidelity prototypes for each option in Figma.
-
-## Acceptance Criteria
-- [ ] Prototype for each option
-- [ ] Key user flows covered
-- [ ] Real content (not lorem ipsum)
-- [ ] Differentiation between options clear
-- [ ] Presentation-ready" \
-    --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
-
-gh issue create --title "SH5: Tradeoff analysis" \
-    --body "## Task
-Map tradeoffs across options so client can make informed decision.
+Assess concepts against constraints from Ground phase.
 
 ## Acceptance Criteria
 - [ ] Evaluation criteria defined
-- [ ] Each option scored
-- [ ] Tradeoffs made explicit
-- [ ] Comparison matrix complete" \
-    --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
+- [ ] Each concept assessed
+- [ ] Feasibility rated
+- [ ] Risks identified
+- [ ] 2-3 concepts selected for development" \
+    --label "phase:shape" --label "type:research" --milestone "3. Shape"
 
-gh issue create --title "SH6: Draft recommendation" \
+gh issue create --title "SH3: Design future state journey" \
     --body "## Task
-Draft Solution Options document and Recommendation Brief.
+Map the ideal user experience for selected concepts.
 
 ## Acceptance Criteria
-- [ ] Solution Options document complete
-- [ ] Recommendation Brief (one-pager) complete
-- [ ] Rationale tied to findings
-- [ ] Risks and mitigations included
+- [ ] Future journey mapped
+- [ ] Improvements over current state highlighted
+- [ ] New touchpoints designed
+- [ ] Metrics defined
 - [ ] Internal review completed" \
     --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
 
-gh issue create --title "SH7: Present options to client" \
+gh issue create --title "SH4: Create wireframes/prototypes" \
     --body "## Task
-Present options to client for decision.
+Design low-fidelity wireframes or clickable prototypes.
 
 ## Acceptance Criteria
-- [ ] Presentation prepared
-- [ ] Internal rehearsal completed
-- [ ] Options presented to client
-- [ ] Questions answered
-- [ ] Feedback captured" \
-    --label "phase:shape" --label "type:internal" --label "client-review" --milestone "3. Shape"
+- [ ] Key screens/flows wireframed
+- [ ] Interactive prototype created (if needed)
+- [ ] Covers happy path + edge cases
+- [ ] Internal review completed
+- [ ] Ready for user feedback" \
+    --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
 
-gh issue create --title "SH8: Shape phase client decision" \
+gh issue create --title "SH5: Define technical approach" \
     --body "## Task
-Get client decision on which option to pursue.
+Document technical architecture and implementation approach.
 
 ## Acceptance Criteria
-- [ ] Client selects option
-- [ ] Decision documented
-- [ ] Scope for pilot agreed
-- [ ] Sign-off received
-- [ ] Ready to proceed to Test" \
+- [ ] Architecture documented
+- [ ] Technology choices justified
+- [ ] Integration approach defined
+- [ ] Data model sketched
+- [ ] Risks/dependencies identified" \
+    --label "phase:shape" --label "type:technical" --milestone "3. Shape"
+
+gh issue create --title "SH6: Validate with users" \
+    --body "## Task
+Test prototypes with 3-5 users to gather feedback.
+
+## Acceptance Criteria
+- [ ] Test plan created
+- [ ] Sessions conducted
+- [ ] Feedback captured
+- [ ] Key learnings documented
+- [ ] Refinements identified" \
+    --label "phase:shape" --label "type:research" --milestone "3. Shape"
+
+gh issue create --title "SH7: Refine based on feedback" \
+    --body "## Task
+Iterate on designs based on user feedback.
+
+## Acceptance Criteria
+- [ ] Feedback analyzed
+- [ ] Priority changes identified
+- [ ] Designs updated
+- [ ] Re-validated if needed
+- [ ] Final version documented" \
+    --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
+
+gh issue create --title "SH8: Shape phase client sign-off" \
+    --body "## Task
+Present Shape phase designs to client and get sign-off to proceed to Test.
+
+## Acceptance Criteria
+- [ ] Client presentation scheduled
+- [ ] Designs/prototypes presented
+- [ ] Technical approach reviewed
+- [ ] Feedback incorporated
+- [ ] Sign-off received" \
     --label "phase:shape" --label "type:internal" --label "client-review" --milestone "3. Shape"
 
 # ─────────────────────────────────────────────────────────────
@@ -487,90 +459,85 @@ Get client decision on which option to pursue.
 # ─────────────────────────────────────────────────────────────
 echo -e "${CYAN}  Creating Test phase issues...${NC}"
 
-gh issue create --title "T1: Write build brief" \
+gh issue create --title "T1: Set up development environment" \
     --body "## Task
-Distill Shape outputs into CC-ready Build Brief.
+Configure development environment and CI/CD pipeline.
 
 ## Acceptance Criteria
-- [ ] What we're building documented
-- [ ] Pilot scope defined (in/out)
-- [ ] Design links included
-- [ ] Technical decisions documented
-- [ ] Constraints listed
-- [ ] Success criteria defined
-- [ ] Open questions listed" \
-    --label "phase:test" --label "type:deliverable" --milestone "4. Test"
-
-gh issue create --title "T2: Build pilot" \
-    --body "## Task
-Build MVP pilot based on Build Brief.
-
-## Acceptance Criteria
-- [ ] All in-scope features built
-- [ ] Internal testing completed
-- [ ] Critical bugs fixed
-- [ ] Monitoring in place
-- [ ] Rollback plan documented
-- [ ] Ready for pilot launch" \
+- [ ] Local dev environment documented
+- [ ] CI/CD pipeline configured
+- [ ] Staging environment ready
+- [ ] Team access verified" \
     --label "phase:test" --label "type:technical" --milestone "4. Test"
 
-gh issue create --title "T3: Launch pilot" \
+gh issue create --title "T2: Build MVP/pilot version" \
     --body "## Task
-Deploy pilot to target users.
+Implement the minimum viable version for pilot testing.
 
 ## Acceptance Criteria
-- [ ] Pilot deployed to production
-- [ ] Target users have access
-- [ ] Baseline metrics captured
-- [ ] Support channels ready
-- [ ] Monitoring active" \
+- [ ] Core functionality implemented
+- [ ] Meets acceptance criteria
+- [ ] Basic error handling
+- [ ] Deployed to staging
+- [ ] Internal QA completed" \
     --label "phase:test" --label "type:technical" --milestone "4. Test"
 
-gh issue create --title "T4: Monitor and collect feedback" \
+gh issue create --title "T3: Define pilot parameters" \
     --body "## Task
-Monitor pilot performance and collect user/staff feedback.
+Define pilot scope, participants, timeline, and success metrics.
 
 ## Acceptance Criteria
-- [ ] Daily monitoring completed
-- [ ] User interviews conducted
-- [ ] Staff feedback collected
-- [ ] Issues tracked and resolved
-- [ ] Mid-pilot check completed" \
+- [ ] Pilot scope defined
+- [ ] Participants identified
+- [ ] Timeline established
+- [ ] Success metrics defined
+- [ ] Rollback plan documented" \
+    --label "phase:test" --label "type:internal" --milestone "4. Test"
+
+gh issue create --title "T4: Run pilot" \
+    --body "## Task
+Execute the pilot with real users in real conditions.
+
+## Acceptance Criteria
+- [ ] Participants onboarded
+- [ ] Support available during pilot
+- [ ] Issues tracked and triaged
+- [ ] Usage data collected
+- [ ] Feedback gathered" \
     --label "phase:test" --label "type:research" --milestone "4. Test"
 
-gh issue create --title "T5: Compile test results" \
+gh issue create --title "T5: Monitor and support pilot" \
     --body "## Task
-Compile quantitative and qualitative results from pilot.
+Actively monitor pilot performance and provide user support.
 
 ## Acceptance Criteria
-- [ ] Quantitative metrics compiled
-- [ ] Qualitative findings synthesized
-- [ ] Technical performance documented
-- [ ] Issues summarized
-- [ ] Internal review completed" \
+- [ ] Monitoring dashboards active
+- [ ] Support channels established
+- [ ] Issues resolved promptly
+- [ ] User feedback collected continuously" \
+    --label "phase:test" --label "type:internal" --milestone "4. Test"
+
+gh issue create --title "T6: Evaluate pilot results" \
+    --body "## Task
+Analyze pilot data against success metrics.
+
+## Acceptance Criteria
+- [ ] All metrics analyzed
+- [ ] User feedback synthesized
+- [ ] Technical performance reviewed
+- [ ] Go/no-go recommendation made
+- [ ] Improvements identified" \
     --label "phase:test" --label "type:deliverable" --milestone "4. Test"
 
-gh issue create --title "T6: Go/no-go recommendation" \
+gh issue create --title "T7: Test phase client sign-off" \
     --body "## Task
-Prepare evidence-based go/no-go recommendation.
+Present pilot results and get sign-off to proceed to Embed.
 
 ## Acceptance Criteria
-- [ ] Recommendation drafted (Go/Iterate/No-Go)
-- [ ] Evidence supports recommendation
-- [ ] Risks for scaling documented
-- [ ] Requirements for next step listed" \
-    --label "phase:test" --label "type:deliverable" --milestone "4. Test"
-
-gh issue create --title "T7: Test phase client decision" \
-    --body "## Task
-Present results and get client decision.
-
-## Acceptance Criteria
-- [ ] Results presented
-- [ ] Questions answered
-- [ ] Decision made (Go/Iterate/No-Go)
+- [ ] Pilot results presented
+- [ ] Recommendation discussed
 - [ ] Next steps agreed
-- [ ] Ready to proceed to Embed (if Go)" \
+- [ ] Sign-off received" \
     --label "phase:test" --label "type:internal" --label "client-review" --milestone "4. Test"
 
 # ─────────────────────────────────────────────────────────────
@@ -578,104 +545,92 @@ Present results and get client decision.
 # ─────────────────────────────────────────────────────────────
 echo -e "${CYAN}  Creating Embed phase issues...${NC}"
 
-gh issue create --title "E1: Technical documentation" \
+gh issue create --title "E1: Address pilot findings" \
     --body "## Task
-Document architecture, deployment, database, integrations, and troubleshooting.
+Implement improvements identified during pilot.
 
 ## Acceptance Criteria
-- [ ] Architecture documented
-- [ ] Environments documented
-- [ ] Deployment process documented
-- [ ] Database schema documented
-- [ ] Integrations documented
-- [ ] Monitoring/alerts documented
-- [ ] Common issues and fixes documented
-- [ ] Internal review completed" \
-    --label "phase:embed" --label "type:deliverable" --label "type:technical" --milestone "5. Embed"
-
-gh issue create --title "E2: Operational runbook" \
-    --body "## Task
-Document how to operate the solution day-to-day.
-
-## Acceptance Criteria
-- [ ] Roles and responsibilities defined
-- [ ] Daily/weekly/monthly tasks documented
-- [ ] User management procedures documented
-- [ ] Common requests documented
-- [ ] Troubleshooting guide created
-- [ ] Escalation paths defined
-- [ ] Internal review completed" \
-    --label "phase:embed" --label "type:deliverable" --milestone "5. Embed"
-
-gh issue create --title "E3: Design documentation" \
-    --body "## Task
-Document design files, design system, decisions, and future recommendations.
-
-## Acceptance Criteria
-- [ ] Design files linked
-- [ ] Design system documented (colors, typography, components)
-- [ ] Key decisions and rationale documented
-- [ ] Accessibility notes included
-- [ ] Future recommendations listed
-- [ ] Internal review completed" \
-    --label "phase:embed" --label "type:deliverable" --milestone "5. Embed"
-
-gh issue create --title "E4: Training" \
-    --body "## Task
-Train client team to operate and maintain the solution.
-
-## Acceptance Criteria
-- [ ] Training plan created
-- [ ] Technical walkthrough completed
-- [ ] Operational training completed
-- [ ] Admin training completed (if applicable)
-- [ ] Training materials delivered
-- [ ] Recordings saved (if applicable)" \
-    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
-
-gh issue create --title "E5: Transfer access" \
-    --body "## Task
-Transfer all accounts, credentials, and access to client.
-
-## Acceptance Criteria
-- [ ] GitHub repo transferred/access granted
-- [ ] Vercel account transferred/access granted
-- [ ] Supabase access transferred (if applicable)
-- [ ] All API keys documented
-- [ ] Third-party accounts transferred
-- [ ] Client can deploy independently" \
+- [ ] Priority fixes implemented
+- [ ] Enhancements added
+- [ ] Performance optimized
+- [ ] Testing completed" \
     --label "phase:embed" --label "type:technical" --milestone "5. Embed"
 
-gh issue create --title "E6: Sustainability plan" \
+gh issue create --title "E2: Plan rollout" \
     --body "## Task
-Document ownership, funding, maintenance, and evolution plan.
+Create rollout plan for broader deployment.
 
 ## Acceptance Criteria
-- [ ] Owner identified
-- [ ] Funding documented
-- [ ] Maintenance tasks assigned
-- [ ] Evolution recommendations listed
-- [ ] Risks documented
-- [ ] Sunset criteria defined
-- [ ] Internal review completed" \
-    --label "phase:embed" --label "type:deliverable" --milestone "5. Embed"
+- [ ] Rollout phases defined
+- [ ] Communication plan created
+- [ ] Training materials prepared
+- [ ] Support plan established
+- [ ] Rollback plan updated" \
+    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
 
-gh issue create --title "E7: Measurement framework" \
+gh issue create --title "E3: Create documentation" \
     --body "## Task
-Define how success will be tracked after engagement ends.
+Document system for users, administrators, and developers.
 
 ## Acceptance Criteria
-- [ ] Success metrics defined
-- [ ] Data collection plan created
-- [ ] Reporting cadence set
-- [ ] Review cadence set
-- [ ] Owners assigned
-- [ ] Internal review completed" \
+- [ ] User guide created
+- [ ] Admin guide created
+- [ ] Technical documentation complete
+- [ ] FAQs documented
+- [ ] Video tutorials (if applicable)" \
     --label "phase:embed" --label "type:deliverable" --milestone "5. Embed"
 
-gh issue create --title "E8: Engagement closeout" \
+gh issue create --title "E4: Train users and administrators" \
     --body "## Task
-Get final sign-off and close engagement.
+Conduct training sessions for end users and system administrators.
+
+## Acceptance Criteria
+- [ ] Training materials finalized
+- [ ] Sessions scheduled
+- [ ] Training delivered
+- [ ] Feedback collected
+- [ ] Materials updated based on feedback" \
+    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
+
+gh issue create --title "E5: Execute rollout" \
+    --body "## Task
+Deploy to production and roll out to users.
+
+## Acceptance Criteria
+- [ ] Production deployment completed
+- [ ] Users onboarded per plan
+- [ ] Communications sent
+- [ ] Support in place
+- [ ] Monitoring active" \
+    --label "phase:embed" --label "type:technical" --milestone "5. Embed"
+
+gh issue create --title "E6: Knowledge transfer" \
+    --body "## Task
+Transfer knowledge to client team for ongoing ownership.
+
+## Acceptance Criteria
+- [ ] Technical walkthrough completed
+- [ ] Documentation reviewed
+- [ ] Access transferred
+- [ ] Questions answered
+- [ ] Client team confident to maintain" \
+    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
+
+gh issue create --title "E7: Establish ongoing support model" \
+    --body "## Task
+Define how the solution will be supported after project ends.
+
+## Acceptance Criteria
+- [ ] Support owner identified
+- [ ] Escalation paths defined
+- [ ] SLAs established (if applicable)
+- [ ] Monitoring ownership transferred
+- [ ] Documentation location confirmed" \
+    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
+
+gh issue create --title "E8: Project closeout" \
+    --body "## Task
+Formally close the project with lessons learned.
 
 ## Acceptance Criteria
 - [ ] All deliverables accepted
@@ -689,65 +644,130 @@ Get final sign-off and close engagement.
 echo -e "${GREEN}✓ 39 starter issues created${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Step 6: Update project files
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 6: Updating project files...${NC}"
 
 # Update package.json name
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/\"name\": \".*\"/\"name\": \"${PROJECT_SLUG}\"/" package.json
+    sed -i '' "s/\"name\": \"project-name\"/\"name\": \"${PROJECT_SLUG}\"/" package.json
 else
-    sed -i "s/\"name\": \".*\"/\"name\": \"${PROJECT_SLUG}\"/" package.json
+    sed -i "s/\"name\": \"project-name\"/\"name\": \"${PROJECT_SLUG}\"/" package.json
 fi
 
-# Create .env.local template
-if [ "$CREATE_DB" = true ]; then
-    cat > .env.local << EOF
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-
-# App
-NEXT_PUBLIC_APP_NAME=${PROJECT_NAME}
-NEXT_PUBLIC_APP_URL=https://${DOMAIN}
-EOF
+# Update README.md
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s/# Project Name/# ${PROJECT_NAME}/" README.md
+    sed -i '' "s/Brief project description./${PROJECT_NAME} - A Friends Innovation Lab project./" README.md
 else
-    cat > .env.local << EOF
-# App
-NEXT_PUBLIC_APP_NAME=${PROJECT_NAME}
-NEXT_PUBLIC_APP_URL=https://${DOMAIN}
-
-# Database (add if needed)
-# NEXT_PUBLIC_SUPABASE_URL=
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=
-EOF
+    sed -i "s/# Project Name/# ${PROJECT_NAME}/" README.md
+    sed -i "s/Brief project description./${PROJECT_NAME} - A Friends Innovation Lab project./" README.md
 fi
 
-# Create docs folder structure
+# Update CLAUDE.md
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s/\[PROJECT_NAME\]/${PROJECT_NAME}/" CLAUDE.md
+    sed -i '' "s|\[Brief description\]|${PROJECT_NAME} - A Friends Innovation Lab project|" CLAUDE.md
+    sed -i '' "s|\[URL\]|https://${DOMAIN}|" CLAUDE.md
+    sed -i '' "s|\[GitHub URL\]|https://github.com/${GITHUB_ORG}/${PROJECT_SLUG}|" CLAUDE.md
+else
+    sed -i "s/\[PROJECT_NAME\]/${PROJECT_NAME}/" CLAUDE.md
+    sed -i "s|\[Brief description\]|${PROJECT_NAME} - A Friends Innovation Lab project|" CLAUDE.md
+    sed -i "s|\[URL\]|https://${DOMAIN}|" CLAUDE.md
+    sed -i "s|\[GitHub URL\]|https://github.com/${GITHUB_ORG}/${PROJECT_SLUG}|" CLAUDE.md
+fi
+
+# Update src/app/layout.tsx metadata
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s/title: 'Project Name'/title: '${PROJECT_NAME}'/" src/app/layout.tsx
+    sed -i '' "s/description: 'Project description'/description: '${PROJECT_NAME}'/" src/app/layout.tsx
+else
+    sed -i "s/title: 'Project Name'/title: '${PROJECT_NAME}'/" src/app/layout.tsx
+    sed -i "s/description: 'Project description'/description: '${PROJECT_NAME}'/" src/app/layout.tsx
+fi
+
+# Update src/app/page.tsx
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s/>Project Name</>$PROJECT_NAME</" src/app/page.tsx
+else
+    sed -i "s/>Project Name</>$PROJECT_NAME</" src/app/page.tsx
+fi
+
+# Create .env.local from .env.example
+cp .env.example .env.local
+
+# Update .env.local with project values
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|NEXT_PUBLIC_APP_URL=http://localhost:3000|NEXT_PUBLIC_APP_URL=https://${DOMAIN}|" .env.local
+else
+    sed -i "s|NEXT_PUBLIC_APP_URL=http://localhost:3000|NEXT_PUBLIC_APP_URL=https://${DOMAIN}|" .env.local
+fi
+
+# Create docs folder structure for PIM phases
 mkdir -p docs/ground docs/sense docs/shape docs/test docs/embed
 mkdir -p notes/interviews notes/meetings notes/synthesis
 mkdir -p assets
 
 # Create placeholder READMEs
-echo "# Ground Phase Deliverables" > docs/ground/README.md
-echo "# Sense Phase Deliverables" > docs/sense/README.md
-echo "# Shape Phase Deliverables" > docs/shape/README.md
-echo "# Test Phase Deliverables" > docs/test/README.md
-echo "# Embed Phase Deliverables" > docs/embed/README.md
+cat > docs/ground/README.md << 'EOF'
+# Ground Phase Deliverables
+
+Store Ground phase deliverables here:
+- Stakeholder alignment snapshot
+- Constraint and opportunity map
+- Problem statement
+EOF
+
+cat > docs/sense/README.md << 'EOF'
+# Sense Phase Deliverables
+
+Store Sense phase deliverables here:
+- User research findings
+- Current state journey maps
+- User archetypes
+EOF
+
+cat > docs/shape/README.md << 'EOF'
+# Shape Phase Deliverables
+
+Store Shape phase deliverables here:
+- Future state journey maps
+- Wireframes and prototypes
+- Technical architecture
+EOF
+
+cat > docs/test/README.md << 'EOF'
+# Test Phase Deliverables
+
+Store Test phase deliverables here:
+- Pilot plan
+- Pilot results
+- Go/no-go recommendation
+EOF
+
+cat > docs/embed/README.md << 'EOF'
+# Embed Phase Deliverables
+
+Store Embed phase deliverables here:
+- Documentation
+- Training materials
+- Rollout plan
+- Lessons learned
+EOF
 
 echo -e "${GREEN}✓ Project files updated${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Step 7: Supabase setup (if --db flag)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 if [ "$CREATE_DB" = true ]; then
     echo -e "${YELLOW}Step 7: Supabase setup${NC}"
     echo ""
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
     echo -e "  ${YELLOW}ACTION REQUIRED:${NC} Create Supabase project"
-    echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
     echo ""
     echo "  1. Go to: https://supabase.com/dashboard"
     echo "  2. Select org: Friends Innovation Lab"
@@ -764,11 +784,11 @@ if [ "$CREATE_DB" = true ]; then
 
     # Update .env.local with Supabase credentials
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s|NEXT_PUBLIC_SUPABASE_URL=|NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}|" .env.local
-        sed -i '' "s|NEXT_PUBLIC_SUPABASE_ANON_KEY=|NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_KEY}|" .env.local
+        sed -i '' "s|NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co|NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}|" .env.local
+        sed -i '' "s|NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key|NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_KEY}|" .env.local
     else
-        sed -i "s|NEXT_PUBLIC_SUPABASE_URL=|NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}|" .env.local
-        sed -i "s|NEXT_PUBLIC_SUPABASE_ANON_KEY=|NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_KEY}|" .env.local
+        sed -i "s|NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co|NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}|" .env.local
+        sed -i "s|NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key|NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_KEY}|" .env.local
     fi
 
     echo ""
@@ -781,9 +801,9 @@ else
     echo ""
 fi
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Step 8: Install dependencies
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 8: Installing dependencies...${NC}"
 
 npm install
@@ -791,19 +811,31 @@ npm install
 echo -e "${GREEN}✓ Dependencies installed${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Step 9: Deploy to Vercel
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo -e "${YELLOW}Step 9: Deploying to Vercel...${NC}"
+# ════════════════════════════════════════════════════════════
+# Step 9: Initialize Husky (git hooks)
+# ════════════════════════════════════════════════════════════
+echo -e "${YELLOW}Step 9: Initializing git hooks...${NC}"
+
+npx husky init 2>/dev/null || true
+
+# Ensure pre-commit hook has correct content
+echo "npx lint-staged" > .husky/pre-commit
+
+echo -e "${GREEN}✓ Git hooks configured${NC}"
+echo ""
+
+# ════════════════════════════════════════════════════════════
+# Step 10: Deploy to Vercel
+# ════════════════════════════════════════════════════════════
+echo -e "${YELLOW}Step 10: Deploying to Vercel...${NC}"
 
 # Link to Vercel
 vercel link --yes
 
 # Set environment variables in Vercel
-vercel env add NEXT_PUBLIC_APP_NAME production <<< "${PROJECT_NAME}"
 vercel env add NEXT_PUBLIC_APP_URL production <<< "https://${DOMAIN}"
 
-if [ "$CREATE_DB" = true ]; then
+if [ "$CREATE_DB" = true ] && [ -n "$SUPABASE_URL" ] && [ "$SUPABASE_URL" != "(not configured)" ]; then
     vercel env add NEXT_PUBLIC_SUPABASE_URL production <<< "${SUPABASE_URL}"
     vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production <<< "${SUPABASE_KEY}"
 fi
@@ -814,10 +846,10 @@ vercel --prod
 echo -e "${GREEN}✓ Deployed to Vercel${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Step 10: Add custom domain
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo -e "${YELLOW}Step 10: Adding custom domain...${NC}"
+# ════════════════════════════════════════════════════════════
+# Step 11: Add custom domain
+# ════════════════════════════════════════════════════════════
+echo -e "${YELLOW}Step 11: Adding custom domain...${NC}"
 
 vercel domains add "${DOMAIN}"
 
@@ -825,14 +857,15 @@ echo ""
 echo -e "${GREEN}✓ Domain added${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Step 11: Commit and push
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo -e "${YELLOW}Step 11: Committing changes...${NC}"
+# ════════════════════════════════════════════════════════════
+# Step 12: Commit and push
+# ════════════════════════════════════════════════════════════
+echo -e "${YELLOW}Step 12: Committing changes...${NC}"
 
 git add .
 git commit -m "Initial project setup for ${PROJECT_NAME}
 
+- Updated project name and metadata
 - Created docs/ and notes/ folder structure
 - Configured environment variables
 - Set up for PIM methodology"
@@ -841,13 +874,13 @@ git push
 echo -e "${GREEN}✓ Changes pushed${NC}"
 echo ""
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 # Done!
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ════════════════════════════════════════════════════════════
 echo ""
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
 echo -e "${GREEN}  ✓ Project setup complete!${NC}"
-echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "  ${BLUE}Project:${NC}   ${PROJECT_NAME}"
 echo -e "  ${BLUE}Repo:${NC}      https://github.com/${GITHUB_ORG}/${PROJECT_SLUG}"
@@ -862,8 +895,12 @@ echo -e "    • Project board"
 echo ""
 echo -e "  ${BLUE}Local:${NC}     cd ${PROJECT_SLUG} && npm run dev"
 echo ""
-echo -e "  ${YELLOW}Next steps:${NC}"
-echo "  1. Open GitHub Issues to see your project roadmap"
-echo "  2. Set milestone due dates"
-echo "  3. Start Ground phase!"
+echo -e "  ${YELLOW}Manual steps remaining:${NC}"
+echo "  1. Set up UptimeRobot monitor:"
+echo "     URL: https://${DOMAIN}/api/health"
+echo "     Interval: 5 minutes"
+echo ""
+echo "  2. Open GitHub Issues to see your project roadmap"
+echo "  3. Set milestone due dates"
+echo "  4. Start Ground phase!"
 echo ""
