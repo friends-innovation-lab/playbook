@@ -29,20 +29,25 @@ playbook/
 
 ## Quick Links
 
-**Start Here**
-- [Getting Started Guide](operations/getting-started-guide.md) - First 30 days: contract to project underway
+**New Team Member?**
+- [First-Time Setup](operations/first-time-setup.md) - Install tools, configure access (do this once)
+- [Getting Started Guide](operations/getting-started-guide.md) - First 30 days on a project
 
-**Methodology**
-- [Public Impact Method](methodology/overview.md)
-- [Why We Exist](methodology/why-we-exist.md)
+**Methodology** - How we work with clients
+- [Public Impact Method](methodology/overview.md) - Our 5-phase approach
+- [Why We Exist](methodology/why-we-exist.md) - Lab founding principles
 
-**Operations**
-- [Spinup Script](operations/automation/README.md) - Launch new projects
-- [Domain Setup](operations/development/domain-setup-checklist.md)
-- [UI/UX Guide](operations/design/ui-ux-guide.md)
+**Operations** - How we run projects
+- [Project Operations](operations/README.md) - Task tracking, file structure, workflows
+- [Spinup Script](operations/automation/README.md) - Launch new projects in minutes
 
-**Products**
-- [TrueBid](products/truebid/README.md)
+**Development** - Technical standards
+- [Development Guide](development/README.md) - Code standards overview
+- [Frontend](development/frontend/) - React, Next.js, styling, accessibility
+- [Backend](development/backend/) - Database, auth, APIs
+- [Testing](development/testing/) - Unit, integration, E2E, QA checklist
+- [Security](development/security/) - Secrets, input validation, compliance
+- [Deployment](development/deployment/) - Environments, CI/CD, rollback
 
 ---
 
