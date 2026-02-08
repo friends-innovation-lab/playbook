@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Friends Innovation Lab - Project Spinup Script v2.2
+# Friends Innovation Lab - Project Spinup Script v2.3
 # Usage: spinup project-name "Client Display Name" [--db]
 # Example: spinup acme-crm "Acme Corp CRM"
 # Example: spinup acme-crm "Acme Corp CRM" --db  (includes Supabase)
@@ -37,7 +37,7 @@ fi
 
 echo ""
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.2${NC}"
+echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.3${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "  Project:  ${GREEN}${PROJECT_NAME}${NC}"
@@ -851,9 +851,10 @@ echo ""
 # ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 11: Adding custom domain...${NC}"
 
-vercel domains add "${DOMAIN}" 2>/dev/null || true
+# Vercel outputs confusing success+error combo, suppress all and continue
+vercel domains add "${DOMAIN}" >/dev/null 2>&1 || true
 
-echo -e "${GREEN}✓ Domain added${NC}"
+echo -e "${GREEN}✓ Domain configured (verify at https://${DOMAIN})${NC}"
 echo ""
 
 # ════════════════════════════════════════════════════════════
