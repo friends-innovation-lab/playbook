@@ -67,7 +67,7 @@ Identify 5-8 stakeholders across these categories:
 - [ ] Priority order determined
 
 ## Links
-- [Ground Phase Guide](../playbook/methodology/ground/README.md)
+- [Ground Phase Guide](../../methodology/ground/README.md)
 ```
 
 ---
@@ -92,7 +92,7 @@ Schedule 45-60 minute interviews with identified stakeholders.
 - [ ] Note-taking template ready
 
 ## Links
-- [Interview Questions](../playbook/methodology/ground/README.md#ground-phase-interview-questions)
+- [Interview Questions](../../methodology/ground/README.md#ground-phase-interview-questions)
 ```
 
 ---
@@ -117,7 +117,7 @@ Conduct all scheduled stakeholder interviews. Capture notes in `/notes/interview
 - [ ] Follow-up items noted
 
 ## Links
-- [Interview Note Template](../playbook/methodology/ground/README.md)
+- [Interview Note Template](../../methodology/ground/README.md)
 ```
 
 ---
@@ -143,7 +143,7 @@ Review existing systems, APIs, data, and technical constraints.
 - [ ] Access requirements noted
 
 ## Links
-- [Ground Phase Guide](../playbook/methodology/ground/README.md)
+- [Ground Phase Guide](../../methodology/ground/README.md)
 ```
 
 ---
@@ -169,7 +169,7 @@ Synthesize interview findings into stakeholder alignment snapshot.
 - [ ] Internal review completed
 
 ## Template
-See [Stakeholder Alignment Snapshot Template](../playbook/methodology/ground/README.md#output-1-stakeholder-alignment-snapshot)
+See [Stakeholder Alignment Snapshot Template](../../methodology/ground/README.md#output-1-stakeholder-alignment-snapshot)
 ```
 
 ---
@@ -197,7 +197,7 @@ Document constraints (policy, technical, budget, political, timeline) and opport
 - [ ] Internal review completed
 
 ## Template
-See [Constraint and Opportunity Map Template](../playbook/methodology/ground/README.md#output-2-constraint-and-opportunity-map)
+See [Constraint and Opportunity Map Template](../../methodology/ground/README.md#output-2-constraint-and-opportunity-map)
 ```
 
 ---
@@ -225,7 +225,7 @@ Articulate the problem clearly, including tradeoffs any solution must navigate.
 - [ ] Internal review completed
 
 ## Template
-See [Problem Statement Template](../playbook/methodology/ground/README.md#output-3-problem-statement)
+See [Problem Statement Template](../../methodology/ground/README.md#output-3-problem-statement)
 ```
 
 ---
@@ -280,7 +280,7 @@ Define research questions tied to specific decisions. No research for research's
 - [ ] Sample size determined
 
 ## Links
-- [Decision-Driven Research](../playbook/methodology/sense/README.md#key-principle-decision-driven-research)
+- [Decision-Driven Research](../../methodology/sense/README.md#key-principle-decision-driven-research)
 ```
 
 ---
@@ -336,7 +336,7 @@ Conduct user interviews, observations, or other research methods. Capture notes 
 - [ ] Quotes captured
 
 ## Links
-- [Sense Interview Questions](../playbook/methodology/sense/README.md#sense-phase-interview-questions)
+- [Sense Interview Questions](../../methodology/sense/README.md#sense-phase-interview-questions)
 ```
 
 ---
@@ -363,7 +363,7 @@ Map the current user journey in FigJam, including pain points and bright spots.
 - [ ] Exported to `/assets/`
 
 ## Links
-- [System Map Components](../playbook/methodology/sense/README.md#system-map-components)
+- [System Map Components](../../methodology/sense/README.md#system-map-components)
 ```
 
 ---
@@ -391,7 +391,7 @@ Map how the current system works: user journey, service delivery, and technology
 - [ ] Exported to `/assets/`
 
 ## Links
-- [System Mapping](../playbook/methodology/sense/README.md#systems-mapping)
+- [System Mapping](../../methodology/sense/README.md#systems-mapping)
 ```
 
 ---
@@ -419,7 +419,7 @@ Synthesize research into findings with decision implications.
 - [ ] Internal review completed
 
 ## Template
-See [Research Findings Template](../playbook/methodology/sense/README.md#output-1-research-findings)
+See [Research Findings Template](../../methodology/sense/README.md#output-1-research-findings)
 ```
 
 ---
@@ -446,7 +446,7 @@ Document current state risks, change risks, equity risks, and dependencies.
 - [ ] Internal review completed
 
 ## Template
-See [Risk/Impact Register Template](../playbook/methodology/sense/README.md#output-3-riskimpact-register)
+See [Risk/Impact Register Template](../../methodology/sense/README.md#output-3-riskimpact-register)
 ```
 
 ---
@@ -504,7 +504,7 @@ Facilitate ideation session to generate solution concepts.
 - [ ] Notes captured
 
 ## Links
-- [Ideation Session Guide](../playbook/methodology/shape/README.md#ideation-session)
+- [Ideation Session Guide](../../methodology/shape/README.md#ideation-session)
 ```
 
 ---
@@ -530,7 +530,7 @@ Develop 2-3 viable options from ideation output.
 - [ ] Tradeoffs named
 
 ## Template
-See [Option Development Template](../playbook/methodology/shape/README.md#option-development-template)
+See [Option Development Template](../../methodology/shape/README.md#option-development-template)
 ```
 
 ---
@@ -558,7 +558,7 @@ Builder assesses technical feasibility of each option.
 - [ ] Options compared
 
 ## Template
-See [Feasibility Assessment](../playbook/methodology/shape/README.md#feasibility-assessment)
+See [Feasibility Assessment](../../methodology/shape/README.md#feasibility-assessment)
 ```
 
 ---
@@ -584,7 +584,7 @@ Create low-to-medium fidelity prototypes for each option in Figma.
 - [ ] Presentation-ready
 
 ## Links
-- [Prototyping Guidance](../playbook/methodology/shape/README.md#prototyping)
+- [Prototyping Guidance](../../methodology/shape/README.md#prototyping)
 ```
 
 ---
@@ -609,7 +609,7 @@ Map tradeoffs across options so client can make informed decision.
 - [ ] Comparison matrix complete
 
 ## Template
-See [Tradeoff Analysis](../playbook/methodology/shape/README.md#tradeoff-analysis)
+See [Tradeoff Analysis](../../methodology/shape/README.md#tradeoff-analysis)
 ```
 
 ---
@@ -635,8 +635,8 @@ Draft Solution Options document and Recommendation Brief.
 - [ ] Internal review completed
 
 ## Templates
-- [Solution Options](../playbook/methodology/shape/README.md#output-1-solution-options)
-- [Recommendation Brief](../playbook/methodology/shape/README.md#output-2-recommendation-brief)
+- [Solution Options](../../methodology/shape/README.md#output-1-solution-options)
+- [Recommendation Brief](../../methodology/shape/README.md#output-2-recommendation-brief)
 ```
 
 ---
@@ -662,7 +662,7 @@ Present options to client for decision.
 - [ ] Feedback captured
 
 ## Links
-- [Presentation Structure](../playbook/methodology/shape/README.md#client-presentation)
+- [Presentation Structure](../../methodology/shape/README.md#client-presentation)
 ```
 
 ---
@@ -715,7 +715,7 @@ Distill Shape outputs into CC-ready Build Brief.
 - [ ] Open questions listed
 
 ## Template
-See [Build Brief Template](../playbook/methodology/test/README.md#build-brief-template)
+See [Build Brief Template](../../methodology/test/README.md#build-brief-template)
 ```
 
 ---
@@ -788,8 +788,8 @@ Monitor pilot performance and collect user/staff feedback.
 - [ ] Mid-pilot check completed
 
 ## Links
-- [Feedback Collection](../playbook/methodology/test/README.md#feedback-collection)
-- [Pilot Feedback Questions](../playbook/methodology/test/README.md#pilot-feedback-questions)
+- [Feedback Collection](../../methodology/test/README.md#feedback-collection)
+- [Pilot Feedback Questions](../../methodology/test/README.md#pilot-feedback-questions)
 ```
 
 ---
@@ -815,7 +815,7 @@ Compile quantitative and qualitative results from pilot.
 - [ ] Internal review completed
 
 ## Template
-See [Test Results Template](../playbook/methodology/test/README.md#output-1-test-results)
+See [Test Results Template](../../methodology/test/README.md#output-1-test-results)
 ```
 
 ---
@@ -840,7 +840,7 @@ Prepare evidence-based go/no-go recommendation.
 - [ ] Requirements for next step listed
 
 ## Template
-See [Go/No-Go Template](../playbook/methodology/test/README.md#output-2-gono-go-recommendation)
+See [Go/No-Go Template](../../methodology/test/README.md#output-2-gono-go-recommendation)
 ```
 
 ---
@@ -894,7 +894,7 @@ Document architecture, deployment, database, integrations, and troubleshooting.
 - [ ] Internal review completed
 
 ## Template
-See [Technical Documentation Template](../playbook/methodology/embed/README.md#technical-documentation-builder)
+See [Technical Documentation Template](../../methodology/embed/README.md#technical-documentation-builder)
 ```
 
 ---
@@ -922,7 +922,7 @@ Document how to operate the solution day-to-day.
 - [ ] Internal review completed
 
 ## Template
-See [Operational Runbook Template](../playbook/methodology/embed/README.md#operational-runbook-ux-strategist)
+See [Operational Runbook Template](../../methodology/embed/README.md#operational-runbook-ux-strategist)
 ```
 
 ---
@@ -949,7 +949,7 @@ Document design files, design system, decisions, and future recommendations.
 - [ ] Internal review completed
 
 ## Template
-See [Design Documentation Template](../playbook/methodology/embed/README.md#design-documentation-designer)
+See [Design Documentation Template](../../methodology/embed/README.md#design-documentation-designer)
 ```
 
 ---
@@ -1025,7 +1025,7 @@ Document ownership, funding, maintenance, and evolution plan.
 - [ ] Internal review completed
 
 ## Template
-See [Sustainability Plan Template](../playbook/methodology/embed/README.md#output-2-sustainability-plan)
+See [Sustainability Plan Template](../../methodology/embed/README.md#output-2-sustainability-plan)
 ```
 
 ---
@@ -1052,7 +1052,7 @@ Define how success will be tracked after engagement ends.
 - [ ] Internal review completed
 
 ## Template
-See [Measurement Framework Template](../playbook/methodology/embed/README.md#output-3-measurement-framework)
+See [Measurement Framework Template](../../methodology/embed/README.md#output-3-measurement-framework)
 ```
 
 ---
@@ -1079,7 +1079,7 @@ Get final sign-off and close engagement.
 - [ ] Project archived
 
 ## Template
-See [Engagement Closeout](../playbook/methodology/embed/README.md#engagement-closeout)
+See [Engagement Closeout](../../methodology/embed/README.md#engagement-closeout)
 ```
 
 ---

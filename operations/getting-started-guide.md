@@ -12,7 +12,7 @@ You've won the project. The contract is signed. Now what?
 
 This guide covers the first 30 days — from internal prep through the end of the Ground phase. It defines who does what and when.
 
-Before starting, read [Project Operations](../operations/README.md) to understand our tools and workflows.
+Before starting, read [Project Operations](README.md) to understand our tools and workflows.
 
 ---
 
@@ -269,7 +269,7 @@ playbook/
 ```
 
 ### How We Work
-- [Project Operations](../operations/README.md) — Tools, task tracking, file structure
+- [Project Operations](README.md) — Tools, task tracking, file structure
 
 ### Communication Rhythm (Default)
 
