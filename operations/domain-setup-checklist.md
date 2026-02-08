@@ -30,7 +30,7 @@ spinup acme-crm "Acme Corp CRM"
 
 **That's it.** The script handles everything including domain configuration.
 
-See [automation/README.md](../automation/README.md) for full documentation.
+See [automation/README.md](automation/README.md) for full documentation.
 
 ---
 
