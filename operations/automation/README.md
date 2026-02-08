@@ -79,3 +79,22 @@ Local dev: cd acme-crm && npm run dev
 - Domain DNS is automatic (Vercel manages `lab.cityfriends.tech` nameservers)
 - Database password is saved locally in `.db-password` (not committed)
 - The script will prompt for Supabase API keys if auto-retrieval fails
+
+---
+
+## Manual Steps After Spinup
+
+The script cannot create everything automatically. After spinup completes:
+
+1. **Create GitHub Project board manually:**
+   - Go to https://github.com/orgs/friends-innovation-lab/projects
+   - Click "New project"
+   - Choose "Board" template
+   - Name it the same as your project
+   - Link the repo to the project
+
+2. **Set up UptimeRobot monitor:**
+   - URL: `https://[project-name].lab.cityfriends.tech/api/health`
+   - Interval: 5 minutes
+
+3. **Set milestone due dates** in GitHub Issues

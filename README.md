@@ -15,11 +15,21 @@ playbook/
 │   └── embed/                # Phase 5: Durable change
 │
 ├── operations/               # Internal - how we run the lab
+│   ├── first-time-setup.md   # Tool installation, one-time setup
+│   ├── getting-started-guide.md  # First 30 days on a project
 │   ├── sales/                # Intake, proposals, pricing
 │   ├── contracts/            # SOW templates, terms
 │   ├── automation/           # Scripts (spinup.sh)
-│   ├── development/          # Code standards, architecture
 │   └── design/               # UI/UX standards, components
+│
+├── development/              # Technical standards
+│   ├── frontend/             # React, Next.js, styling, accessibility
+│   ├── backend/              # Database, auth, APIs
+│   ├── testing/              # Unit, integration, E2E, QA checklist
+│   ├── quality/              # Code review, linting, PR template
+│   ├── security/             # Secrets, validation, compliance
+│   ├── performance/          # Optimization, cold start, monitoring
+│   └── deployment/           # Environments, CI/CD, rollback
 │
 ├── products/                 # Standalone products
 │   └── truebid/              # TrueBid documentation

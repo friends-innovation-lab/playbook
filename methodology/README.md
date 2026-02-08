@@ -4,18 +4,18 @@ The Public Impact Method (PIM) - our client-facing innovation methodology.
 
 ## Contents
 
-- **overview.md** - Complete PIM documentation
-- **why-we-exist.md** - Lab founding principles and background
+- [overview.md](overview.md) - Complete PIM documentation
+- [why-we-exist.md](why-we-exist.md) - Lab founding principles and background
 
 ## Phase Folders
 
 Each phase has its own folder for phase-specific resources:
 
-- **ground/** - Legitimacy and constraints
-- **sense/** - Understanding and systems
-- **shape/** - Viable options
-- **test/** - Real proof
-- **embed/** - Durable change
+- [ground/](ground/) - Legitimacy and constraints
+- [sense/](sense/) - Understanding and systems
+- [shape/](shape/) - Viable options
+- [test/](test/) - Real proof
+- [embed/](embed/) - Durable change
 
 ## Usage
 
