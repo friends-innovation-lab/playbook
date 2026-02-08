@@ -104,7 +104,7 @@ cd ~/projects  # or wherever you keep projects
 ./spinup.sh project-name "Project Display Name"
 ```
 
-See [Project Operations](project-operations.md) for the full spinup walkthrough.
+See [Getting Started Guide](getting-started-guide.md) for the full project walkthrough.
 
 ---
 
