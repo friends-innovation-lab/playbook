@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Friends Innovation Lab - Project Spinup Script v2.4
+# Friends Innovation Lab - Project Spinup Script v2.5
 # Usage: spinup project-name "Client Display Name" [--lite] [--db]
 # Example: spinup acme-crm "Acme Corp CRM"
 # Example: spinup acme-crm "Acme Corp CRM" --db  (includes Supabase)
@@ -53,7 +53,7 @@ done
 
 echo ""
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.4${NC}"
+echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.5${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "  Project:  ${GREEN}${PROJECT_NAME}${NC}"
@@ -746,6 +746,10 @@ fi
 
 # Create folder structure
 if [ "$LITE_MODE" = true ]; then
+    # Remove any PIM phase folders inherited from template
+    rm -rf docs/ground docs/sense docs/shape docs/test docs/embed 2>/dev/null || true
+    rm -rf notes/interviews notes/meetings notes/synthesis 2>/dev/null || true
+
     # Flat structure for lite mode
     mkdir -p docs
     mkdir -p notes
