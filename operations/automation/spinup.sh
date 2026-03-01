@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Friends Innovation Lab - Project Spinup Script v2.3
-# Usage: spinup project-name "Client Display Name" [--db]
+# Friends Innovation Lab - Project Spinup Script v2.4
+# Usage: spinup project-name "Client Display Name" [--lite] [--db]
 # Example: spinup acme-crm "Acme Corp CRM"
 # Example: spinup acme-crm "Acme Corp CRM" --db  (includes Supabase)
+# Example: spinup acme-crm "Acme Corp CRM" --lite --db  (lite mode with Supabase)
 
 set -e
 
@@ -17,33 +18,49 @@ NC='\033[0m' # No Color
 
 # Check arguments
 if [ -z "$1" ] || [ -z "$2" ]; then
-    echo -e "${RED}Usage: spinup project-name \"Client Display Name\" [--db]${NC}"
+    echo -e "${RED}Usage: spinup project-name \"Client Display Name\" [--lite] [--db]${NC}"
     echo -e "Example: spinup acme-crm \"Acme Corp CRM\""
     echo -e "Add --db flag to create Supabase database"
+    echo -e "Add --lite flag for simplified setup (no PIM methodology)"
     exit 1
 fi
 
 PROJECT_SLUG=$1
 PROJECT_NAME=$2
 CREATE_DB=false
+LITE_MODE=false
 GITHUB_ORG="friends-innovation-lab"
 TEMPLATE_REPO="project-template"
 DOMAIN="${PROJECT_SLUG}.lab.cityfriends.tech"
 
-# Check for --db flag
-if [ "$3" == "--db" ]; then
-    CREATE_DB=true
-fi
+# Check for flags (--db and --lite in any order)
+shift 2
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --db)
+            CREATE_DB=true
+            ;;
+        --lite)
+            LITE_MODE=true
+            ;;
+        *)
+            echo -e "${RED}Unknown flag: $1${NC}"
+            exit 1
+            ;;
+    esac
+    shift
+done
 
 echo ""
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.3${NC}"
+echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.4${NC}"
 echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "  Project:  ${GREEN}${PROJECT_NAME}${NC}"
 echo -e "  Repo:     ${GREEN}${GITHUB_ORG}/${PROJECT_SLUG}${NC}"
 echo -e "  Domain:   ${GREEN}${DOMAIN}${NC}"
 echo -e "  Database: ${GREEN}${CREATE_DB}${NC}"
+echo -e "  Lite:     ${GREEN}${LITE_MODE}${NC}"
 echo ""
 
 # Check for required CLI tools
@@ -90,23 +107,36 @@ echo ""
 # ════════════════════════════════════════════════════════════
 echo -e "${YELLOW}Step 2: Creating labels...${NC}"
 
-# Phase labels (blue)
-gh label create "phase:ground" --color "0052CC" --description "Ground phase work" 2>/dev/null || true
-gh label create "phase:sense" --color "0052CC" --description "Sense phase work" 2>/dev/null || true
-gh label create "phase:shape" --color "0052CC" --description "Shape phase work" 2>/dev/null || true
-gh label create "phase:test" --color "0052CC" --description "Test phase work" 2>/dev/null || true
-gh label create "phase:embed" --color "0052CC" --description "Embed phase work" 2>/dev/null || true
+if [ "$LITE_MODE" = true ]; then
+    # Generic labels for lite mode
+    gh label create "bug" --color "D73A4A" --description "Something isn't working" 2>/dev/null || true
+    gh label create "feature" --color "0E8A16" --description "New feature or request" 2>/dev/null || true
+    gh label create "chore" --color "FEF2C0" --description "Maintenance or housekeeping" 2>/dev/null || true
+    gh label create "documentation" --color "0075CA" --description "Documentation updates" 2>/dev/null || true
 
-# Type labels (green)
-gh label create "type:research" --color "0E8A16" --description "Interviews, discovery, analysis" 2>/dev/null || true
-gh label create "type:deliverable" --color "0E8A16" --description "Client-facing output" 2>/dev/null || true
-gh label create "type:technical" --color "0E8A16" --description "Code, infrastructure, systems" 2>/dev/null || true
-gh label create "type:internal" --color "0E8A16" --description "Internal task" 2>/dev/null || true
+    # Status labels (shared)
+    gh label create "blocked" --color "D93F0B" --description "Waiting on something" 2>/dev/null || true
+    gh label create "needs-review" --color "FBCA04" --description "Ready for internal review" 2>/dev/null || true
+    gh label create "client-review" --color "FBCA04" --description "Waiting on client" 2>/dev/null || true
+else
+    # Phase labels (blue)
+    gh label create "phase:ground" --color "0052CC" --description "Ground phase work" 2>/dev/null || true
+    gh label create "phase:sense" --color "0052CC" --description "Sense phase work" 2>/dev/null || true
+    gh label create "phase:shape" --color "0052CC" --description "Shape phase work" 2>/dev/null || true
+    gh label create "phase:test" --color "0052CC" --description "Test phase work" 2>/dev/null || true
+    gh label create "phase:embed" --color "0052CC" --description "Embed phase work" 2>/dev/null || true
 
-# Status labels
-gh label create "blocked" --color "D93F0B" --description "Waiting on something" 2>/dev/null || true
-gh label create "needs-review" --color "FBCA04" --description "Ready for internal review" 2>/dev/null || true
-gh label create "client-review" --color "FBCA04" --description "Waiting on client" 2>/dev/null || true
+    # Type labels (green)
+    gh label create "type:research" --color "0E8A16" --description "Interviews, discovery, analysis" 2>/dev/null || true
+    gh label create "type:deliverable" --color "0E8A16" --description "Client-facing output" 2>/dev/null || true
+    gh label create "type:technical" --color "0E8A16" --description "Code, infrastructure, systems" 2>/dev/null || true
+    gh label create "type:internal" --color "0E8A16" --description "Internal task" 2>/dev/null || true
+
+    # Status labels
+    gh label create "blocked" --color "D93F0B" --description "Waiting on something" 2>/dev/null || true
+    gh label create "needs-review" --color "FBCA04" --description "Ready for internal review" 2>/dev/null || true
+    gh label create "client-review" --color "FBCA04" --description "Waiting on client" 2>/dev/null || true
+fi
 
 echo -e "${GREEN}✓ Labels created${NC}"
 echo ""
@@ -114,16 +144,21 @@ echo ""
 # ════════════════════════════════════════════════════════════
 # Step 3: Create milestones
 # ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 3: Creating milestones...${NC}"
+if [ "$LITE_MODE" = true ]; then
+    echo -e "${YELLOW}Step 3: Skipping milestones (lite mode)${NC}"
+    echo ""
+else
+    echo -e "${YELLOW}Step 3: Creating milestones...${NC}"
 
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="1. Ground" -f description="Establish legitimacy and constraints" -f state="open" >/dev/null 2>&1 || true
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="2. Sense" -f description="Develop shared understanding of users and systems" -f state="open" >/dev/null 2>&1 || true
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="3. Shape" -f description="Design viable pathways" -f state="open" >/dev/null 2>&1 || true
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="4. Test" -f description="Validate in real conditions" -f state="open" >/dev/null 2>&1 || true
-gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="5. Embed" -f description="Ensure work lasts beyond the project" -f state="open" >/dev/null 2>&1 || true
+    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="1. Ground" -f description="Establish legitimacy and constraints" -f state="open" >/dev/null 2>&1 || true
+    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="2. Sense" -f description="Develop shared understanding of users and systems" -f state="open" >/dev/null 2>&1 || true
+    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="3. Shape" -f description="Design viable pathways" -f state="open" >/dev/null 2>&1 || true
+    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="4. Test" -f description="Validate in real conditions" -f state="open" >/dev/null 2>&1 || true
+    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="5. Embed" -f description="Ensure work lasts beyond the project" -f state="open" >/dev/null 2>&1 || true
 
-echo -e "${GREEN}✓ Milestones created${NC}"
-echo ""
+    echo -e "${GREEN}✓ Milestones created${NC}"
+    echo ""
+fi
 
 # ════════════════════════════════════════════════════════════
 # Step 4: Create GitHub Project board
@@ -143,7 +178,11 @@ echo ""
 # ════════════════════════════════════════════════════════════
 # Step 5: Create starter issues
 # ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 5: Creating starter issues...${NC}"
+if [ "$LITE_MODE" = true ]; then
+    echo -e "${YELLOW}Step 5: Skipping starter issues (lite mode)${NC}"
+    echo ""
+else
+    echo -e "${YELLOW}Step 5: Creating starter issues...${NC}"
 
 # ─────────────────────────────────────────────────────────────
 # GROUND PHASE (8 issues)
@@ -641,8 +680,9 @@ Formally close the project with lessons learned.
 - [ ] Project archived" \
     --label "phase:embed" --label "type:internal" --label "client-review" --milestone "5. Embed"
 
-echo -e "${GREEN}✓ 39 starter issues created${NC}"
-echo ""
+    echo -e "${GREEN}✓ 39 starter issues created${NC}"
+    echo ""
+fi
 
 # ════════════════════════════════════════════════════════════
 # Step 6: Update project files
@@ -704,13 +744,39 @@ else
     sed -i "s|NEXT_PUBLIC_APP_URL=http://localhost:3000|NEXT_PUBLIC_APP_URL=https://${DOMAIN}|" .env.local
 fi
 
-# Create docs folder structure for PIM phases
-mkdir -p docs/ground docs/sense docs/shape docs/test docs/embed
-mkdir -p notes/interviews notes/meetings notes/synthesis
-mkdir -p assets
+# Create folder structure
+if [ "$LITE_MODE" = true ]; then
+    # Flat structure for lite mode
+    mkdir -p docs
+    mkdir -p notes
+    mkdir -p assets
 
-# Create placeholder READMEs
-cat > docs/ground/README.md << 'EOF'
+    # Create placeholder READMEs
+    cat > docs/README.md << 'EOF'
+# Documentation
+
+Store project documentation here:
+- Technical specs
+- Architecture decisions
+- User guides
+EOF
+
+    cat > notes/README.md << 'EOF'
+# Notes
+
+Store project notes here:
+- Meeting notes
+- Research findings
+- Ideas and brainstorming
+EOF
+else
+    # PIM phase folder structure
+    mkdir -p docs/ground docs/sense docs/shape docs/test docs/embed
+    mkdir -p notes/interviews notes/meetings notes/synthesis
+    mkdir -p assets
+
+    # Create placeholder READMEs
+    cat > docs/ground/README.md << 'EOF'
 # Ground Phase Deliverables
 
 Store Ground phase deliverables here:
@@ -719,7 +785,7 @@ Store Ground phase deliverables here:
 - Problem statement
 EOF
 
-cat > docs/sense/README.md << 'EOF'
+    cat > docs/sense/README.md << 'EOF'
 # Sense Phase Deliverables
 
 Store Sense phase deliverables here:
@@ -728,7 +794,7 @@ Store Sense phase deliverables here:
 - User archetypes
 EOF
 
-cat > docs/shape/README.md << 'EOF'
+    cat > docs/shape/README.md << 'EOF'
 # Shape Phase Deliverables
 
 Store Shape phase deliverables here:
@@ -737,7 +803,7 @@ Store Shape phase deliverables here:
 - Technical architecture
 EOF
 
-cat > docs/test/README.md << 'EOF'
+    cat > docs/test/README.md << 'EOF'
 # Test Phase Deliverables
 
 Store Test phase deliverables here:
@@ -746,7 +812,7 @@ Store Test phase deliverables here:
 - Go/no-go recommendation
 EOF
 
-cat > docs/embed/README.md << 'EOF'
+    cat > docs/embed/README.md << 'EOF'
 # Embed Phase Deliverables
 
 Store Embed phase deliverables here:
@@ -755,6 +821,7 @@ Store Embed phase deliverables here:
 - Rollout plan
 - Lessons learned
 EOF
+fi
 
 echo -e "${GREEN}✓ Project files updated${NC}"
 echo ""
@@ -863,12 +930,20 @@ echo ""
 echo -e "${YELLOW}Step 12: Committing changes...${NC}"
 
 git add .
-git commit -m "Initial project setup for ${PROJECT_NAME}
+if [ "$LITE_MODE" = true ]; then
+    git commit -m "Initial project setup for ${PROJECT_NAME}
+
+- Updated project name and metadata
+- Created docs/ and notes/ folder structure
+- Configured environment variables"
+else
+    git commit -m "Initial project setup for ${PROJECT_NAME}
 
 - Updated project name and metadata
 - Created docs/ and notes/ folder structure
 - Configured environment variables
 - Set up for PIM methodology"
+fi
 git push
 
 echo -e "${GREEN}✓ Changes pushed${NC}"
@@ -887,20 +962,37 @@ echo -e "  ${BLUE}Repo:${NC}      https://github.com/${GITHUB_ORG}/${PROJECT_SLU
 echo -e "  ${BLUE}Live URL:${NC}  https://${DOMAIN}"
 echo -e "  ${BLUE}Database:${NC}  ${SUPABASE_URL}"
 echo ""
-echo -e "  ${BLUE}Created:${NC}"
-echo -e "    • 5 milestones (Ground → Embed)"
-echo -e "    • 39 starter issues"
-echo -e "    • 12 labels"
-echo -e "    • Project board"
-echo ""
-echo -e "  ${BLUE}Local:${NC}     cd ${PROJECT_SLUG} && npm run dev"
-echo ""
-echo -e "  ${YELLOW}Manual steps remaining:${NC}"
-echo "  1. Set up UptimeRobot monitor:"
-echo "     URL: https://${DOMAIN}/api/health"
-echo "     Interval: 5 minutes"
-echo ""
-echo "  2. Open GitHub Issues to see your project roadmap"
-echo "  3. Set milestone due dates"
-echo "  4. Start Ground phase!"
+if [ "$LITE_MODE" = true ]; then
+    echo -e "  ${BLUE}Created (lite mode):${NC}"
+    echo -e "    • 7 labels (bug, feature, chore, documentation, + status)"
+    echo -e "    • Project board"
+    echo -e "    • Flat docs/ and notes/ structure"
+    echo ""
+    echo -e "  ${BLUE}Local:${NC}     cd ${PROJECT_SLUG} && npm run dev"
+    echo ""
+    echo -e "  ${YELLOW}Manual steps remaining:${NC}"
+    echo "  1. Set up UptimeRobot monitor:"
+    echo "     URL: https://${DOMAIN}/api/health"
+    echo "     Interval: 5 minutes"
+    echo ""
+    echo "  2. Create issues as needed"
+    echo "  3. Start building!"
+else
+    echo -e "  ${BLUE}Created:${NC}"
+    echo -e "    • 5 milestones (Ground → Embed)"
+    echo -e "    • 39 starter issues"
+    echo -e "    • 12 labels"
+    echo -e "    • Project board"
+    echo ""
+    echo -e "  ${BLUE}Local:${NC}     cd ${PROJECT_SLUG} && npm run dev"
+    echo ""
+    echo -e "  ${YELLOW}Manual steps remaining:${NC}"
+    echo "  1. Set up UptimeRobot monitor:"
+    echo "     URL: https://${DOMAIN}/api/health"
+    echo "     Interval: 5 minutes"
+    echo ""
+    echo "  2. Open GitHub Issues to see your project roadmap"
+    echo "  3. Set milestone due dates"
+    echo "  4. Start Ground phase!"
+fi
 echo ""
