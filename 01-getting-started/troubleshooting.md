@@ -218,6 +218,28 @@ automatically.
 
 ---
 
+## Vercel CLI install fails with permissions error
+
+**Symptom:** You see this error when running `npm install -g vercel`:
+```
+npm error code: 'EACCES'
+npm error syscall: 'mkdir'
+npm error path: '/usr/local/lib/node_modules/vercel'
+```
+
+**Why it happens:** The global npm folder on your Mac requires admin
+permissions to write to.
+
+**How to fix it:**
+```bash
+sudo npm install -g vercel
+```
+
+It will ask for your Mac password. Type it and press Enter.
+Nothing appears as you type — that is normal.
+
+---
+
 ## Something else is wrong
 
 If your issue is not listed here:

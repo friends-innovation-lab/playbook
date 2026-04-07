@@ -185,6 +185,11 @@ automatically.
 npm install -g vercel
 ```
 
+If you see a permissions error, run it with sudo instead:
+```bash
+sudo npm install -g vercel
+```
+
 Then log in to Vercel:
 ```bash
 vercel login
