@@ -55,11 +55,33 @@ It will ask for your Mac password. Type it and press Enter.
 Nothing appears as you type — that is normal.
 The installation takes 2-5 minutes.
 
+After the installation finishes, Homebrew will show a "Next steps" section.
+You must run all three commands it shows. They look like this:
+
+```bash
+echo >> /Users/[yourname]/.zprofile
+echo 'eval "$(/opt/homebrew/bin/brew shellenv zsh)"' >> /Users/[yourname]/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+```
+
+Copy and run each one exactly as shown in your terminal — do not skip the third one.
+The third command activates Homebrew immediately in your current session.
+Without it, you will see `zsh: command not found: brew` on the next step.
+
+Then reload your shell profile:
+
+```bash
+source ~/.zprofile
+```
+
 **Verify it worked:**
 ```bash
 brew --version
 ```
-You should see something like `Homebrew 4.x.x`
+You should see `Homebrew 4.x.x`
+
+**Note:** This extra step is only required on Macs with Apple Silicon (M1, M2, M3 chips).
+If you are on an older Intel Mac you can skip straight to verifying the version.
 
 ---
 
