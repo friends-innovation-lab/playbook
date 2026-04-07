@@ -54,6 +54,51 @@ ratio (4.5:1 for normal text, 3:1 for large text).
 
 ---
 
+## Accessibility and Color Usage
+
+Not all FFTC brand color combinations meet WCAG 2.1 AA contrast
+requirements. Follow these rules on every project — no exceptions
+for government client work.
+
+### What passes
+
+| Combination | Contrast Ratio | Use for |
+|---|---|---|
+| fftc-black on fftc-white | 19.5:1 ✓ | Body text, headings |
+| fftc-black on fftc-yellow | 12.6:1 ✓ | Button text, labels on yellow |
+| fftc-white on fftc-black | 19.5:1 ✓ | Reversed text, dark headers |
+| gov-900 on gov-50 | 16.2:1 ✓ | Body text on light backgrounds |
+| gov-800 on gov-100 | 10.4:1 ✓ | Secondary text on cards |
+
+### What fails — never use these
+
+| Combination | Contrast Ratio | Problem |
+|---|---|---|
+| fftc-yellow on fftc-white | 1.8:1 ✗ | Yellow text on white fails badly |
+| fftc-yellow on gov-50 | 1.7:1 ✗ | Yellow text on off-white fails |
+| gov-400 on gov-50 | 2.9:1 ✗ | Placeholder text too light |
+
+### Rules for buttons
+
+- **Primary yellow button** — always use fftc-black text on fftc-yellow background ✓
+- **Primary black button** — always use fftc-white text on fftc-black background ✓
+- **Never** put yellow text on a white or light background
+
+### Rules for secondary colors
+
+The secondary colors (orange, pink, green, blue, red) are for
+accents, badges, and category indicators — not for body text.
+Always pair them with fftc-black or fftc-white text, never with
+each other or on light backgrounds without checking contrast.
+
+### How to check contrast
+
+Use the free tool at **webaim.org/resources/contrastchecker** —
+paste in any two hex values and it will tell you the ratio and
+whether it passes AA or AAA.
+
+---
+
 ## Typography
 
 **Primary font:** Inter (loaded via `next/font/google`)
