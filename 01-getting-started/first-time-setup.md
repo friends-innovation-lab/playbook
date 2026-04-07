@@ -319,16 +319,15 @@ Now fill in the blank values using the steps below.
 This lets the spinup script create Vercel projects on your behalf.
 
 1. Go to **vercel.com** and log in
-2. Click your **profile picture** in the top right corner
-3. Click **Account Settings**
-4. In the left sidebar click **Tokens**
-5. Click **Create Token**
-6. Name: `fftc-lab`
-7. Scope: **Friends Innovation Lab**
-8. Expiration: **1 year**
-9. Click **Create**
-10. **Copy the token immediately** — Vercel only shows it once
-11. Paste it after `VERCEL_TOKEN=` in your `.zshrc`
+2. In the search bar at the top of the page type **Tokens**
+3. Click **Tokens** when it appears in the results
+4. Click **Create Token**
+5. Name: `fftc-lab`
+6. Scope: **Friends Innovation Lab**
+7. Expiration: **1 year**
+8. Click **Create**
+9. **Copy the token immediately** — Vercel only shows it once
+10. Paste it after `VERCEL_TOKEN=` in your `.zshrc`
 
 ---
 
