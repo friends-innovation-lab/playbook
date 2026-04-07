@@ -332,14 +332,15 @@ This lets the spinup script create Supabase projects on your behalf.
 
 ### SUPABASE_ORG_ID
 
-This tells the script which Supabase organization to create
-projects under.
+This tells the script which Supabase organization to create projects under.
 
-1. Stay on supabase.com
+1. Go to **supabase.com** and log in
 2. In the left sidebar click your **organization name**
 3. Click **Settings**
 4. Click **General**
-5. Find the field labeled **Organization ID**
+5. Find the field labeled **Organization ID** or **Slug** —
+   these are the same value, just labeled differently depending
+   on your Supabase version
 6. Copy that value
 7. Paste it after `SUPABASE_ORG_ID=` in your `.zshrc`
 
