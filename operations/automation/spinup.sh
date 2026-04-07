@@ -1,1002 +1,852 @@
 #!/bin/bash
 
-# Friends Innovation Lab - Project Spinup Script v2.5
-# Usage: spinup project-name "Client Display Name" [--lite] [--db]
-# Example: spinup acme-crm "Acme Corp CRM"
-# Example: spinup acme-crm "Acme Corp CRM" --db  (includes Supabase)
-# Example: spinup acme-crm "Acme Corp CRM" --lite --db  (lite mode with Supabase)
+# Friends Innovation Lab - Project Spinup Script
+# This script creates a complete project across GitHub, Supabase, and Vercel.
+# Run it and follow the prompts.
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
+# ─────────────────────────────────────────────────────────
+# Colors
+# ─────────────────────────────────────────────────────────
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
 
-# Check arguments
-if [ -z "$1" ] || [ -z "$2" ]; then
-    echo -e "${RED}Usage: spinup project-name \"Client Display Name\" [--lite] [--db]${NC}"
-    echo -e "Example: spinup acme-crm \"Acme Corp CRM\""
-    echo -e "Add --db flag to create Supabase database"
-    echo -e "Add --lite flag for simplified setup (no PIM methodology)"
-    exit 1
+# Resolve the directory where this script lives (for template paths)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Track whether the build succeeded for the final summary
+BUILD_OK=true
+
+# ─────────────────────────────────────────────────────────
+# Helper functions
+# ─────────────────────────────────────────────────────────
+ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
+fail() { echo -e "  ${RED}✗${NC} $1"; }
+warn() { echo -e "  ${YELLOW}!${NC} $1"; }
+
+# ═════════════════════════════════════════════════════════
+# STEP 0 — Welcome
+# ═════════════════════════════════════════════════════════
+echo ""
+echo "╔════════════════════════════════════════════╗"
+echo "║   Friends Innovation Lab — Project Spinup  ║"
+echo "╚════════════════════════════════════════════╝"
+echo ""
+echo "This script will create a new project across GitHub, Supabase,"
+echo "and Vercel and have it live at a real URL in under 10 minutes."
+echo ""
+echo "Let's get started."
+echo ""
+
+# ═════════════════════════════════════════════════════════
+# STEP 1 — Pre-flight checks
+# ═════════════════════════════════════════════════════════
+echo "Checking your setup..."
+echo ""
+
+CHECKS_PASSED=true
+
+# --- CLI tools ---
+
+if command -v gh &>/dev/null; then
+  ok "gh (GitHub CLI)"
+else
+  fail "gh — GitHub CLI is not installed. Install it: brew install gh"
+  CHECKS_PASSED=false
 fi
 
-PROJECT_SLUG=$1
-PROJECT_NAME=$2
-CREATE_DB=false
-LITE_MODE=false
-GITHUB_ORG="friends-innovation-lab"
-TEMPLATE_REPO="project-template"
-DOMAIN="${PROJECT_SLUG}.lab.cityfriends.tech"
+if command -v supabase &>/dev/null; then
+  ok "supabase (Supabase CLI)"
+else
+  fail "supabase — Supabase CLI is not installed. Install it: brew install supabase/tap/supabase"
+  CHECKS_PASSED=false
+fi
 
-# Check for flags (--db and --lite in any order)
-shift 2
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --db)
-            CREATE_DB=true
-            ;;
-        --lite)
-            LITE_MODE=true
-            ;;
-        *)
-            echo -e "${RED}Unknown flag: $1${NC}"
-            exit 1
-            ;;
-    esac
-    shift
+if command -v vercel &>/dev/null; then
+  ok "vercel (Vercel CLI)"
+else
+  fail "vercel — Vercel CLI is not installed. Install it: npm install -g vercel"
+  CHECKS_PASSED=false
+fi
+
+NODE_VERSION=$(node --version 2>/dev/null || echo "")
+if [ -n "$NODE_VERSION" ]; then
+  NODE_MAJOR=$(echo "$NODE_VERSION" | sed 's/v//' | cut -d. -f1)
+  if [ "$NODE_MAJOR" -ge 18 ]; then
+    ok "node ($NODE_VERSION)"
+  else
+    fail "node — Node.js 18 or higher is required. You have $NODE_VERSION. Download from nodejs.org"
+    CHECKS_PASSED=false
+  fi
+else
+  fail "node — Node.js is not installed. Download from nodejs.org"
+  CHECKS_PASSED=false
+fi
+
+if command -v npm &>/dev/null; then
+  ok "npm"
+else
+  fail "npm — npm is not installed. It comes with Node.js. Download from nodejs.org"
+  CHECKS_PASSED=false
+fi
+
+if command -v git &>/dev/null; then
+  ok "git"
+else
+  fail "git — git is not installed. Install it: brew install git"
+  CHECKS_PASSED=false
+fi
+
+if command -v jq &>/dev/null; then
+  ok "jq (JSON processor)"
+else
+  fail "jq — jq is not installed. Install it: brew install jq"
+  CHECKS_PASSED=false
+fi
+
+if command -v curl &>/dev/null; then
+  ok "curl"
+else
+  fail "curl — curl is not installed. It should come with macOS. Try: brew install curl"
+  CHECKS_PASSED=false
+fi
+
+# --- Authentications ---
+
+if gh auth status &>/dev/null 2>&1; then
+  ok "GitHub CLI is logged in"
+else
+  fail "GitHub CLI is not logged in. Run: gh auth login"
+  CHECKS_PASSED=false
+fi
+
+if vercel whoami &>/dev/null 2>&1; then
+  ok "Vercel CLI is logged in"
+else
+  fail "Vercel CLI is not logged in. Run: vercel login"
+  CHECKS_PASSED=false
+fi
+
+if supabase projects list &>/dev/null 2>&1; then
+  ok "Supabase CLI is logged in"
+else
+  fail "Supabase CLI is not logged in. Run: supabase login"
+  CHECKS_PASSED=false
+fi
+
+# --- Environment variables ---
+
+if [ -n "$VERCEL_TOKEN" ]; then
+  ok "VERCEL_TOKEN is set"
+else
+  fail "VERCEL_TOKEN is not set. Get a token at vercel.com → Settings → Tokens, then add to your shell profile."
+  CHECKS_PASSED=false
+fi
+
+if [ -n "$VERCEL_ORG_ID" ]; then
+  ok "VERCEL_ORG_ID is set"
+else
+  fail "VERCEL_ORG_ID is not set. Find it at vercel.com → Settings → General → Team ID, then add to your shell profile."
+  CHECKS_PASSED=false
+fi
+
+if [ -n "$GITHUB_ORG" ]; then
+  ok "GITHUB_ORG is set ($GITHUB_ORG)"
+else
+  fail "GITHUB_ORG is not set. Add this to your shell profile: export GITHUB_ORG=friends-innovation-lab"
+  CHECKS_PASSED=false
+fi
+
+if [ -n "$SUPABASE_ORG_ID" ]; then
+  ok "SUPABASE_ORG_ID is set"
+else
+  fail "SUPABASE_ORG_ID is not set. Find it at supabase.com → org settings, then add to your shell profile."
+  CHECKS_PASSED=false
+fi
+
+if [ -n "$LABS_DOMAIN" ]; then
+  ok "LABS_DOMAIN is set ($LABS_DOMAIN)"
+else
+  fail "LABS_DOMAIN is not set. Add this to your shell profile: export LABS_DOMAIN=labs.cityfriends.tech"
+  CHECKS_PASSED=false
+fi
+
+echo ""
+
+if [ "$CHECKS_PASSED" = false ]; then
+  echo "Some things need to be set up before we can continue."
+  echo "Fix the issues above and run this script again."
+  exit 1
+fi
+
+echo "Everything looks good. Let's build."
+echo ""
+
+# ═════════════════════════════════════════════════════════
+# STEP 2 — Collect project details
+# ═════════════════════════════════════════════════════════
+
+# --- Question 1: Project name ---
+while true; do
+  echo "What do you want to call this project?"
+  echo "(lowercase letters, numbers, and hyphens only — e.g. veteran-intake-tool)"
+  printf "> "
+  read -r PROJECT_NAME
+
+  # Validate format
+  if ! echo "$PROJECT_NAME" | grep -qE '^[a-z0-9][a-z0-9-]*[a-z0-9]$' || [ ${#PROJECT_NAME} -lt 3 ] || [ ${#PROJECT_NAME} -gt 40 ]; then
+    echo ""
+    echo -e "${RED}Project name must be 3–40 characters and contain only lowercase letters, numbers, and hyphens.${NC}"
+    echo ""
+    continue
+  fi
+
+  # Check if GitHub repo already exists
+  if gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" &>/dev/null 2>&1; then
+    echo ""
+    echo -e "${RED}A project called ${PROJECT_NAME} already exists in GitHub. Choose a different name.${NC}"
+    echo ""
+    continue
+  fi
+
+  # Check if Vercel project already exists
+  VERCEL_CHECK=$(curl -s -o /dev/null -w "%{http_code}" \
+    "https://api.vercel.com/v9/projects/${PROJECT_NAME}" \
+    -H "Authorization: Bearer $VERCEL_TOKEN")
+  if [ "$VERCEL_CHECK" = "200" ]; then
+    echo ""
+    echo -e "${RED}A Vercel project called ${PROJECT_NAME} already exists. Choose a different name.${NC}"
+    echo ""
+    continue
+  fi
+
+  break
 done
 
 echo ""
-echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Friends Innovation Lab - Project Spinup v2.5${NC}"
-echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
-echo ""
-echo -e "  Project:  ${GREEN}${PROJECT_NAME}${NC}"
-echo -e "  Repo:     ${GREEN}${GITHUB_ORG}/${PROJECT_SLUG}${NC}"
-echo -e "  Domain:   ${GREEN}${DOMAIN}${NC}"
-echo -e "  Database: ${GREEN}${CREATE_DB}${NC}"
-echo -e "  Lite:     ${GREEN}${LITE_MODE}${NC}"
-echo ""
 
-# Check for required CLI tools
-echo -e "${YELLOW}Checking requirements...${NC}"
+# --- Question 2: Project type ---
+while true; do
+  echo "What type of project is this?"
+  echo ""
+  echo "  1. Government / client-facing prototype"
+  echo "  2. Internal tool"
+  echo ""
+  printf "> "
+  read -r PROJECT_TYPE_NUM
 
-if ! command -v gh &> /dev/null; then
-    echo -e "${RED}Error: GitHub CLI (gh) is not installed.${NC}"
-    echo "Install it: brew install gh"
-    exit 1
+  if [ "$PROJECT_TYPE_NUM" = "1" ] || [ "$PROJECT_TYPE_NUM" = "2" ]; then
+    break
+  fi
+  echo ""
+  echo -e "${RED}Please enter 1 or 2.${NC}"
+  echo ""
+done
+
+if [ "$PROJECT_TYPE_NUM" = "1" ]; then
+  PROJECT_TYPE="Government"
+else
+  PROJECT_TYPE="Internal"
 fi
 
-if ! command -v vercel &> /dev/null; then
-    echo -e "${RED}Error: Vercel CLI is not installed.${NC}"
-    echo "Install it: npm install -g vercel"
-    exit 1
-fi
-
-if ! gh auth status &> /dev/null; then
-    echo -e "${RED}Error: Not logged in to GitHub CLI.${NC}"
-    echo "Run: gh auth login"
-    exit 1
-fi
-
-echo -e "${GREEN}✓ All requirements met${NC}"
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 1: Create GitHub repo from template
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 1: Creating GitHub repository...${NC}"
-
-gh repo create "${GITHUB_ORG}/${PROJECT_SLUG}" \
-    --template "${GITHUB_ORG}/${TEMPLATE_REPO}" \
-    --private \
-    --clone
-
-cd "${PROJECT_SLUG}"
-
-echo -e "${GREEN}✓ Repository created and cloned${NC}"
+# --- Question 3: Client or description ---
+if [ "$PROJECT_TYPE" = "Government" ]; then
+  echo "Who is this for? (e.g. Department of Veterans Affairs, HHS, internal FFTC)"
+else
+  echo "What does this tool do? (one sentence)"
+fi
+printf "> "
+read -r PROJECT_FOR
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 2: Create labels
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 2: Creating labels...${NC}"
+# --- Question 4: Database ---
+while true; do
+  echo "Does this project need a database?"
+  echo ""
+  echo "  1. Yes — set up Supabase"
+  echo "  2. No — skip Supabase"
+  echo ""
+  printf "> "
+  read -r DB_CHOICE
 
-if [ "$LITE_MODE" = true ]; then
-    # Generic labels for lite mode
-    gh label create "bug" --color "D73A4A" --description "Something isn't working" 2>/dev/null || true
-    gh label create "feature" --color "0E8A16" --description "New feature or request" 2>/dev/null || true
-    gh label create "chore" --color "FEF2C0" --description "Maintenance or housekeeping" 2>/dev/null || true
-    gh label create "documentation" --color "0075CA" --description "Documentation updates" 2>/dev/null || true
+  if [ "$DB_CHOICE" = "1" ] || [ "$DB_CHOICE" = "2" ]; then
+    break
+  fi
+  echo ""
+  echo -e "${RED}Please enter 1 or 2.${NC}"
+  echo ""
+done
 
-    # Status labels (shared)
-    gh label create "blocked" --color "D93F0B" --description "Waiting on something" 2>/dev/null || true
-    gh label create "needs-review" --color "FBCA04" --description "Ready for internal review" 2>/dev/null || true
-    gh label create "client-review" --color "FBCA04" --description "Waiting on client" 2>/dev/null || true
+if [ "$DB_CHOICE" = "1" ]; then
+  NEEDS_DB=true
+  DB_DISPLAY="Yes — Supabase"
 else
-    # Phase labels (blue)
-    gh label create "phase:ground" --color "0052CC" --description "Ground phase work" 2>/dev/null || true
-    gh label create "phase:sense" --color "0052CC" --description "Sense phase work" 2>/dev/null || true
-    gh label create "phase:shape" --color "0052CC" --description "Shape phase work" 2>/dev/null || true
-    gh label create "phase:test" --color "0052CC" --description "Test phase work" 2>/dev/null || true
-    gh label create "phase:embed" --color "0052CC" --description "Embed phase work" 2>/dev/null || true
-
-    # Type labels (green)
-    gh label create "type:research" --color "0E8A16" --description "Interviews, discovery, analysis" 2>/dev/null || true
-    gh label create "type:deliverable" --color "0E8A16" --description "Client-facing output" 2>/dev/null || true
-    gh label create "type:technical" --color "0E8A16" --description "Code, infrastructure, systems" 2>/dev/null || true
-    gh label create "type:internal" --color "0E8A16" --description "Internal task" 2>/dev/null || true
-
-    # Status labels
-    gh label create "blocked" --color "D93F0B" --description "Waiting on something" 2>/dev/null || true
-    gh label create "needs-review" --color "FBCA04" --description "Ready for internal review" 2>/dev/null || true
-    gh label create "client-review" --color "FBCA04" --description "Waiting on client" 2>/dev/null || true
+  NEEDS_DB=false
+  DB_DISPLAY="No"
 fi
 
-echo -e "${GREEN}✓ Labels created${NC}"
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 3: Create milestones
-# ════════════════════════════════════════════════════════════
-if [ "$LITE_MODE" = true ]; then
-    echo -e "${YELLOW}Step 3: Skipping milestones (lite mode)${NC}"
-    echo ""
-else
-    echo -e "${YELLOW}Step 3: Creating milestones...${NC}"
-
-    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="1. Ground" -f description="Establish legitimacy and constraints" -f state="open" >/dev/null 2>&1 || true
-    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="2. Sense" -f description="Develop shared understanding of users and systems" -f state="open" >/dev/null 2>&1 || true
-    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="3. Shape" -f description="Design viable pathways" -f state="open" >/dev/null 2>&1 || true
-    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="4. Test" -f description="Validate in real conditions" -f state="open" >/dev/null 2>&1 || true
-    gh api repos/${GITHUB_ORG}/${PROJECT_SLUG}/milestones -f title="5. Embed" -f description="Ensure work lasts beyond the project" -f state="open" >/dev/null 2>&1 || true
-
-    echo -e "${GREEN}✓ Milestones created${NC}"
-    echo ""
+# --- Question 5: Confirm ---
+SUPABASE_DISPLAY="skipped"
+if [ "$NEEDS_DB" = true ]; then
+  SUPABASE_DISPLAY="$PROJECT_NAME"
 fi
 
-# ════════════════════════════════════════════════════════════
-# Step 4: Create GitHub Project board
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 4: Creating GitHub Project board...${NC}"
+echo "Here's what we're about to create:"
+echo ""
+echo "  Project name:   $PROJECT_NAME"
+echo "  Type:           $PROJECT_TYPE"
+echo "  For:            $PROJECT_FOR"
+echo "  Database:       $DB_DISPLAY"
+echo "  GitHub repo:    github.com/${GITHUB_ORG}/${PROJECT_NAME}"
+echo "  Live URL:       https://${PROJECT_NAME}.${LABS_DOMAIN}"
+echo "  Supabase:       $SUPABASE_DISPLAY"
+echo ""
+printf "Ready to go? (y/n) > "
+read -r CONFIRM
 
-# Create project and capture the URL
-PROJECT_URL=$(gh project create --owner "${GITHUB_ORG}" --title "${PROJECT_NAME}" --format json 2>/dev/null | jq -r '.url' || echo "")
-
-if [ -n "$PROJECT_URL" ]; then
-    echo -e "${GREEN}✓ Project board created: ${PROJECT_URL}${NC}"
-else
-    echo -e "${YELLOW}⚠ Could not create project board automatically. Create manually in GitHub.${NC}"
+if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
+  echo ""
+  echo "No problem. Run the script again when you're ready."
+  exit 0
 fi
+
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 5: Create starter issues
-# ════════════════════════════════════════════════════════════
-if [ "$LITE_MODE" = true ]; then
-    echo -e "${YELLOW}Step 5: Skipping starter issues (lite mode)${NC}"
-    echo ""
-else
-    echo -e "${YELLOW}Step 5: Creating starter issues...${NC}"
-
-# ─────────────────────────────────────────────────────────────
-# GROUND PHASE (8 issues)
-# ─────────────────────────────────────────────────────────────
-echo -e "${CYAN}  Creating Ground phase issues...${NC}"
-
-gh issue create --title "G1: Identify stakeholders to interview" \
-    --body "## Task
-Identify 5-8 stakeholders across these categories:
-- Decision makers
-- Day-to-day operators
-- Subject matter experts
-- Skeptics
-- Beneficiaries
-
-## Acceptance Criteria
-- [ ] List of 5-8 names with roles
-- [ ] Category assigned to each
-- [ ] Contact info gathered
-- [ ] Priority order determined
-
-## Links
-- [Ground Phase Guide](https://github.com/${GITHUB_ORG}/playbook/blob/main/methodology/ground/README.md)" \
-    --label "phase:ground" --label "type:research" --milestone "1. Ground"
-
-gh issue create --title "G2: Schedule stakeholder interviews" \
-    --body "## Task
-Schedule 45-60 minute interviews with identified stakeholders.
-
-## Acceptance Criteria
-- [ ] All interviews scheduled
-- [ ] Calendar invites sent
-- [ ] Interview guide prepared
-- [ ] Note-taking template ready" \
-    --label "phase:ground" --label "type:internal" --milestone "1. Ground"
-
-gh issue create --title "G3: Conduct stakeholder interviews" \
-    --body "## Task
-Conduct all scheduled stakeholder interviews. Capture notes in \`/notes/interviews/\`.
-
-## Acceptance Criteria
-- [ ] All interviews completed
-- [ ] Notes captured for each interview
-- [ ] Key quotes highlighted
-- [ ] Follow-up items noted" \
-    --label "phase:ground" --label "type:research" --milestone "1. Ground"
-
-gh issue create --title "G4: Technical discovery" \
-    --body "## Task
-Review existing systems, APIs, data, and technical constraints.
-
-## Acceptance Criteria
-- [ ] Existing systems documented
-- [ ] Integration points identified
-- [ ] Technical constraints listed
-- [ ] Data sources mapped
-- [ ] Access requirements noted" \
-    --label "phase:ground" --label "type:technical" --milestone "1. Ground"
-
-gh issue create --title "G5: Draft stakeholder alignment snapshot" \
-    --body "## Task
-Synthesize interview findings into stakeholder alignment snapshot.
-
-## Acceptance Criteria
-- [ ] All stakeholders listed with role/interest/influence
-- [ ] Champions, supporters, neutral, skeptics categorized
-- [ ] Decision authority mapped
-- [ ] Alignment risks identified
-- [ ] Internal review completed" \
-    --label "phase:ground" --label "type:deliverable" --milestone "1. Ground"
-
-gh issue create --title "G6: Draft constraint and opportunity map" \
-    --body "## Task
-Document constraints (policy, technical, budget, political, timeline) and opportunities.
-
-## Acceptance Criteria
-- [ ] Policy/legal constraints documented
-- [ ] Technical constraints documented
-- [ ] Budget/resource constraints documented
-- [ ] Political/organizational constraints documented
-- [ ] Opportunities identified
-- [ ] Prior attempts documented
-- [ ] Internal review completed" \
-    --label "phase:ground" --label "type:deliverable" --milestone "1. Ground"
-
-gh issue create --title "G7: Draft problem statement" \
-    --body "## Task
-Articulate the problem clearly, including tradeoffs any solution must navigate.
-
-## Acceptance Criteria
-- [ ] Problem described in plain language
-- [ ] Affected groups identified with scale
-- [ ] Root causes documented
-- [ ] Success metrics defined
-- [ ] Tradeoffs named
-- [ ] Scope boundaries set
-- [ ] Internal review completed" \
-    --label "phase:ground" --label "type:deliverable" --milestone "1. Ground"
-
-gh issue create --title "G8: Ground phase client sign-off" \
-    --body "## Task
-Present Ground phase findings to client and get sign-off to proceed to Sense.
-
-## Acceptance Criteria
-- [ ] Client presentation scheduled
-- [ ] Deliverables presented
-- [ ] Feedback incorporated
-- [ ] Sign-off received
-- [ ] Phase documented in /docs/ground/" \
-    --label "phase:ground" --label "type:internal" --label "client-review" --milestone "1. Ground"
-
-# ─────────────────────────────────────────────────────────────
-# SENSE PHASE (8 issues)
-# ─────────────────────────────────────────────────────────────
-echo -e "${CYAN}  Creating Sense phase issues...${NC}"
-
-gh issue create --title "S1: Plan user research" \
-    --body "## Task
-Design research plan including methods, participants, and timeline.
-
-## Acceptance Criteria
-- [ ] Research questions defined
-- [ ] Methods selected (interviews, observation, surveys)
-- [ ] Participant criteria defined
-- [ ] Recruitment plan created
-- [ ] Timeline established" \
-    --label "phase:sense" --label "type:research" --milestone "2. Sense"
-
-gh issue create --title "S2: Recruit research participants" \
-    --body "## Task
-Recruit 8-12 participants representing key user segments.
-
-## Acceptance Criteria
-- [ ] Screener created
-- [ ] Outreach completed
-- [ ] 8-12 participants confirmed
-- [ ] Sessions scheduled
-- [ ] Incentives arranged (if applicable)" \
-    --label "phase:sense" --label "type:internal" --milestone "2. Sense"
-
-gh issue create --title "S3: Conduct user research sessions" \
-    --body "## Task
-Conduct research sessions (interviews, observation, usability tests).
-
-## Acceptance Criteria
-- [ ] All sessions completed
-- [ ] Notes/recordings captured
-- [ ] Key observations highlighted
-- [ ] Synthesis notes started" \
-    --label "phase:sense" --label "type:research" --milestone "2. Sense"
-
-gh issue create --title "S4: Map current state journey" \
-    --body "## Task
-Document how users currently accomplish their goals (pain points, workarounds).
-
-## Acceptance Criteria
-- [ ] Current journey mapped end-to-end
-- [ ] Pain points identified
-- [ ] Workarounds documented
-- [ ] Touchpoints mapped
-- [ ] Emotions/frustrations captured" \
-    --label "phase:sense" --label "type:deliverable" --milestone "2. Sense"
-
-gh issue create --title "S5: Document system architecture" \
-    --body "## Task
-Map the technical landscape (systems, data flows, integrations).
-
-## Acceptance Criteria
-- [ ] Systems inventory complete
-- [ ] Data flows documented
-- [ ] Integration points mapped
-- [ ] Technical debt identified
-- [ ] Constraints documented" \
-    --label "phase:sense" --label "type:technical" --milestone "2. Sense"
-
-gh issue create --title "S6: Synthesize research findings" \
-    --body "## Task
-Analyze research data to identify themes, insights, and opportunities.
-
-## Acceptance Criteria
-- [ ] All data reviewed
-- [ ] Themes identified
-- [ ] Key insights articulated
-- [ ] Opportunities prioritized
-- [ ] Evidence documented" \
-    --label "phase:sense" --label "type:research" --milestone "2. Sense"
-
-gh issue create --title "S7: Create user archetypes" \
-    --body "## Task
-Develop archetypes representing key user segments (not fictional personas).
-
-## Acceptance Criteria
-- [ ] Key segments identified
-- [ ] Archetypes documented with goals/challenges
-- [ ] Validated with research data
-- [ ] Internal review completed" \
-    --label "phase:sense" --label "type:deliverable" --milestone "2. Sense"
-
-gh issue create --title "S8: Sense phase client sign-off" \
-    --body "## Task
-Present Sense phase findings to client and get sign-off to proceed to Shape.
-
-## Acceptance Criteria
-- [ ] Client presentation scheduled
-- [ ] Research findings presented
-- [ ] Journey maps shared
-- [ ] Feedback incorporated
-- [ ] Sign-off received" \
-    --label "phase:sense" --label "type:internal" --label "client-review" --milestone "2. Sense"
-
-# ─────────────────────────────────────────────────────────────
-# SHAPE PHASE (8 issues)
-# ─────────────────────────────────────────────────────────────
-echo -e "${CYAN}  Creating Shape phase issues...${NC}"
-
-gh issue create --title "SH1: Generate solution concepts" \
-    --body "## Task
-Brainstorm multiple approaches to address identified opportunities.
-
-## Acceptance Criteria
-- [ ] Divergent brainstorm completed
-- [ ] 5-10 concepts generated
-- [ ] Each concept sketched/described
-- [ ] Team review completed" \
-    --label "phase:shape" --label "type:research" --milestone "3. Shape"
-
-gh issue create --title "SH2: Evaluate concepts against constraints" \
-    --body "## Task
-Assess concepts against constraints from Ground phase.
-
-## Acceptance Criteria
-- [ ] Evaluation criteria defined
-- [ ] Each concept assessed
-- [ ] Feasibility rated
-- [ ] Risks identified
-- [ ] 2-3 concepts selected for development" \
-    --label "phase:shape" --label "type:research" --milestone "3. Shape"
-
-gh issue create --title "SH3: Design future state journey" \
-    --body "## Task
-Map the ideal user experience for selected concepts.
-
-## Acceptance Criteria
-- [ ] Future journey mapped
-- [ ] Improvements over current state highlighted
-- [ ] New touchpoints designed
-- [ ] Metrics defined
-- [ ] Internal review completed" \
-    --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
-
-gh issue create --title "SH4: Create wireframes/prototypes" \
-    --body "## Task
-Design low-fidelity wireframes or clickable prototypes.
-
-## Acceptance Criteria
-- [ ] Key screens/flows wireframed
-- [ ] Interactive prototype created (if needed)
-- [ ] Covers happy path + edge cases
-- [ ] Internal review completed
-- [ ] Ready for user feedback" \
-    --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
-
-gh issue create --title "SH5: Define technical approach" \
-    --body "## Task
-Document technical architecture and implementation approach.
-
-## Acceptance Criteria
-- [ ] Architecture documented
-- [ ] Technology choices justified
-- [ ] Integration approach defined
-- [ ] Data model sketched
-- [ ] Risks/dependencies identified" \
-    --label "phase:shape" --label "type:technical" --milestone "3. Shape"
-
-gh issue create --title "SH6: Validate with users" \
-    --body "## Task
-Test prototypes with 3-5 users to gather feedback.
-
-## Acceptance Criteria
-- [ ] Test plan created
-- [ ] Sessions conducted
-- [ ] Feedback captured
-- [ ] Key learnings documented
-- [ ] Refinements identified" \
-    --label "phase:shape" --label "type:research" --milestone "3. Shape"
-
-gh issue create --title "SH7: Refine based on feedback" \
-    --body "## Task
-Iterate on designs based on user feedback.
-
-## Acceptance Criteria
-- [ ] Feedback analyzed
-- [ ] Priority changes identified
-- [ ] Designs updated
-- [ ] Re-validated if needed
-- [ ] Final version documented" \
-    --label "phase:shape" --label "type:deliverable" --milestone "3. Shape"
-
-gh issue create --title "SH8: Shape phase client sign-off" \
-    --body "## Task
-Present Shape phase designs to client and get sign-off to proceed to Test.
-
-## Acceptance Criteria
-- [ ] Client presentation scheduled
-- [ ] Designs/prototypes presented
-- [ ] Technical approach reviewed
-- [ ] Feedback incorporated
-- [ ] Sign-off received" \
-    --label "phase:shape" --label "type:internal" --label "client-review" --milestone "3. Shape"
-
-# ─────────────────────────────────────────────────────────────
-# TEST PHASE (7 issues)
-# ─────────────────────────────────────────────────────────────
-echo -e "${CYAN}  Creating Test phase issues...${NC}"
-
-gh issue create --title "T1: Set up development environment" \
-    --body "## Task
-Configure development environment and CI/CD pipeline.
-
-## Acceptance Criteria
-- [ ] Local dev environment documented
-- [ ] CI/CD pipeline configured
-- [ ] Staging environment ready
-- [ ] Team access verified" \
-    --label "phase:test" --label "type:technical" --milestone "4. Test"
-
-gh issue create --title "T2: Build MVP/pilot version" \
-    --body "## Task
-Implement the minimum viable version for pilot testing.
-
-## Acceptance Criteria
-- [ ] Core functionality implemented
-- [ ] Meets acceptance criteria
-- [ ] Basic error handling
-- [ ] Deployed to staging
-- [ ] Internal QA completed" \
-    --label "phase:test" --label "type:technical" --milestone "4. Test"
-
-gh issue create --title "T3: Define pilot parameters" \
-    --body "## Task
-Define pilot scope, participants, timeline, and success metrics.
-
-## Acceptance Criteria
-- [ ] Pilot scope defined
-- [ ] Participants identified
-- [ ] Timeline established
-- [ ] Success metrics defined
-- [ ] Rollback plan documented" \
-    --label "phase:test" --label "type:internal" --milestone "4. Test"
-
-gh issue create --title "T4: Run pilot" \
-    --body "## Task
-Execute the pilot with real users in real conditions.
-
-## Acceptance Criteria
-- [ ] Participants onboarded
-- [ ] Support available during pilot
-- [ ] Issues tracked and triaged
-- [ ] Usage data collected
-- [ ] Feedback gathered" \
-    --label "phase:test" --label "type:research" --milestone "4. Test"
-
-gh issue create --title "T5: Monitor and support pilot" \
-    --body "## Task
-Actively monitor pilot performance and provide user support.
-
-## Acceptance Criteria
-- [ ] Monitoring dashboards active
-- [ ] Support channels established
-- [ ] Issues resolved promptly
-- [ ] User feedback collected continuously" \
-    --label "phase:test" --label "type:internal" --milestone "4. Test"
-
-gh issue create --title "T6: Evaluate pilot results" \
-    --body "## Task
-Analyze pilot data against success metrics.
-
-## Acceptance Criteria
-- [ ] All metrics analyzed
-- [ ] User feedback synthesized
-- [ ] Technical performance reviewed
-- [ ] Go/no-go recommendation made
-- [ ] Improvements identified" \
-    --label "phase:test" --label "type:deliverable" --milestone "4. Test"
-
-gh issue create --title "T7: Test phase client sign-off" \
-    --body "## Task
-Present pilot results and get sign-off to proceed to Embed.
-
-## Acceptance Criteria
-- [ ] Pilot results presented
-- [ ] Recommendation discussed
-- [ ] Next steps agreed
-- [ ] Sign-off received" \
-    --label "phase:test" --label "type:internal" --label "client-review" --milestone "4. Test"
-
-# ─────────────────────────────────────────────────────────────
-# EMBED PHASE (8 issues)
-# ─────────────────────────────────────────────────────────────
-echo -e "${CYAN}  Creating Embed phase issues...${NC}"
-
-gh issue create --title "E1: Address pilot findings" \
-    --body "## Task
-Implement improvements identified during pilot.
-
-## Acceptance Criteria
-- [ ] Priority fixes implemented
-- [ ] Enhancements added
-- [ ] Performance optimized
-- [ ] Testing completed" \
-    --label "phase:embed" --label "type:technical" --milestone "5. Embed"
-
-gh issue create --title "E2: Plan rollout" \
-    --body "## Task
-Create rollout plan for broader deployment.
-
-## Acceptance Criteria
-- [ ] Rollout phases defined
-- [ ] Communication plan created
-- [ ] Training materials prepared
-- [ ] Support plan established
-- [ ] Rollback plan updated" \
-    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
-
-gh issue create --title "E3: Create documentation" \
-    --body "## Task
-Document system for users, administrators, and developers.
-
-## Acceptance Criteria
-- [ ] User guide created
-- [ ] Admin guide created
-- [ ] Technical documentation complete
-- [ ] FAQs documented
-- [ ] Video tutorials (if applicable)" \
-    --label "phase:embed" --label "type:deliverable" --milestone "5. Embed"
-
-gh issue create --title "E4: Train users and administrators" \
-    --body "## Task
-Conduct training sessions for end users and system administrators.
-
-## Acceptance Criteria
-- [ ] Training materials finalized
-- [ ] Sessions scheduled
-- [ ] Training delivered
-- [ ] Feedback collected
-- [ ] Materials updated based on feedback" \
-    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
-
-gh issue create --title "E5: Execute rollout" \
-    --body "## Task
-Deploy to production and roll out to users.
-
-## Acceptance Criteria
-- [ ] Production deployment completed
-- [ ] Users onboarded per plan
-- [ ] Communications sent
-- [ ] Support in place
-- [ ] Monitoring active" \
-    --label "phase:embed" --label "type:technical" --milestone "5. Embed"
-
-gh issue create --title "E6: Knowledge transfer" \
-    --body "## Task
-Transfer knowledge to client team for ongoing ownership.
-
-## Acceptance Criteria
-- [ ] Technical walkthrough completed
-- [ ] Documentation reviewed
-- [ ] Access transferred
-- [ ] Questions answered
-- [ ] Client team confident to maintain" \
-    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
-
-gh issue create --title "E7: Establish ongoing support model" \
-    --body "## Task
-Define how the solution will be supported after project ends.
-
-## Acceptance Criteria
-- [ ] Support owner identified
-- [ ] Escalation paths defined
-- [ ] SLAs established (if applicable)
-- [ ] Monitoring ownership transferred
-- [ ] Documentation location confirmed" \
-    --label "phase:embed" --label "type:internal" --milestone "5. Embed"
-
-gh issue create --title "E8: Project closeout" \
-    --body "## Task
-Formally close the project with lessons learned.
-
-## Acceptance Criteria
-- [ ] All deliverables accepted
-- [ ] Knowledge transfer complete
-- [ ] Access transferred
-- [ ] Client sign-off received
-- [ ] Lessons learned captured
-- [ ] Project archived" \
-    --label "phase:embed" --label "type:internal" --label "client-review" --milestone "5. Embed"
-
-    echo -e "${GREEN}✓ 39 starter issues created${NC}"
-    echo ""
-fi
-
-# ════════════════════════════════════════════════════════════
-# Step 6: Update project files
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 6: Updating project files...${NC}"
-
-# Update package.json name
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/\"name\": \"project-name\"/\"name\": \"${PROJECT_SLUG}\"/" package.json
-else
-    sed -i "s/\"name\": \"project-name\"/\"name\": \"${PROJECT_SLUG}\"/" package.json
-fi
-
-# Update README.md
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/# Project Name/# ${PROJECT_NAME}/" README.md
-    sed -i '' "s/Brief project description./${PROJECT_NAME} - A Friends Innovation Lab project./" README.md
-else
-    sed -i "s/# Project Name/# ${PROJECT_NAME}/" README.md
-    sed -i "s/Brief project description./${PROJECT_NAME} - A Friends Innovation Lab project./" README.md
-fi
-
-# Update CLAUDE.md
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/\[PROJECT_NAME\]/${PROJECT_NAME}/" CLAUDE.md
-    sed -i '' "s|\[Brief description\]|${PROJECT_NAME} - A Friends Innovation Lab project|" CLAUDE.md
-    sed -i '' "s|\[URL\]|https://${DOMAIN}|" CLAUDE.md
-    sed -i '' "s|\[GitHub URL\]|https://github.com/${GITHUB_ORG}/${PROJECT_SLUG}|" CLAUDE.md
-else
-    sed -i "s/\[PROJECT_NAME\]/${PROJECT_NAME}/" CLAUDE.md
-    sed -i "s|\[Brief description\]|${PROJECT_NAME} - A Friends Innovation Lab project|" CLAUDE.md
-    sed -i "s|\[URL\]|https://${DOMAIN}|" CLAUDE.md
-    sed -i "s|\[GitHub URL\]|https://github.com/${GITHUB_ORG}/${PROJECT_SLUG}|" CLAUDE.md
-fi
-
-# Update src/app/layout.tsx metadata
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/title: 'Project Name'/title: '${PROJECT_NAME}'/" src/app/layout.tsx
-    sed -i '' "s/description: 'Project description'/description: '${PROJECT_NAME}'/" src/app/layout.tsx
-else
-    sed -i "s/title: 'Project Name'/title: '${PROJECT_NAME}'/" src/app/layout.tsx
-    sed -i "s/description: 'Project description'/description: '${PROJECT_NAME}'/" src/app/layout.tsx
-fi
-
-# Update src/app/page.tsx
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/>Project Name</>$PROJECT_NAME</" src/app/page.tsx
-else
-    sed -i "s/>Project Name</>$PROJECT_NAME</" src/app/page.tsx
-fi
-
-# Create .env.local from .env.example
-cp .env.example .env.local
-
-# Update .env.local with project values
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|NEXT_PUBLIC_APP_URL=http://localhost:3000|NEXT_PUBLIC_APP_URL=https://${DOMAIN}|" .env.local
-else
-    sed -i "s|NEXT_PUBLIC_APP_URL=http://localhost:3000|NEXT_PUBLIC_APP_URL=https://${DOMAIN}|" .env.local
-fi
-
-# Create folder structure
-if [ "$LITE_MODE" = true ]; then
-    # Remove any PIM phase folders inherited from template
-    rm -rf docs/ground docs/sense docs/shape docs/test docs/embed 2>/dev/null || true
-    rm -rf notes/interviews notes/meetings notes/synthesis 2>/dev/null || true
-
-    # Flat structure for lite mode
-    mkdir -p docs
-    mkdir -p notes
-    mkdir -p assets
-
-    # Create placeholder READMEs
-    cat > docs/README.md << 'EOF'
-# Documentation
-
-Store project documentation here:
-- Technical specs
-- Architecture decisions
-- User guides
-EOF
-
-    cat > notes/README.md << 'EOF'
-# Notes
-
-Store project notes here:
-- Meeting notes
-- Research findings
-- Ideas and brainstorming
-EOF
-else
-    # PIM phase folder structure
-    mkdir -p docs/ground docs/sense docs/shape docs/test docs/embed
-    mkdir -p notes/interviews notes/meetings notes/synthesis
-    mkdir -p assets
-
-    # Create placeholder READMEs
-    cat > docs/ground/README.md << 'EOF'
-# Ground Phase Deliverables
-
-Store Ground phase deliverables here:
-- Stakeholder alignment snapshot
-- Constraint and opportunity map
-- Problem statement
-EOF
-
-    cat > docs/sense/README.md << 'EOF'
-# Sense Phase Deliverables
-
-Store Sense phase deliverables here:
-- User research findings
-- Current state journey maps
-- User archetypes
-EOF
-
-    cat > docs/shape/README.md << 'EOF'
-# Shape Phase Deliverables
-
-Store Shape phase deliverables here:
-- Future state journey maps
-- Wireframes and prototypes
-- Technical architecture
-EOF
-
-    cat > docs/test/README.md << 'EOF'
-# Test Phase Deliverables
-
-Store Test phase deliverables here:
-- Pilot plan
-- Pilot results
-- Go/no-go recommendation
-EOF
-
-    cat > docs/embed/README.md << 'EOF'
-# Embed Phase Deliverables
-
-Store Embed phase deliverables here:
-- Documentation
-- Training materials
-- Rollout plan
-- Lessons learned
-EOF
-fi
-
-echo -e "${GREEN}✓ Project files updated${NC}"
+# Save the starting directory so we can reference it later
+START_DIR="$(pwd)"
+
+# ═════════════════════════════════════════════════════════
+# STEP 3 — GitHub setup
+# ═════════════════════════════════════════════════════════
+echo "Setting up GitHub..."
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 7: Supabase setup (if --db flag)
-# ════════════════════════════════════════════════════════════
-if [ "$CREATE_DB" = true ]; then
-    echo -e "${YELLOW}Step 7: Supabase setup${NC}"
-    echo ""
-    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
-    echo -e "  ${YELLOW}ACTION REQUIRED:${NC} Create Supabase project"
-    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
-    echo ""
-    echo "  1. Go to: https://supabase.com/dashboard"
-    echo "  2. Select org: Friends Innovation Lab"
-    echo "  3. Click 'New Project'"
-    echo "  4. Name: ${PROJECT_SLUG}"
-    echo "  5. Generate a password (save it somewhere)"
-    echo "  6. Click 'Create new project'"
-    echo "  7. Go to Settings → API"
-    echo "  8. Copy the Project URL and anon/public key"
-    echo ""
+# 3a. Create repo from template
+if ! gh repo create "${GITHUB_ORG}/${PROJECT_NAME}" \
+  --template "${GITHUB_ORG}/project-template" \
+  --private \
+  --description "$PROJECT_FOR"; then
+  echo ""
+  echo -e "${RED}Something went wrong creating the GitHub repo.${NC}"
+  echo "A project called ${PROJECT_NAME} may already exist, or you may not have permission."
+  exit 1
+fi
 
-    read -p "Paste your Supabase Project URL: " SUPABASE_URL
-    read -p "Paste your Supabase anon/public key: " SUPABASE_KEY
+sleep 3
+ok "Repo created"
 
-    # Update .env.local with Supabase credentials
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        sed -i '' "s|NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co|NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}|" .env.local
-        sed -i '' "s|NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key|NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_KEY}|" .env.local
-    else
-        sed -i "s|NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co|NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}|" .env.local
-        sed -i "s|NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key|NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_KEY}|" .env.local
+# 3b. Clone locally
+if ! git clone "https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git"; then
+  echo ""
+  echo -e "${RED}Something went wrong cloning the repo.${NC}"
+  echo "Check your internet connection and try: git clone https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git"
+  exit 1
+fi
+
+cd "${PROJECT_NAME}"
+PROJECT_DIR="$(pwd)"
+ok "Cloned locally"
+
+# 3c. Create and push develop branch
+if ! git checkout -b develop; then
+  echo ""
+  echo -e "${RED}Something went wrong creating the develop branch.${NC}"
+  exit 1
+fi
+
+if ! git push origin develop; then
+  echo ""
+  echo -e "${RED}Something went wrong pushing the develop branch.${NC}"
+  echo "Check your GitHub permissions and try: git push origin develop"
+  exit 1
+fi
+
+ok "develop branch created"
+
+# 3d. Set develop as default branch
+if ! gh repo edit "${GITHUB_ORG}/${PROJECT_NAME}" --default-branch develop; then
+  echo ""
+  echo -e "${RED}Something went wrong setting the default branch.${NC}"
+  echo "You can set it manually at github.com/${GITHUB_ORG}/${PROJECT_NAME}/settings"
+  exit 1
+fi
+
+ok "Default branch set to develop"
+
+# 3e. Branch protection on main
+if ! gh api "repos/${GITHUB_ORG}/${PROJECT_NAME}/branches/main/protection" \
+  --method PUT \
+  --field required_status_checks='{"strict":true,"contexts":["Lint, Typecheck & Test"]}' \
+  --field enforce_admins=false \
+  --field required_pull_request_reviews='{"required_approving_review_count":1}' \
+  --field restrictions=null; then
+  echo ""
+  warn "Branch protection could not be set on main. You may need to set it manually."
+fi
+
+ok "Branch protection set on main"
+
+# 3f. Create standard labels
+gh label delete "bug" --yes 2>/dev/null || true
+gh label delete "documentation" --yes 2>/dev/null || true
+gh label delete "duplicate" --yes 2>/dev/null || true
+gh label delete "enhancement" --yes 2>/dev/null || true
+gh label delete "good first issue" --yes 2>/dev/null || true
+gh label delete "help wanted" --yes 2>/dev/null || true
+gh label delete "invalid" --yes 2>/dev/null || true
+gh label delete "question" --yes 2>/dev/null || true
+gh label delete "wontfix" --yes 2>/dev/null || true
+
+gh label create "bug" --color "d73a4a" --description "Something isn't working"
+gh label create "feature" --color "0075ca" --description "New feature or request"
+gh label create "design" --color "e4e669" --description "Design work needed"
+gh label create "blocked" --color "e11d48" --description "Blocked by something"
+gh label create "in progress" --color "0052cc" --description "Currently being worked on"
+gh label create "review needed" --color "8b5cf6" --description "Needs review before merging"
+gh label create "accessibility" --color "1d9e75" --description "Accessibility related"
+gh label create "good first issue" --color "7057ff" --description "Good for new contributors"
+
+ok "Labels created"
+
+# 3g. Create issues from template
+if [ "$PROJECT_TYPE" = "Government" ]; then
+  ISSUES_FILE="${SCRIPT_DIR}/templates/issues-government.txt"
+else
+  ISSUES_FILE="${SCRIPT_DIR}/templates/issues-internal.txt"
+fi
+
+if [ ! -f "$ISSUES_FILE" ]; then
+  warn "Issue template file not found at $ISSUES_FILE. Skipping issue creation."
+else
+  # Collect unique weeks and create milestones
+  WEEKS=$(jq -r '.[].week' "$ISSUES_FILE" | sort -u)
+  for WEEK in $WEEKS; do
+    gh api "repos/${GITHUB_ORG}/${PROJECT_NAME}/milestones" \
+      --method POST \
+      --field title="Week ${WEEK}" 2>/dev/null || true
+  done
+
+  # Get milestone IDs
+  MILESTONES_JSON=$(gh api "repos/${GITHUB_ORG}/${PROJECT_NAME}/milestones" 2>/dev/null)
+
+  # Create each issue
+  ISSUE_COUNT=$(jq length "$ISSUES_FILE")
+  for i in $(seq 0 $((ISSUE_COUNT - 1))); do
+    TITLE=$(jq -r ".[$i].title" "$ISSUES_FILE")
+    BODY=$(jq -r ".[$i].body" "$ISSUES_FILE")
+    WEEK=$(jq -r ".[$i].week" "$ISSUES_FILE")
+    LABELS=$(jq -r ".[$i].labels | join(\",\")" "$ISSUES_FILE")
+    MILESTONE_NUMBER=$(echo "$MILESTONES_JSON" | jq -r ".[] | select(.title==\"Week ${WEEK}\") | .number")
+
+    ISSUE_CMD="gh issue create --repo ${GITHUB_ORG}/${PROJECT_NAME} --title \"${TITLE}\" --body \"${BODY}\""
+
+    if [ -n "$LABELS" ]; then
+      ISSUE_CMD="$ISSUE_CMD --label \"${LABELS}\""
     fi
 
+    if [ -n "$MILESTONE_NUMBER" ]; then
+      ISSUE_CMD="$ISSUE_CMD --milestone \"Week ${WEEK}\""
+    fi
+
+    eval "$ISSUE_CMD" 2>/dev/null || true
+  done
+
+  ok "Project issues created"
+fi
+
+# 3h. Create project board
+if ! gh project create --owner "${GITHUB_ORG}" --title "${PROJECT_NAME}" --format board 2>/dev/null; then
+  warn "Could not create project board. You may need to create it manually."
+fi
+
+ok "Project board created"
+
+echo ""
+echo "GitHub setup complete."
+echo ""
+
+# ═════════════════════════════════════════════════════════
+# STEP 4 — Supabase setup
+# ═════════════════════════════════════════════════════════
+
+SUPABASE_URL_VALUE=""
+SUPABASE_ANON_KEY=""
+SUPABASE_SERVICE_ROLE_KEY=""
+SUPABASE_PROJECT_REF=""
+SUPABASE_DB_PASSWORD=""
+
+if [ "$NEEDS_DB" = true ]; then
+  echo "Setting up Supabase..."
+  echo ""
+
+  # 4a. Generate password and create project
+  SUPABASE_DB_PASSWORD=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)
+
+  CREATE_OUTPUT=$(supabase projects create "${PROJECT_NAME}" \
+    --org-id "$SUPABASE_ORG_ID" \
+    --region us-east-1 \
+    --db-password "$SUPABASE_DB_PASSWORD" 2>&1)
+
+  if [ $? -ne 0 ]; then
     echo ""
-    echo -e "${GREEN}✓ Supabase credentials saved${NC}"
+    echo -e "${RED}Something went wrong creating the Supabase project.${NC}"
+    echo "$CREATE_OUTPUT"
+    echo "You may need to create it manually at supabase.com/dashboard"
+    exit 1
+  fi
+
+  # Extract project ref from output
+  SUPABASE_PROJECT_REF=$(echo "$CREATE_OUTPUT" | grep -oE '[a-z]{20}' | head -1)
+
+  # If we couldn't parse the ref, try listing projects
+  if [ -z "$SUPABASE_PROJECT_REF" ]; then
+    sleep 3
+    SUPABASE_PROJECT_REF=$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}')
+  fi
+
+  if [ -z "$SUPABASE_PROJECT_REF" ]; then
     echo ""
+    echo -e "${RED}Could not determine the Supabase project ID.${NC}"
+    echo "Check supabase.com/dashboard for the project ref and set it manually."
+    exit 1
+  fi
+
+  ok "Supabase project created"
+
+  # 4b. Wait for provisioning
+  echo "  Waiting for Supabase to finish setting up (this takes about 30 seconds)..."
+  SUPABASE_READY=false
+  for i in {1..12}; do
+    sleep 5
+    STATUS=$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $NF}')
+    if [ "$STATUS" = "ACTIVE_HEALTHY" ]; then
+      SUPABASE_READY=true
+      break
+    fi
+    echo "  Still waiting..."
+  done
+
+  if [ "$SUPABASE_READY" = false ]; then
+    echo ""
+    warn "Supabase is taking longer than expected to set up."
+    echo "  Go to supabase.com/dashboard and wait for ${PROJECT_NAME} to show as active,"
+    echo "  then run: supabase db push --project-ref ${SUPABASE_PROJECT_REF}"
+    echo "  to apply the database setup."
+    echo ""
+  else
+    ok "Supabase is ready"
+  fi
+
+  # 4c. Get API keys
+  SUPABASE_URL_VALUE="https://${SUPABASE_PROJECT_REF}.supabase.co"
+
+  API_KEYS_OUTPUT=$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" 2>/dev/null || echo "")
+
+  if [ -n "$API_KEYS_OUTPUT" ]; then
+    SUPABASE_ANON_KEY=$(echo "$API_KEYS_OUTPUT" | jq -r '.[] | select(.name=="anon") | .api_key' 2>/dev/null || echo "")
+    SUPABASE_SERVICE_ROLE_KEY=$(echo "$API_KEYS_OUTPUT" | jq -r '.[] | select(.name=="service_role") | .api_key' 2>/dev/null || echo "")
+  fi
+
+  # 4d. Run baseline migration (only if Supabase is ready)
+  if [ "$SUPABASE_READY" = true ]; then
+    if supabase db push --project-ref "$SUPABASE_PROJECT_REF" 2>/dev/null; then
+      ok "Database schema applied"
+    else
+      warn "Could not apply database schema. Run manually: supabase db push --project-ref ${SUPABASE_PROJECT_REF}"
+    fi
+  fi
+
+  # 4e. Configure auth redirect URLs
+  if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
+    AUTH_CONFIG=$(curl -s -X PATCH \
+      "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/config/auth" \
+      -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"site_url\": \"https://${PROJECT_NAME}.${LABS_DOMAIN}\",
+        \"additional_redirect_urls\": [
+          \"https://${PROJECT_NAME}.${LABS_DOMAIN}/auth/callback\",
+          \"https://*.vercel.app/auth/callback\",
+          \"http://localhost:3000/auth/callback\"
+        ],
+        \"disable_signup\": false,
+        \"mailer_autoconfirm\": true
+      }")
+
+    ok "Auth configured"
+  else
+    warn "SUPABASE_ACCESS_TOKEN is not set. Skipping auth configuration."
+    echo "  Set it in your shell profile and configure auth manually at supabase.com/dashboard."
+  fi
+
+  echo ""
+  echo "Supabase setup complete."
+  echo ""
+fi
+
+# ═════════════════════════════════════════════════════════
+# STEP 5 — Generate CLAUDE.md
+# ═════════════════════════════════════════════════════════
+
+CLAUDE_TEMPLATE="${SCRIPT_DIR}/templates/claude-md.txt"
+
+if [ -f "$CLAUDE_TEMPLATE" ]; then
+  SUPABASE_URL_DISPLAY="Not configured"
+  if [ -n "$SUPABASE_URL_VALUE" ]; then
+    SUPABASE_URL_DISPLAY="$SUPABASE_URL_VALUE"
+  fi
+
+  STACK="Next.js 14, TypeScript, Tailwind CSS, shadcn/ui, Supabase, Vercel"
+  TODAY=$(date +%Y-%m-%d)
+
+  sed \
+    -e "s|{{PROJECT_NAME}}|${PROJECT_NAME}|g" \
+    -e "s|{{PROJECT_TYPE}}|${PROJECT_TYPE}|g" \
+    -e "s|{{PROJECT_FOR}}|${PROJECT_FOR}|g" \
+    -e "s|{{GITHUB_URL}}|https://github.com/${GITHUB_ORG}/${PROJECT_NAME}|g" \
+    -e "s|{{VERCEL_URL}}|https://${PROJECT_NAME}.${LABS_DOMAIN}|g" \
+    -e "s|{{SUPABASE_URL}}|${SUPABASE_URL_DISPLAY}|g" \
+    -e "s|{{DATE_CREATED}}|${TODAY}|g" \
+    -e "s|{{STACK}}|${STACK}|g" \
+    "$CLAUDE_TEMPLATE" > CLAUDE.md
+
+  git add CLAUDE.md
+  git commit -m "chore: configure project for ${PROJECT_NAME}"
+  git push origin develop
+
+  ok "CLAUDE.md configured"
 else
-    echo -e "${YELLOW}Step 7: Skipping Supabase (no --db flag)${NC}"
-    SUPABASE_URL="(not configured)"
-    SUPABASE_KEY=""
-    echo ""
+  warn "CLAUDE.md template not found at ${CLAUDE_TEMPLATE}. Skipping."
 fi
 
-# ════════════════════════════════════════════════════════════
-# Step 8: Install dependencies
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 8: Installing dependencies...${NC}"
-
-npm install
-
-echo -e "${GREEN}✓ Dependencies installed${NC}"
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 9: Initialize Husky (git hooks)
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 9: Initializing git hooks...${NC}"
+# ═════════════════════════════════════════════════════════
+# STEP 6 — Create .env.local
+# ═════════════════════════════════════════════════════════
 
-npx husky init 2>/dev/null || true
+cat > .env.local <<ENVEOF
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 
-# Ensure pre-commit hook has correct content
-echo "npx lint-staged" > .husky/pre-commit
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=${PROJECT_NAME}
 
-echo -e "${GREEN}✓ Git hooks configured${NC}"
+# Sentry (fill in after creating Sentry project)
+NEXT_PUBLIC_SENTRY_DSN=
+SENTRY_ORG=friends-innovation-lab
+SENTRY_PROJECT=${PROJECT_NAME}
+
+# Resend (fill in if project uses email)
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=noreply@${LABS_DOMAIN}
+
+# Upstash (fill in after creating Upstash database)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+# Feature flags
+NEXT_PUBLIC_ENABLE_ANALYTICS=true
+NEXT_PUBLIC_MAINTENANCE_MODE=false
+ENVEOF
+
+ok ".env.local created"
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 10: Deploy to Vercel
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 10: Deploying to Vercel...${NC}"
+# ═════════════════════════════════════════════════════════
+# STEP 7 — Install dependencies
+# ═════════════════════════════════════════════════════════
 
-# Link to Vercel (decline upgrade prompts)
-echo "n" | vercel link --yes 2>/dev/null || vercel link --yes
-
-# Set environment variables in Vercel
-vercel env add NEXT_PUBLIC_APP_URL production <<< "https://${DOMAIN}" 2>/dev/null || true
-
-if [ "$CREATE_DB" = true ] && [ -n "$SUPABASE_URL" ] && [ "$SUPABASE_URL" != "(not configured)" ]; then
-    vercel env add NEXT_PUBLIC_SUPABASE_URL production <<< "${SUPABASE_URL}" 2>/dev/null || true
-    vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production <<< "${SUPABASE_KEY}" 2>/dev/null || true
+if ! npm install; then
+  echo ""
+  echo -e "${RED}Dependency installation failed.${NC}"
+  echo "Try running: npm install"
+  echo "If it still fails, check that Node.js 18+ is installed: node --version"
+  exit 1
 fi
 
-# Deploy with --force to avoid hanging uploads
-echo "n" | vercel --prod --force 2>/dev/null || vercel --prod --force
-
-echo -e "${GREEN}✓ Deployed to Vercel${NC}"
+ok "Dependencies installed"
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 11: Add custom domain
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 11: Adding custom domain...${NC}"
-
-# Vercel outputs confusing success+error combo, suppress all and continue
-vercel domains add "${DOMAIN}" >/dev/null 2>&1 || true
-
-echo -e "${GREEN}✓ Domain configured (verify at https://${DOMAIN})${NC}"
+# ═════════════════════════════════════════════════════════
+# STEP 8 — Vercel setup
+# ═════════════════════════════════════════════════════════
+echo "Setting up Vercel..."
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Step 12: Commit and push
-# ════════════════════════════════════════════════════════════
-echo -e "${YELLOW}Step 12: Committing changes...${NC}"
+# 8a. Create Vercel project via API (linked to GitHub repo)
+VERCEL_CREATE=$(curl -s -X POST "https://api.vercel.com/v10/projects" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"name\": \"${PROJECT_NAME}\",
+    \"framework\": \"nextjs\",
+    \"gitRepository\": {
+      \"type\": \"github\",
+      \"repo\": \"${GITHUB_ORG}/${PROJECT_NAME}\"
+    }
+  }")
 
-git add .
-if [ "$LITE_MODE" = true ]; then
-    git commit -m "Initial project setup for ${PROJECT_NAME}
+VERCEL_PROJECT_ID=$(echo "$VERCEL_CREATE" | jq -r '.id // empty')
 
-- Updated project name and metadata
-- Created docs/ and notes/ folder structure
-- Configured environment variables"
+if [ -z "$VERCEL_PROJECT_ID" ]; then
+  echo ""
+  echo -e "${RED}Something went wrong creating the Vercel project.${NC}"
+  echo "$VERCEL_CREATE"
+  exit 1
+fi
+
+# Link locally
+vercel link --yes --project "$PROJECT_NAME" --scope "$VERCEL_ORG_ID" 2>/dev/null || true
+
+ok "Vercel project created"
+
+# 8b. Set environment variables
+set_vercel_env() {
+  local KEY=$1
+  local VALUE=$2
+  local TARGETS=$3  # JSON array like '["production","preview","development"]'
+
+  curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
+    -H "Authorization: Bearer $VERCEL_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"key\": \"${KEY}\",
+      \"value\": \"${VALUE}\",
+      \"type\": \"encrypted\",
+      \"target\": ${TARGETS}
+    }" >/dev/null
+}
+
+ALL_ENVS='["production","preview","development"]'
+PROD_ONLY='["production"]'
+PREVIEW_ONLY='["preview"]'
+DEV_ONLY='["development"]'
+
+# Supabase vars (all environments)
+if [ -n "$SUPABASE_URL_VALUE" ]; then
+  set_vercel_env "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE" "$ALL_ENVS"
+  set_vercel_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY" "$ALL_ENVS"
+  set_vercel_env "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY" "$ALL_ENVS"
+fi
+
+# App name (all environments)
+set_vercel_env "NEXT_PUBLIC_APP_NAME" "$PROJECT_NAME" "$ALL_ENVS"
+
+# App URL (per environment)
+set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}.${LABS_DOMAIN}" "$PROD_ONLY"
+set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}-*.vercel.app" "$PREVIEW_ONLY"
+set_vercel_env "NEXT_PUBLIC_APP_URL" "http://localhost:3000" "$DEV_ONLY"
+
+# Feature flags (all environments)
+set_vercel_env "NEXT_PUBLIC_ENABLE_ANALYTICS" "true" "$ALL_ENVS"
+set_vercel_env "NEXT_PUBLIC_MAINTENANCE_MODE" "false" "$ALL_ENVS"
+
+# Sentry (all environments)
+set_vercel_env "SENTRY_ORG" "friends-innovation-lab" "$ALL_ENVS"
+set_vercel_env "SENTRY_PROJECT" "$PROJECT_NAME" "$ALL_ENVS"
+
+# Resend (all environments)
+set_vercel_env "RESEND_FROM_EMAIL" "noreply@${LABS_DOMAIN}" "$ALL_ENVS"
+
+ok "Environment variables set"
+
+# 8c. Set custom subdomain
+DOMAIN_RESULT=$(curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"name\": \"${PROJECT_NAME}.${LABS_DOMAIN}\"}")
+
+ok "Subdomain configured: ${PROJECT_NAME}.${LABS_DOMAIN}"
+
+# 8d. Trigger first deployment
+if vercel deploy --prod --yes 2>/dev/null; then
+  ok "First deployment triggered"
 else
-    git commit -m "Initial project setup for ${PROJECT_NAME}
-
-- Updated project name and metadata
-- Created docs/ and notes/ folder structure
-- Configured environment variables
-- Set up for PIM methodology"
+  warn "Automatic deployment could not be triggered. Vercel will deploy on the next push."
 fi
-git push
 
-echo -e "${GREEN}✓ Changes pushed${NC}"
+echo ""
+echo "Vercel setup complete."
 echo ""
 
-# ════════════════════════════════════════════════════════════
-# Done!
-# ════════════════════════════════════════════════════════════
-echo ""
-echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  ✓ Project setup complete!${NC}"
-echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
-echo ""
-echo -e "  ${BLUE}Project:${NC}   ${PROJECT_NAME}"
-echo -e "  ${BLUE}Repo:${NC}      https://github.com/${GITHUB_ORG}/${PROJECT_SLUG}"
-echo -e "  ${BLUE}Live URL:${NC}  https://${DOMAIN}"
-echo -e "  ${BLUE}Database:${NC}  ${SUPABASE_URL}"
-echo ""
-if [ "$LITE_MODE" = true ]; then
-    echo -e "  ${BLUE}Created (lite mode):${NC}"
-    echo -e "    • 7 labels (bug, feature, chore, documentation, + status)"
-    echo -e "    • Project board"
-    echo -e "    • Flat docs/ and notes/ structure"
-    echo ""
-    echo -e "  ${BLUE}Local:${NC}     cd ${PROJECT_SLUG} && npm run dev"
-    echo ""
-    echo -e "  ${YELLOW}Manual steps remaining:${NC}"
-    echo "  1. Set up UptimeRobot monitor:"
-    echo "     URL: https://${DOMAIN}/api/health"
-    echo "     Interval: 5 minutes"
-    echo ""
-    echo "  2. Create issues as needed"
-    echo "  3. Start building!"
+# ═════════════════════════════════════════════════════════
+# STEP 9 — Verify build locally
+# ═════════════════════════════════════════════════════════
+
+if ! npm run build 2>/dev/null; then
+  echo ""
+  echo -e "${YELLOW}The local build failed. This usually means a missing environment variable.${NC}"
+  echo "Check your .env.local file and make sure all required values are filled in."
+  echo "Run: npm run build"
+  echo "to try again."
+  echo ""
+  BUILD_OK=false
 else
-    echo -e "  ${BLUE}Created:${NC}"
-    echo -e "    • 5 milestones (Ground → Embed)"
-    echo -e "    • 39 starter issues"
-    echo -e "    • 12 labels"
-    echo -e "    • Project board"
-    echo ""
-    echo -e "  ${BLUE}Local:${NC}     cd ${PROJECT_SLUG} && npm run dev"
-    echo ""
-    echo -e "  ${YELLOW}Manual steps remaining:${NC}"
-    echo "  1. Set up UptimeRobot monitor:"
-    echo "     URL: https://${DOMAIN}/api/health"
-    echo "     Interval: 5 minutes"
-    echo ""
-    echo "  2. Open GitHub Issues to see your project roadmap"
-    echo "  3. Set milestone due dates"
-    echo "  4. Start Ground phase!"
+  ok "Local build succeeded"
+  echo ""
 fi
+
+# ═════════════════════════════════════════════════════════
+# STEP 10 — Final summary
+# ═════════════════════════════════════════════════════════
+
+SUPABASE_DASHBOARD="skipped"
+if [ -n "$SUPABASE_PROJECT_REF" ]; then
+  SUPABASE_DASHBOARD="https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}"
+fi
+
 echo ""
+echo "╔════════════════════════════════════════════╗"
+echo "║   All done. Here's your project.           ║"
+echo "╚════════════════════════════════════════════╝"
+echo ""
+echo "PROJECT"
+echo "  Name:          ${PROJECT_NAME}"
+echo "  Type:          ${PROJECT_TYPE}"
+echo "  Created:       $(date +%Y-%m-%d)"
+echo ""
+echo "LINKS"
+echo "  Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}"
+echo "  GitHub:        https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
+echo "  Vercel:        https://vercel.com/${GITHUB_ORG}/${PROJECT_NAME}"
+echo "  Supabase:      ${SUPABASE_DASHBOARD}"
+echo ""
+echo "LOCAL"
+echo "  Folder:        ${PROJECT_DIR}"
+echo "  Dev server:    npm run dev → http://localhost:3000"
+echo ""
+
+if [ "$BUILD_OK" = false ]; then
+  echo -e "${YELLOW}NOTE: The local build failed. Check .env.local for missing values.${NC}"
+  echo ""
+fi
+
+echo "NEXT STEPS"
+echo "  1. Open the project in VS Code: code ."
+echo "  2. Fill in missing values in .env.local (Sentry, Resend, Upstash)"
+echo "  3. Start the dev server: npm run dev"
+echo "  4. Read CLAUDE.md before asking CC to build anything"
+echo ""
+echo "STILL NEEDS MANUAL SETUP"
+echo "  [ ] Create a Sentry project at sentry.io and add the DSN to .env.local"
+echo "  [ ] Create an Upstash Redis database at upstash.com and add keys to .env.local"
+echo "  [ ] Add Resend API key if this project sends emails"
+echo ""
+printf "Run the dev server now? (y/n) > "
+read -r RUN_DEV
+
+if [ "$RUN_DEV" = "y" ] || [ "$RUN_DEV" = "Y" ]; then
+  open "http://localhost:3000"
+  npm run dev
+fi

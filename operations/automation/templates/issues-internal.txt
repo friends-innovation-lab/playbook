@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Project setup and first deploy",
+    "body": "## Goal\nGet the project running and deployed.\n\n## Checklist\n- [ ] Spinup script completed successfully\n- [ ] Live URL is working\n- [ ] Auth flow works\n- [ ] CLAUDE.md updated with current focus",
+    "labels": ["feature"],
+    "week": 1
+  },
+  {
+    "title": "Core feature — v1",
+    "body": "## Goal\nBuild the first working version of the core feature.\n\n## Checklist\n- [ ] Feature is functional\n- [ ] Data saves correctly\n- [ ] Basic error handling in place",
+    "labels": ["feature"],
+    "week": 1
+  },
+  {
+    "title": "Team review and feedback",
+    "body": "## Goal\nShare with the team and collect feedback.\n\n## Checklist\n- [ ] Demo run with team\n- [ ] Feedback documented\n- [ ] Priority changes identified",
+    "labels": ["review needed"],
+    "week": 2
+  },
+  {
+    "title": "Iteration and polish",
+    "body": "## Goal\nApply feedback and get to a usable internal tool.\n\n## Checklist\n- [ ] Feedback changes built\n- [ ] Works on mobile if needed\n- [ ] No console errors\n- [ ] README updated",
+    "labels": ["feature"],
+    "week": 2
+  }
+]

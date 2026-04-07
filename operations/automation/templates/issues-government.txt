@@ -1,0 +1,44 @@
+[
+  {
+    "title": "Project setup and first deploy",
+    "body": "## Goal\nGet the project running and deployed.\n\n## Checklist\n- [ ] Spinup script completed successfully\n- [ ] Live URL is working\n- [ ] Auth flow works (sign up, login, logout)\n- [ ] CLAUDE.md is updated with current focus\n- [ ] Supabase tables confirmed with RLS enabled",
+    "labels": ["feature"],
+    "week": 1
+  },
+  {
+    "title": "Core user flow — first screen",
+    "body": "## Goal\nBuild the first screen a user sees after logging in.\n\n## Checklist\n- [ ] Main interface designed and built\n- [ ] Works on mobile (375px)\n- [ ] Loading states present\n- [ ] Error states present\n- [ ] Empty state present",
+    "labels": ["feature", "design"],
+    "week": 1
+  },
+  {
+    "title": "Core user flow — primary feature",
+    "body": "## Goal\nBuild the primary feature of this prototype.\n\n## Checklist\n- [ ] Feature is functional end to end\n- [ ] Data saves to Supabase correctly\n- [ ] RLS verified — users only see their own data\n- [ ] Works on mobile\n- [ ] Keyboard navigable",
+    "labels": ["feature"],
+    "week": 2
+  },
+  {
+    "title": "Accessibility review",
+    "body": "## Goal\nEnsure the prototype meets Section 508 / WCAG 2.1 AA standards.\n\n## Checklist\n- [ ] Run npm run test:a11y — zero violations\n- [ ] Keyboard navigation works through all flows\n- [ ] All images have alt text\n- [ ] All form fields have labels\n- [ ] Color contrast passes (4.5:1 minimum)\n- [ ] Focus states are visible",
+    "labels": ["accessibility"],
+    "week": 2
+  },
+  {
+    "title": "Client review prep",
+    "body": "## Goal\nGet the prototype ready to show a client or evaluator.\n\n## Checklist\n- [ ] All happy path flows work without errors\n- [ ] No console errors in browser\n- [ ] Copy is proofread — no lorem ipsum\n- [ ] Demo credentials created\n- [ ] Mobile tested on a real device\n- [ ] Sentry showing zero errors",
+    "labels": ["review needed"],
+    "week": 3
+  },
+  {
+    "title": "Feedback incorporation",
+    "body": "## Goal\nIncorporate feedback from client review.\n\n## Checklist\n- [ ] Feedback documented\n- [ ] Changes prioritized\n- [ ] Changes built and deployed\n- [ ] Re-reviewed with client",
+    "labels": ["feature"],
+    "week": 4
+  },
+  {
+    "title": "Final demo prep",
+    "body": "## Goal\nFinal polish before submission or evaluation.\n\n## Checklist\n- [ ] Full accessibility scan passes\n- [ ] Performance check — Lighthouse score 80+\n- [ ] All links work\n- [ ] Tested in Chrome and Safari\n- [ ] One-pager written explaining the approach\n- [ ] Demo URL confirmed working\n- [ ] Backup plan if live demo fails",
+    "labels": ["review needed"],
+    "week": 4
+  }
+]

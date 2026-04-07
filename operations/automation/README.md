@@ -1,100 +1,58 @@
 # Automation Scripts
 
-## spinup.sh - Project Spinup Script
+Two scripts that manage the full lifecycle of an Innovation Lab project.
 
-Fully automated project creation that sets up GitHub, Vercel, and DNS in one command. Optionally creates a Supabase database.
+## Prerequisites — one-time setup
 
-### Usage
-
+Install required tools:
 ```bash
-spinup project-slug "Client Display Name"
-```
-
-### Example
-
-```bash
-spinup acme-crm "Acme Corp CRM"
-```
-
-The script will prompt:
-```
-Create Supabase database? (y/N):
-```
-
-Press Enter for no database, or `y` for Supabase.
-
-### What Gets Created
-
-- **GitHub repo**: `friends-innovation-lab/[project-slug]` (from project-template)
-- **Vercel deployment**: With environment variables configured
-- **Custom domain**: `[project-slug].lab.cityfriends.tech`
-- **GitHub issues**: Weekly milestone issues for the 4-week sprint
-- **Supabase project** (optional): With auto-generated credentials
-
-### Prerequisites
-
-Install the required CLI tools:
-
-```bash
-# GitHub CLI
-brew install gh
-gh auth login
-
-# Vercel CLI
+brew install gh supabase/tap/supabase git jq
 npm install -g vercel
-vercel login
+```
 
-# Supabase CLI (only needed if using database)
-brew install supabase/tap/supabase
+Log in to each service:
+```bash
+gh auth login
+vercel login
 supabase login
 ```
 
-### What It Does
-
-| Step | Action |
-|------|--------|
-| 1 | Creates GitHub repo from `project-template` |
-| 2 | Creates Supabase project (if selected) |
-| 3 | Configures `.env.local` |
-| 4 | Installs npm dependencies |
-| 5 | Deploys to Vercel with environment variables |
-| 6 | Creates GitHub issues for weekly milestones |
-| 7 | Commits and pushes initial setup |
-
-### Output
-
-After completion, you'll have:
-
-```
-Project:   Acme Corp CRM
-Repo:      https://github.com/friends-innovation-lab/acme-crm
-Live URL:  https://acme-crm.lab.cityfriends.tech
-Supabase:  https://[project-ref].supabase.co  (if database enabled)
-
-Local dev: cd acme-crm && npm run dev
+Add these to your shell profile (~/.zshrc or ~/.bashrc):
+```bash
+export VERCEL_TOKEN=         # vercel.com → Settings → Tokens
+export VERCEL_ORG_ID=        # vercel.com → Settings → General → Team ID
+export GITHUB_ORG=friends-innovation-lab
+export SUPABASE_ORG_ID=      # supabase.com → org settings
+export SUPABASE_ACCESS_TOKEN= # supabase.com → account → access tokens
+export LABS_DOMAIN=labs.cityfriends.tech
 ```
 
-### Notes
+Then reload your shell:
+```bash
+source ~/.zshrc
+```
 
-- Domain DNS is automatic (Vercel manages `lab.cityfriends.tech` nameservers)
-- Database password is saved locally in `.db-password` (not committed)
-- The script will prompt for Supabase API keys if auto-retrieval fails
+## Spinning up a project
 
----
+From anywhere on your machine:
+```bash
+bash ~/path/to/playbook/operations/automation/spinup.sh
+```
 
-## Manual Steps After Spinup
+Follow the prompts. The script will ask you questions and do everything else.
 
-The script cannot create everything automatically. After spinup completes:
+## Tearing down a project
 
-1. **Create GitHub Project board manually:**
-   - Go to https://github.com/orgs/friends-innovation-lab/projects
-   - Click "New project"
-   - Choose "Board" template
-   - Name it the same as your project
-   - Link the repo to the project
+```bash
+bash ~/path/to/playbook/operations/automation/teardown.sh
+```
 
-2. **Set up UptimeRobot monitor:**
-   - URL: `https://[project-name].lab.cityfriends.tech/api/health`
-   - Interval: 5 minutes
+## What each script does
 
-3. **Set milestone due dates** in GitHub Issues
+| Step | spinup.sh | teardown.sh |
+|------|-----------|-------------|
+| GitHub | Creates repo, branches, labels, issues | Archives repo |
+| Supabase | Creates project, runs migration, configures auth | Exports data, deletes project |
+| Vercel | Creates project, sets env vars, deploys | Removes project |
+| Domain | Assigns subdomain | Removes subdomain |
+| Local | Clones repo, installs deps, creates .env.local | Removes local folder (optional) |
