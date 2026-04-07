@@ -83,6 +83,8 @@ You should see `Homebrew 4.x.x`
 **Note:** This extra step is only required on Macs with Apple Silicon (M1, M2, M3 chips).
 If you are on an older Intel Mac you can skip straight to verifying the version.
 
+> Having trouble? See [Homebrew installation issues](troubleshooting.md#homebrew-not-found-after-installation)
+
 ---
 
 ## Step 4 — Install Git
@@ -202,6 +204,8 @@ Follow the prompts and log in with your email or GitHub account.
 vercel whoami
 ```
 You should see your Vercel username.
+
+> Having trouble? See [Vercel CLI permissions error](troubleshooting.md#vercel-cli-install-fails-with-permissions-error)
 
 ---
 
@@ -385,6 +389,8 @@ echo $SUPABASE_ACCESS_TOKEN
 ```
 Each should print its value — not blank.
 
+> Having trouble? See [Environment variable shows blank](troubleshooting.md#pre-flight-checks-fail-after-setup)
+
 ---
 
 ## Step 12 — Create a projects folder
@@ -434,6 +440,8 @@ tell you exactly what to fix. Fix it and run the script again.
 
 You do not need to complete a full spinup right now — just confirm
 all the checks pass and then press Control + C to exit.
+
+> Having trouble? See [Troubleshooting guide](troubleshooting.md)
 
 ---
 

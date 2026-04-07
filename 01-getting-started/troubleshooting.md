@@ -5,6 +5,43 @@ work correctly. Find your issue below and follow the steps.
 
 ---
 
+## Homebrew not found after installation
+
+**Symptom:** You run `brew --version` and see:
+```
+zsh: command not found: brew
+```
+
+**Why it happens:** On Apple Silicon Macs (M1, M2, M3), Homebrew installs
+to `/opt/homebrew/` which is not in your PATH by default. The installer
+shows "Next steps" commands that add it, but they are easy to miss.
+
+**How to fix it:**
+
+Run these three commands in Terminal:
+
+```bash
+echo >> ~/.zprofile
+echo 'eval "$(/opt/homebrew/bin/brew shellenv zsh)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+```
+
+Then reload your shell profile:
+
+```bash
+source ~/.zprofile
+```
+
+Verify it worked:
+
+```bash
+brew --version
+```
+
+You should see `Homebrew 4.x.x`.
+
+---
+
 ## Supabase keys are empty after spinup
 
 **Symptom:** The spinup script completed but `.env.local` has
