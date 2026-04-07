@@ -5,7 +5,7 @@ Two scripts that manage the full lifecycle of a project.
 ## Spin up a new project
 
 ```bash
-bash operations/automation/spinup.sh
+bash ~/projects/playbook/operations/automation/spinup.sh
 ```
 
 The script will ask you a few questions and handle everything else:
@@ -22,7 +22,7 @@ See the full script documentation:
 ## Tear down a project
 
 ```bash
-bash operations/automation/teardown.sh
+bash ~/projects/playbook/operations/automation/teardown.sh
 ```
 
 Run this when a prototype engagement ends or an internal tool is retired.
