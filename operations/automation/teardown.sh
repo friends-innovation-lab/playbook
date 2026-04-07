@@ -308,11 +308,11 @@ if [ "$DO_SUPABASE" = true ]; then
   echo ""
 
   # 5a. Find the Supabase project ref
-  SUPABASE_PROJECT_REF=$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}')
+  SUPABASE_PROJECT_REF=$(supabase projects list --output json 2>/dev/null \
+    | jq -r '.[] | select(.name=="'"$PROJECT_NAME"'") | .id')
 
   if [ -z "$SUPABASE_PROJECT_REF" ]; then
-    echo "  No Supabase project found for ${PROJECT_NAME}. It may have already been deleted."
-    echo "  Skipping database export."
+    echo "  No Supabase project found for ${PROJECT_NAME} — skipping database export."
     echo ""
     SUPABASE_RESULT="No project found — already deleted or never created"
   else
@@ -353,7 +353,8 @@ if [ "$DO_SUPABASE" = true ]; then
     sleep 3
 
     # Verify deletion
-    STATUS=$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | wc -l)
+    STATUS=$(supabase projects list --output json 2>/dev/null \
+      | jq -r '[.[] | select(.name=="'"$PROJECT_NAME"'")] | length')
     if [ "$STATUS" -eq 0 ]; then
       ok "Supabase project deleted"
       SUPABASE_RESULT="Data exported + project deleted"
