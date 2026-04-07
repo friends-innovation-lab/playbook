@@ -560,8 +560,32 @@ if [ "$NEEDS_DB" = true ]; then
   API_KEYS_OUTPUT=$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" 2>/dev/null || echo "")
 
   if [ -n "$API_KEYS_OUTPUT" ]; then
+    # Try JSON parsing first (newer CLI versions)
     SUPABASE_ANON_KEY=$(echo "$API_KEYS_OUTPUT" | jq -r '.[] | select(.name=="anon") | .api_key' 2>/dev/null || echo "")
     SUPABASE_SERVICE_ROLE_KEY=$(echo "$API_KEYS_OUTPUT" | jq -r '.[] | select(.name=="service_role") | .api_key' 2>/dev/null || echo "")
+
+    # Fall back to table parsing if jq returned empty (CLI outputs table format)
+    if [ -z "$SUPABASE_ANON_KEY" ]; then
+      SUPABASE_ANON_KEY=$(echo "$API_KEYS_OUTPUT" | grep -i "anon" | awk '{print $2}')
+    fi
+    if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      SUPABASE_SERVICE_ROLE_KEY=$(echo "$API_KEYS_OUTPUT" | grep -i "service_role" | awk '{print $2}')
+    fi
+  fi
+
+  # Verify keys were retrieved
+  if [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+    echo ""
+    warn "Could not retrieve Supabase API keys automatically."
+    echo "  Get them manually from: supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+    echo ""
+    echo "  Then add them to .env.local:"
+    echo "    NEXT_PUBLIC_SUPABASE_URL=https://${SUPABASE_PROJECT_REF}.supabase.co"
+    echo "    NEXT_PUBLIC_SUPABASE_ANON_KEY=[your anon key]"
+    echo "    SUPABASE_SERVICE_ROLE_KEY=[your service role key]"
+    echo ""
+  else
+    ok "API keys retrieved"
   fi
 
   # 4d. Run baseline migration (only if Supabase is ready)
@@ -671,6 +695,28 @@ NEXT_PUBLIC_MAINTENANCE_MODE=false
 ENVEOF
 
 ok ".env.local created"
+
+# Verify Supabase values in .env.local
+if [ "$NEEDS_DB" = true ]; then
+  ENV_SUPABASE_URL=$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2-)
+  ENV_ANON_KEY=$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2-)
+  ENV_SERVICE_KEY=$(grep '^SUPABASE_SERVICE_ROLE_KEY=' .env.local | cut -d= -f2-)
+
+  if [ -z "$ENV_SUPABASE_URL" ] || [ -z "$ENV_ANON_KEY" ] || [ -z "$ENV_SERVICE_KEY" ]; then
+    echo ""
+    warn "Supabase keys could not be set automatically."
+    [ -z "$ENV_SUPABASE_URL" ] && fail "NEXT_PUBLIC_SUPABASE_URL is empty"
+    [ -z "$ENV_ANON_KEY" ] && fail "NEXT_PUBLIC_SUPABASE_ANON_KEY is empty"
+    [ -z "$ENV_SERVICE_KEY" ] && fail "SUPABASE_SERVICE_ROLE_KEY is empty"
+    echo ""
+    echo "  Fill them in manually before running npm run dev."
+    echo "  Get the values from: supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+    echo ""
+  else
+    ok "Supabase keys written to .env.local"
+  fi
+fi
+
 echo ""
 
 # ═════════════════════════════════════════════════════════
@@ -722,12 +768,15 @@ vercel link --yes --project "$PROJECT_NAME" --scope "$VERCEL_ORG_ID" 2>/dev/null
 ok "Vercel project created"
 
 # 8b. Set environment variables
+VERCEL_ENV_ERRORS=0
+
 set_vercel_env() {
   local KEY=$1
   local VALUE=$2
   local TARGETS=$3  # JSON array like '["production","preview","development"]'
 
-  curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
+  local RESPONSE
+  RESPONSE=$(curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
     -H "Authorization: Bearer $VERCEL_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{
@@ -735,7 +784,17 @@ set_vercel_env() {
       \"value\": \"${VALUE}\",
       \"type\": \"encrypted\",
       \"target\": ${TARGETS}
-    }" >/dev/null
+    }")
+
+  local ERROR_CODE
+  ERROR_CODE=$(echo "$RESPONSE" | jq -r '.error.code // empty' 2>/dev/null)
+
+  if [ -n "$ERROR_CODE" ]; then
+    local ERROR_MSG
+    ERROR_MSG=$(echo "$RESPONSE" | jq -r '.error.message // "Unknown error"' 2>/dev/null)
+    fail "Failed to set ${KEY}: ${ERROR_MSG}"
+    VERCEL_ENV_ERRORS=$((VERCEL_ENV_ERRORS + 1))
+  fi
 }
 
 ALL_ENVS='["production","preview","development"]'
@@ -769,7 +828,13 @@ set_vercel_env "SENTRY_PROJECT" "$PROJECT_NAME" "$ALL_ENVS"
 # Resend (all environments)
 set_vercel_env "RESEND_FROM_EMAIL" "noreply@${LABS_DOMAIN}" "$ALL_ENVS"
 
-ok "Environment variables set"
+if [ "$VERCEL_ENV_ERRORS" -gt 0 ]; then
+  warn "${VERCEL_ENV_ERRORS} environment variable(s) failed to set in Vercel."
+  echo "  Check the errors above and set them manually at:"
+  echo "  vercel.com/${GITHUB_ORG}/${PROJECT_NAME}/settings/environment-variables"
+else
+  ok "Environment variables set"
+fi
 
 # 8c. Set custom subdomain
 DOMAIN_RESULT=$(curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains" \
