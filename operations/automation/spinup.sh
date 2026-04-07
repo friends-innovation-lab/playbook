@@ -666,6 +666,57 @@ fi
 echo ""
 
 # ═════════════════════════════════════════════════════════
+# STEP 5b — Create global-error.tsx
+# ═════════════════════════════════════════════════════════
+
+GLOBAL_ERROR_DIR="src/app"
+if [ ! -d "$GLOBAL_ERROR_DIR" ]; then
+  GLOBAL_ERROR_DIR="app"
+fi
+
+if [ -d "$GLOBAL_ERROR_DIR" ]; then
+  cat > "${GLOBAL_ERROR_DIR}/global-error.tsx" <<'ERROREOF'
+'use client'
+
+import * as Sentry from '@sentry/nextjs'
+import { useEffect } from 'react'
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+
+  return (
+    <html>
+      <body>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui' }}>
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Something went wrong</h1>
+            <p style={{ color: '#666', marginTop: '8px' }}>The team has been notified.</p>
+            <button onClick={reset} style={{ marginTop: '16px', padding: '8px 16px', cursor: 'pointer' }}>
+              Try again
+            </button>
+          </div>
+        </div>
+      </body>
+    </html>
+  )
+}
+ERROREOF
+  ok "global-error.tsx created"
+else
+  warn "Could not find app directory (tried src/app and app). Skipping global-error.tsx."
+fi
+
+echo ""
+
+# ═════════════════════════════════════════════════════════
 # STEP 6 — Create .env.local
 # ═════════════════════════════════════════════════════════
 
