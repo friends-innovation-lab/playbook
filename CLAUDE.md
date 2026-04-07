@@ -1,18 +1,22 @@
-# Friends Innovation Lab - Playbook Standards
+# Friends Innovation Lab — Playbook Standards
 
-> This file defines coding standards, review personas, and quality gates for Friends Innovation Lab.
-> It serves as the reference for the playbook repo and as a template for project repos.
+> This file tells Claude Code how to work within this playbook repo.
+> For project-specific instructions, see the CLAUDE.md in each project repo.
 
 ---
 
-## Project Context
+## What this repo is
 
-**Friends Innovation Lab** builds fast, high-quality prototypes for small businesses and government agencies. Our standards:
+This is the operational playbook for Friends Innovation Lab, a rapid
+prototyping shop inside Friends From The City (FFTC). The playbook
+contains everything needed to spin up, build, and ship government
+prototypes and internal tools.
 
-- **Speed matters** — We ship in weeks, not months
-- **Quality matters more** — Clients judge us on first impressions
-- **Government-ready** — Even small business projects follow federal best practices
-- **Founder-built** — No hand-offs to junior devs. Every line of code matters.
+**Key files:**
+- `operations/automation/spinup.sh` — creates a new project in under 10 minutes
+- `operations/automation/teardown.sh` — decommissions a project cleanly
+- `03-building/prompts/` — starter prompts for each type of project
+- `01-getting-started/` — onboarding for new team members
 
 ---
 
@@ -270,10 +274,10 @@ Before marking any feature complete:
 
 ## Playbook Navigation
 
-- **Methodology**: See [methodology/](methodology/) for PIM phases
-- **Operations**: See [operations/](operations/) for project management
-- **Development**: See [development/](development/) for technical standards
-
----
-
-*Last updated: February 2025*
+- **Getting started**: [01-getting-started/](01-getting-started/)
+- **Spinup/teardown**: [operations/automation/](operations/automation/)
+- **Building**: [03-building/](03-building/)
+- **Delivering**: [04-delivering/](04-delivering/)
+- **Operations**: [05-operations/](05-operations/)
+- **Technical standards**: [development/](development/)
+- **Products**: [products/](products/)
