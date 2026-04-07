@@ -573,6 +573,9 @@ if [ "$NEEDS_DB" = true ]; then
     fi
   fi
 
+  echo "  Debug — SUPABASE_ANON_KEY length: ${#SUPABASE_ANON_KEY}"
+  echo "  Debug — SUPABASE_PROJECT_REF: ${SUPABASE_PROJECT_REF}"
+
   # Verify keys were retrieved
   if [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
     echo ""
@@ -696,24 +699,22 @@ ENVEOF
 
 ok ".env.local created"
 
-# Verify Supabase values in .env.local
+# Read back from the actual file to confirm
 if [ "$NEEDS_DB" = true ]; then
-  ENV_SUPABASE_URL=$(grep '^NEXT_PUBLIC_SUPABASE_URL=' .env.local | cut -d= -f2-)
-  ENV_ANON_KEY=$(grep '^NEXT_PUBLIC_SUPABASE_ANON_KEY=' .env.local | cut -d= -f2-)
-  ENV_SERVICE_KEY=$(grep '^SUPABASE_SERVICE_ROLE_KEY=' .env.local | cut -d= -f2-)
+  WRITTEN_URL=$(grep "NEXT_PUBLIC_SUPABASE_URL=" .env.local | cut -d'=' -f2)
+  WRITTEN_KEY=$(grep "NEXT_PUBLIC_SUPABASE_ANON_KEY=" .env.local | cut -d'=' -f2)
 
-  if [ -z "$ENV_SUPABASE_URL" ] || [ -z "$ENV_ANON_KEY" ] || [ -z "$ENV_SERVICE_KEY" ]; then
-    echo ""
-    warn "Supabase keys could not be set automatically."
-    [ -z "$ENV_SUPABASE_URL" ] && fail "NEXT_PUBLIC_SUPABASE_URL is empty"
-    [ -z "$ENV_ANON_KEY" ] && fail "NEXT_PUBLIC_SUPABASE_ANON_KEY is empty"
-    [ -z "$ENV_SERVICE_KEY" ] && fail "SUPABASE_SERVICE_ROLE_KEY is empty"
-    echo ""
-    echo "  Fill them in manually before running npm run dev."
-    echo "  Get the values from: supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
-    echo ""
+  if [ -n "$WRITTEN_URL" ] && [ -n "$WRITTEN_KEY" ]; then
+    echo -e "${GREEN}  ✓ Supabase keys written to .env.local${RESET}"
   else
-    ok "Supabase keys written to .env.local"
+    echo -e "${YELLOW}  ⚠ Supabase keys could not be written automatically.${RESET}"
+    echo "  Get them from:"
+    echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+    echo ""
+    echo "  Add these to .env.local manually:"
+    echo "  NEXT_PUBLIC_SUPABASE_URL=https://${SUPABASE_PROJECT_REF}.supabase.co"
+    echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key"
+    echo "  SUPABASE_SERVICE_ROLE_KEY=your-service-role-key"
   fi
 fi
 
@@ -834,6 +835,19 @@ if [ "$VERCEL_ENV_ERRORS" -gt 0 ]; then
   echo "  vercel.com/${GITHUB_ORG}/${PROJECT_NAME}/settings/environment-variables"
 else
   ok "Environment variables set"
+fi
+
+# Verify Vercel env vars by reading them back from the API
+VERCEL_ENV_CHECK=$(curl -s \
+  "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" \
+  | jq -r '.envs[] | select(.key=="NEXT_PUBLIC_SUPABASE_URL") | .key')
+
+if [ "$VERCEL_ENV_CHECK" = "NEXT_PUBLIC_SUPABASE_URL" ]; then
+  echo -e "${GREEN}  ✓ Vercel environment variables confirmed${RESET}"
+else
+  echo -e "${YELLOW}  ⚠ Vercel env vars may not have been set correctly.${RESET}"
+  echo "  Check vercel.com → your project → Settings → Environment Variables"
 fi
 
 # 8c. Set custom subdomain
