@@ -554,41 +554,47 @@ if [ "$NEEDS_DB" = true ]; then
     ok "Supabase is ready"
   fi
 
-  # 4c. Get API keys
+  # 4c. Get API keys (retry until Supabase project is ready)
+  echo "  Fetching Supabase API keys..."
+
+  MAX_ATTEMPTS=10
+  ATTEMPT=0
+  SUPABASE_ANON_KEY=""
+  SUPABASE_SERVICE_ROLE_KEY=""
+
+  while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    ATTEMPT=$((ATTEMPT + 1))
+
+    SUPABASE_ANON_KEY=$(supabase projects api-keys \
+      --project-ref "$SUPABASE_PROJECT_REF" \
+      --output json 2>/dev/null \
+      | jq -r '.[] | select(.name=="anon") | .api_key' 2>/dev/null)
+
+    SUPABASE_SERVICE_ROLE_KEY=$(supabase projects api-keys \
+      --project-ref "$SUPABASE_PROJECT_REF" \
+      --output json 2>/dev/null \
+      | jq -r '.[] | select(.name=="service_role") | .api_key' 2>/dev/null)
+
+    if [ -n "$SUPABASE_ANON_KEY" ] && [ -n "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+      echo -e "${GREEN}  ✓ Supabase API keys retrieved (attempt $ATTEMPT)${RESET}"
+      break
+    fi
+
+    echo "  Keys not ready yet, waiting 5 seconds... (attempt $ATTEMPT of $MAX_ATTEMPTS)"
+    sleep 5
+  done
+
   SUPABASE_URL_VALUE="https://${SUPABASE_PROJECT_REF}.supabase.co"
 
-  API_KEYS_OUTPUT=$(supabase projects api-keys --project-ref "$SUPABASE_PROJECT_REF" 2>/dev/null || echo "")
-
-  if [ -n "$API_KEYS_OUTPUT" ]; then
-    # Try JSON parsing first (newer CLI versions)
-    SUPABASE_ANON_KEY=$(echo "$API_KEYS_OUTPUT" | jq -r '.[] | select(.name=="anon") | .api_key' 2>/dev/null || echo "")
-    SUPABASE_SERVICE_ROLE_KEY=$(echo "$API_KEYS_OUTPUT" | jq -r '.[] | select(.name=="service_role") | .api_key' 2>/dev/null || echo "")
-
-    # Fall back to table parsing if jq returned empty (CLI outputs table format)
-    if [ -z "$SUPABASE_ANON_KEY" ]; then
-      SUPABASE_ANON_KEY=$(echo "$API_KEYS_OUTPUT" | grep -i "anon" | awk '{print $2}')
-    fi
-    if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-      SUPABASE_SERVICE_ROLE_KEY=$(echo "$API_KEYS_OUTPUT" | grep -i "service_role" | awk '{print $2}')
-    fi
-  fi
-
-  echo "  Debug — SUPABASE_ANON_KEY length: ${#SUPABASE_ANON_KEY}"
-  echo "  Debug — SUPABASE_PROJECT_REF: ${SUPABASE_PROJECT_REF}"
-
-  # Verify keys were retrieved
   if [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+    echo -e "${YELLOW}  ⚠ Could not retrieve Supabase API keys after $MAX_ATTEMPTS attempts.${RESET}"
+    echo "  Get them manually from:"
+    echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
     echo ""
-    warn "Could not retrieve Supabase API keys automatically."
-    echo "  Get them manually from: supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
-    echo ""
-    echo "  Then add them to .env.local:"
-    echo "    NEXT_PUBLIC_SUPABASE_URL=https://${SUPABASE_PROJECT_REF}.supabase.co"
-    echo "    NEXT_PUBLIC_SUPABASE_ANON_KEY=[your anon key]"
-    echo "    SUPABASE_SERVICE_ROLE_KEY=[your service role key]"
-    echo ""
-  else
-    ok "API keys retrieved"
+    echo "  Add these to .env.local after the script finishes:"
+    echo "  NEXT_PUBLIC_SUPABASE_URL=https://${SUPABASE_PROJECT_REF}.supabase.co"
+    echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key"
+    echo "  SUPABASE_SERVICE_ROLE_KEY=your-service-role-key"
   fi
 
   # 4d. Run baseline migration (only if Supabase is ready)
