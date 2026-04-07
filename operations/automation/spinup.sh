@@ -533,24 +533,7 @@ if [ "$NEEDS_DB" = true ]; then
     echo "  Still waiting..."
   done
 
-  if [ "$SUPABASE_READY" = false ]; then
-    echo ""
-    warn "Supabase is still setting up. This is normal and usually takes 1-2 minutes."
-    echo ""
-    echo "  Here's what to do:"
-    echo "    1. Go to supabase.com/dashboard and watch for your project to show as Active"
-    echo "    2. Once active, come back here and run:"
-    echo "       supabase db push --project-ref ${SUPABASE_PROJECT_REF}"
-    echo "    3. Then go to your project's .env.local and confirm these values are filled in:"
-    echo "       NEXT_PUBLIC_SUPABASE_URL"
-    echo "       NEXT_PUBLIC_SUPABASE_ANON_KEY"
-    echo "       SUPABASE_SERVICE_ROLE_KEY"
-    echo "    4. Get these values from: supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
-    echo "    5. Once .env.local is updated, run: npm run dev"
-    echo ""
-    echo "  Your project is still set up correctly — Supabase just needs a few more minutes."
-    echo ""
-  else
+  if [ "$SUPABASE_READY" = true ]; then
     ok "Supabase is ready"
   fi
 
