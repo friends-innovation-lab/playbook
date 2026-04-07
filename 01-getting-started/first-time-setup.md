@@ -6,6 +6,10 @@ Follow every step in order — do not skip anything.
 When you are done, every pre-flight check in the spinup script
 will pass and you will be ready to start your first project.
 
+> **All commands in this guide are run in Terminal.**
+> If you closed Terminal, reopen it before continuing.
+> Press **Command + Space**, type `Terminal`, press Enter.
+
 ---
 
 ## Step 1 — Download and install VS Code
@@ -45,7 +49,7 @@ Homebrew is a package manager for Mac. It lets you install developer
 tools with a single command. Install it first — everything else
 depends on it.
 
-Paste this entire command into Terminal and press Enter:
+Run this in Terminal:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -92,6 +96,8 @@ If you are on an older Intel Mac you can skip straight to verifying the version.
 Git tracks changes to code and lets the team share work.
 Every project uses it.
 
+Run this in Terminal:
+
 ```bash
 brew install git
 ```
@@ -127,11 +133,16 @@ You should see `v20.x.x` or higher.
 The GitHub CLI lets the spinup script create and manage GitHub repos
 automatically on your behalf.
 
+Run this in Terminal:
+
 ```bash
 brew install gh
 ```
 
 Then log in to GitHub:
+
+Run this in Terminal:
+
 ```bash
 gh auth login
 ```
@@ -158,11 +169,16 @@ You should see: `Logged in to github.com`
 The Supabase CLI lets the spinup script create and manage databases
 automatically.
 
+Run this in Terminal:
+
 ```bash
 brew install supabase/tap/supabase
 ```
 
 Then log in to Supabase:
+
+Run this in Terminal:
+
 ```bash
 supabase login
 ```
@@ -183,16 +199,24 @@ You should see a list of projects (or an empty list — both are fine).
 The Vercel CLI lets the spinup script create and deploy projects
 automatically.
 
+Run this in Terminal:
+
 ```bash
 npm install -g vercel
 ```
 
 If you see a permissions error, run it with sudo instead:
+
+Run this in Terminal:
+
 ```bash
 sudo npm install -g vercel
 ```
 
 Then log in to Vercel:
+
+Run this in Terminal:
+
 ```bash
 vercel login
 ```
@@ -213,6 +237,8 @@ You should see your Vercel username.
 
 jq processes JSON data. The spinup script uses it internally.
 
+Run this in Terminal:
+
 ```bash
 brew install jq
 ```
@@ -229,6 +255,8 @@ You should see `jq-1.x`
 
 The teardown script uses `pg_dump` to export database backups
 before removing a project.
+
+Run this in Terminal:
 
 ```bash
 brew install postgresql
@@ -252,6 +280,8 @@ They live in a file called `.zshrc` which Terminal reads every
 time it opens.
 
 ### Open your shell profile in VS Code
+
+Run this in Terminal:
 
 ```bash
 code ~/.zshrc
@@ -398,12 +428,14 @@ Each should print its value — not blank.
 
 Keep all lab projects in one place.
 
+Run this in Terminal to create the folder:
+
 ```bash
 mkdir ~/projects
 ```
 
-This creates a `projects` folder in your home directory.
-Every project you spin up will live here.
+This creates a folder called `projects` in your home directory.
+You only need to do this once.
 
 ---
 
@@ -415,12 +447,17 @@ so the spinup and teardown scripts are available on your machine.
 Cloning means downloading a copy of the repo so you can use it
 and run scripts from it locally.
 
+Run this in Terminal:
+
 ```bash
 cd ~/projects
 git clone https://github.com/friends-innovation-lab/playbook.git
 ```
 
 Open it in VS Code:
+
+Run this in Terminal:
+
 ```bash
 cd playbook
 code .
@@ -431,6 +468,8 @@ code .
 ## Step 14 — Run the pre-flight checks
 
 This confirms your machine is set up correctly.
+
+Run this in Terminal:
 
 ```bash
 bash ~/projects/playbook/operations/automation/spinup.sh
