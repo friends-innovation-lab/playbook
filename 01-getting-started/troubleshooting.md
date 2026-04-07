@@ -303,6 +303,32 @@ Ask Lapedra about the lab's Figma plan.
 
 ---
 
+## Claude Code not connecting
+
+**Symptom:** You installed the Claude Code extension but the panel
+shows a sign-in button even after logging in, or the Claude icon
+does not appear in the sidebar.
+
+**Fix 1 — Reload VS Code**
+Press **Command + Shift + P**, type `Reload Window`, press Enter.
+This restarts VS Code without closing it. Try signing in again.
+
+**Fix 2 — Check you installed the right extension**
+In the Extensions panel search for Claude Code and confirm it says
+published by **Anthropic**. There are other Claude extensions —
+make sure it is the official Anthropic one.
+
+**Fix 3 — Sign out and back in**
+In the Claude Code panel click the account menu and sign out.
+Then click Sign in again and go through the browser flow.
+
+**Fix 4 — Check your subscription**
+Claude Code requires an active Anthropic account with a Claude
+subscription. If your account does not have access, ask Lapedra
+to check the team plan.
+
+---
+
 ## Something else is wrong
 
 If your issue is not listed here:

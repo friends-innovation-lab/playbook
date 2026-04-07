@@ -446,6 +446,19 @@ so the spinup and teardown scripts are available on your machine.
 Cloning means downloading a copy of the repo so you can use it
 and run scripts from it locally.
 
+> **Important:** Before cloning, make sure you are in your projects
+> folder, not inside another project or the playbook folder.
+> Run this first to confirm where you are:
+> ```bash
+> pwd
+> ```
+> You should see `/Users/[yourname]/projects`
+> If you see anything else, run:
+> ```bash
+> cd ~/projects
+> ```
+> Then continue with the steps below.
+
 Run this in Terminal:
 
 ```bash
@@ -498,24 +511,48 @@ Send her your GitHub username and the email you use for each service.
 
 ---
 
-## Step 16 — Set up Claude Code in VS Code
+## Step 16 — Install Claude Code in VS Code
 
-Claude Code (CC) is the AI coding assistant the lab uses inside VS Code.
-It can read your project, write code, run commands, and connect to
-external tools like Figma and GitHub.
+Claude Code (CC) is the AI assistant the lab uses to build projects.
+It works directly inside VS Code with full access to your project files.
 
+**Install the Claude Code extension:**
 1. Open VS Code
-2. Go to **Extensions** (click the square icon in the left sidebar or press **Command + Shift + X**)
-3. Search for **Claude Code**
-4. Click **Install**
-5. Once installed, open the terminal inside VS Code (**View → Terminal**)
-6. Type `claude` and press Enter
-7. Follow the prompts to sign in with your Anthropic account
+2. Click the **Extensions** icon in the left sidebar —
+   it looks like four small squares stacked together
+3. A search bar appears at the top of the Extensions panel
+4. Type `Claude Code` in the search bar
+5. Look for the extension named **Claude Code** published by **Anthropic**
+6. Click the blue **Install** button next to it
+7. Wait for it to finish installing
 
-**Verify it worked:** After signing in, type `claude` in the terminal.
-You should see the Claude Code prompt ready for input.
+**Connect to your Anthropic account:**
+1. After installing, look at the left sidebar in VS Code —
+   you will see a new icon that looks like the Claude logo
+   (a small diamond/sparkle shape)
+2. Click that icon
+3. A panel opens on the left side of VS Code
+4. Click **Sign in to Claude**
+5. A browser window opens automatically
+6. Log in with your Anthropic account email and password
+7. Click **Authorize** when prompted
+8. Switch back to VS Code — you should now see Claude Code
+   is connected and ready
 
-> Having trouble? See [Troubleshooting guide](troubleshooting.md)
+**Verify it worked:**
+You should see your account email or name at the top of the
+Claude Code panel in VS Code. If you see a sign-in button
+it means the connection did not complete — try step 4 again.
+
+**How to use CC on a project:**
+1. Open your project folder in VS Code
+2. Click the Claude icon in the left sidebar
+3. Type your request in the chat panel
+4. Always start by telling CC to read the project context:
+   `Read CLAUDE.md first, then tell me what you understand
+   about this project before we start.`
+
+> Having trouble? See [Claude Code not connecting](troubleshooting.md#claude-code-not-connecting)
 
 ### If you are a builder (working on prototypes)
 
