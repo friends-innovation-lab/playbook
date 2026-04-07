@@ -277,6 +277,32 @@ Nothing appears as you type — that is normal.
 
 ---
 
+## Figma MCP not connecting
+
+**Symptom:** You run `/mcp` in Claude Code and don't see Figma
+listed, or CC says it cannot access Figma files.
+
+**Fix 1 — Restart Claude Code**
+MCP connections initialize at startup. If you added the plugin
+mid-session, restart Claude Code completely and try again.
+
+**Fix 2 — Re-authenticate**
+Run `/mcp` in Claude Code, select the Figma server, choose
+Authenticate, and complete the OAuth flow in your browser.
+Make sure you are logged into the correct Figma account.
+
+**Fix 3 — Reinstall the plugin**
+```bash
+claude plugin install figma@claude-plugins-official
+```
+
+**Fix 4 — Check your Figma plan**
+The Figma MCP has usage limits on free plans (6 tool calls per month).
+If you have hit the limit, you will need a paid Figma seat.
+Ask Lapedra about the lab's Figma plan.
+
+---
+
 ## Something else is wrong
 
 If your issue is not listed here:

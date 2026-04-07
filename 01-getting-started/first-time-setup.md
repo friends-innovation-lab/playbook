@@ -459,6 +459,47 @@ Send her your GitHub username and the email you use for each service.
 
 ---
 
+## Step 16 — Set up Claude Code in VS Code
+
+Claude Code (CC) is the AI coding assistant the lab uses inside VS Code.
+It can read your project, write code, run commands, and connect to
+external tools like Figma and GitHub.
+
+1. Open VS Code
+2. Go to **Extensions** (click the square icon in the left sidebar or press **Command + Shift + X**)
+3. Search for **Claude Code**
+4. Click **Install**
+5. Once installed, open the terminal inside VS Code (**View → Terminal**)
+6. Type `claude` and press Enter
+7. Follow the prompts to sign in with your Anthropic account
+
+**Verify it worked:** After signing in, type `claude` in the terminal.
+You should see the Claude Code prompt ready for input.
+
+> Having trouble? See [Troubleshooting guide](troubleshooting.md)
+
+### If you are a builder (working on prototypes)
+
+You also need to install the Figma plugin so CC can read and write
+to Figma files directly. This is only needed for people building
+prototypes — not everyone on the team needs this.
+
+Open the terminal inside VS Code (View → Terminal) and run:
+```bash
+claude plugin install figma@claude-plugins-official
+```
+
+Follow the prompts to authenticate with your Figma account.
+Make sure you are logged into the correct Figma account before
+clicking Allow — the one connected to the Innovation Lab org.
+
+**Verify it worked:** In the terminal type `claude` to open CC,
+then type `/mcp` and look for `figma` in the installed list.
+
+> Having trouble? See [Figma MCP not connecting](troubleshooting.md#figma-mcp-not-connecting)
+
+---
+
 ## Daily Git commands
 
 You will use these every day on projects.
