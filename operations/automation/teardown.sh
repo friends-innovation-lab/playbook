@@ -316,14 +316,23 @@ if [ "$DO_SUPABASE" = true ]; then
     echo ""
     SUPABASE_RESULT="No project found — already deleted or never created"
   else
-    # 5b. Export the database
-    EXPORT_OK=true
-    if ! supabase db dump --project-ref "$SUPABASE_PROJECT_REF" --file "$BACKUP_FILE" 2>/dev/null; then
-      EXPORT_OK=false
+    # 5b. Export the database via Management API
+    echo "  Exporting database..."
+
+    curl -s \
+      "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/backups/download" \
+      -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+      --output "$BACKUP_FILE"
+
+    if [ -s "$BACKUP_FILE" ]; then
+      ok "Database exported to: ${BACKUP_FILE}"
+      BACKUP_RESULT="Database exported to: ${BACKUP_FILE}"
+    else
+      rm -f "$BACKUP_FILE"
       echo ""
-      echo -e "${RED}Database export failed.${NC}"
-      echo "Before continuing, manually export your data from:"
-      echo "https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/editor"
+      warn "Automatic export failed."
+      echo "  Manually export from:"
+      echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/database"
       echo ""
       printf "Do you want to continue without a backup? (y/n) > "
       read -r CONTINUE_NO_BACKUP
@@ -338,11 +347,6 @@ if [ "$DO_SUPABASE" = true ]; then
       warn "Continuing without a database backup."
       echo ""
       BACKUP_RESULT="Export failed — continued without backup"
-    fi
-
-    if [ "$EXPORT_OK" = true ]; then
-      ok "Database exported to: ${BACKUP_FILE}"
-      BACKUP_RESULT="Database exported to: ${BACKUP_FILE}"
     fi
 
     # 5c. Delete the Supabase project
