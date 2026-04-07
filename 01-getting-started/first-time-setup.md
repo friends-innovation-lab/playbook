@@ -6,6 +6,7 @@ Follow every step in order — do not skip anything.
 When you are done, every pre-flight check in the spinup script
 will pass and you will be ready to start your first project.
 
+> [!NOTE]
 > **All commands in this guide are run in Terminal.**
 > If you closed Terminal, reopen it before continuing.
 > Press **Command + Space**, type `Terminal`, press Enter.
@@ -87,6 +88,7 @@ You should see `Homebrew 4.x.x`
 **Note:** This extra step is only required on Macs with Apple Silicon (M1, M2, M3 chips).
 If you are on an older Intel Mac you can skip straight to verifying the version.
 
+> [!TIP]
 > Having trouble? See [Homebrew installation issues](troubleshooting.md#homebrew-not-found-after-installation)
 
 ---
@@ -119,6 +121,10 @@ requires Node.js version 20 or higher.
 2. Click the button labeled **LTS** (not Current)
 3. Open the downloaded file and follow the installer steps
 4. When it finishes, **close Terminal and reopen it**
+
+> [!IMPORTANT]
+> You must close Terminal completely and reopen it after installing
+> Node.js. The `node` command will not work until you do.
 
 **Verify it worked:**
 ```bash
@@ -229,6 +235,7 @@ vercel whoami
 ```
 You should see your Vercel username.
 
+> [!TIP]
 > Having trouble? See [Vercel CLI permissions error](troubleshooting.md#vercel-cli-install-fails-with-permissions-error)
 
 ---
@@ -329,6 +336,10 @@ This lets the spinup script create Vercel projects on your behalf.
 9. **Copy the token immediately** — Vercel only shows it once
 10. Paste it after `VERCEL_TOKEN=` in your `.zshrc`
 
+> [!IMPORTANT]
+> Copy the token immediately. Vercel only shows it once — if you
+> close the page without copying, you will need to create a new token.
+
 ---
 
 ### VERCEL_ORG_ID
@@ -356,6 +367,10 @@ This lets the spinup script create Supabase projects on your behalf.
 7. Click **Generate**
 8. **Copy the token immediately** — Supabase only shows it once
 9. Paste it after `SUPABASE_ACCESS_TOKEN=` in your `.zshrc`
+
+> [!IMPORTANT]
+> Copy the token immediately. Supabase only shows it once — if you
+> close the page without copying, you will need to generate a new token.
 
 ---
 
@@ -419,6 +434,7 @@ echo $SUPABASE_ACCESS_TOKEN
 ```
 Each should print its value — not blank.
 
+> [!TIP]
 > Having trouble? See [Environment variable shows blank](troubleshooting.md#pre-flight-checks-fail-after-setup)
 
 ---
@@ -446,8 +462,9 @@ so the spinup and teardown scripts are available on your machine.
 Cloning means downloading a copy of the repo so you can use it
 and run scripts from it locally.
 
-> **Important:** Before cloning, make sure you are in your projects
-> folder, not inside another project or the playbook folder.
+> [!WARNING]
+> **Before cloning, make sure you are in your projects
+> folder, not inside another project or the playbook folder.**
 > Run this first to confirm where you are:
 > ```bash
 > pwd
@@ -493,6 +510,7 @@ tell you exactly what to fix. Fix it and run the script again.
 You do not need to complete a full spinup right now — just confirm
 all the checks pass and then press Control + C to exit.
 
+> [!TIP]
 > Having trouble? See [Troubleshooting guide](troubleshooting.md)
 
 ---
@@ -552,6 +570,7 @@ it means the connection did not complete — try step 4 again.
    `Read CLAUDE.md first, then tell me what you understand
    about this project before we start.`
 
+> [!TIP]
 > Having trouble? See [Claude Code not connecting](troubleshooting.md#claude-code-not-connecting)
 
 ### If you are a builder (working on prototypes)
@@ -572,6 +591,7 @@ clicking Allow — the one connected to the Innovation Lab org.
 **Verify it worked:** In the terminal type `claude` to open CC,
 then type `/mcp` and look for `figma` in the installed list.
 
+> [!TIP]
 > Having trouble? See [Figma MCP not connecting](troubleshooting.md#figma-mcp-not-connecting)
 
 ---
