@@ -1,0 +1,2 @@
+# Teardown logs — may contain project names and dates that should stay local
+operations/teardown-log/*.md
