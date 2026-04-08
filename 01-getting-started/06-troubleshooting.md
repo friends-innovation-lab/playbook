@@ -295,6 +295,64 @@ Nothing appears as you type — that is normal.
 
 ---
 
+## Git commit fails — user identity not configured
+
+*↩ Related to [Step 4 — Install Git](01-first-time-setup.md#step-4--install-git)*
+
+**Symptom:** You try to commit and see:
+```
+Author identity unknown
+*** Please tell me who you are.
+```
+
+**Why it happens:** Git requires a name and email before it will
+create a commit. This is separate from your GitHub login.
+
+**How to fix it:**
+
+Run this in Terminal:
+
+```bash
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+```
+
+> [!IMPORTANT]
+> Use the email address that is on your GitHub account.
+> Ask Lapedra if you are not sure which email to use.
+
+Then retry your commit.
+
+---
+
+## Spinup fails pushing develop branch
+
+*↩ Related to [Creating a project — Spinning up a project](04-creating-a-project.md#spinning-up-a-project)*
+
+**Symptom:** The spinup script fails when trying to push the
+`develop` branch. You see an error like:
+```
+error: src refspec develop does not match any
+```
+
+**Why it happens:** The repo was created but the initial commit
+or branch setup did not complete correctly.
+
+**How to fix it:**
+
+Run these commands from inside your project folder:
+
+```bash
+git pull origin main
+git checkout -b develop
+git push origin develop
+```
+
+This pulls the latest from main, creates the develop branch
+locally, and pushes it to GitHub.
+
+---
+
 ## Figma MCP not connecting
 
 *↩ Related to [If you are a builder — creating-a-project.md](04-creating-a-project.md#if-you-are-a-builder)*
