@@ -189,6 +189,37 @@ Use descriptive names like `feature/login-page` or `fix/mobile-nav`.
 
 ---
 
+## Working with CC
+
+Once your project is open in VS Code, here is how to work with CC.
+
+**Open CC:**
+Click the **Claude icon** in the left sidebar.
+
+**Start every session the same way:**
+Before asking CC to build anything, always orient it to the project first:
+Read CLAUDE.md first, then tell me what you understand
+about this project before we start.
+
+This makes CC read the project context — the stack, standards,
+and current focus — before writing any code. Without this step
+CC may make incorrect assumptions.
+
+**Keep CLAUDE.md updated:**
+The `## Current Focus` section at the bottom of CLAUDE.md is
+the most important part. Update it every time priorities change.
+A stale CLAUDE.md means CC works with wrong assumptions.
+
+**Starter prompts:**
+For new features use the starter prompts in the playbook to get
+50% of the way there fast:
+→ [03-building/prompts/](../03-building/prompts/README.md)
+
+> [!TIP]
+> Having trouble with CC? See [Claude Code not connecting](troubleshooting.md#claude-code-not-connecting)
+
+---
+
 ## Something not working after spinup?
 
 → [Troubleshooting](troubleshooting.md)
