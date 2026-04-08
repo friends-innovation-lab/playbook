@@ -775,6 +775,16 @@ fi
 ok "Dependencies installed"
 echo ""
 
+echo "  Installing Playwright browsers..."
+npx playwright install chromium
+if [ $? -eq 0 ]; then
+  echo -e "${GREEN}  ✓ Playwright browsers installed${NC}"
+else
+  echo -e "${YELLOW}  ⚠ Playwright install failed — run: npx playwright install chromium${NC}"
+fi
+
+echo ""
+
 # ═════════════════════════════════════════════════════════
 # STEP 8 — Vercel setup
 # ═════════════════════════════════════════════════════════
