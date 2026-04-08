@@ -8,7 +8,7 @@ you have a real project to spin up.
 
 ## Before you start
 
-Make sure you have completed [first-time-setup.md](first-time-setup.md)
+Make sure you have completed [first-time-setup.md](01-first-time-setup.md)
 and all pre-flight checks pass. If you are not sure, run:
 ```bash
 bash ~/projects/playbook/operations/automation/spinup.sh
@@ -83,7 +83,7 @@ Type `claude` in the terminal to open CC, then type `/mcp` and
 look for `figma` in the installed list.
 
 > [!TIP]
-> Having trouble? See [Figma MCP not connecting](troubleshooting.md#figma-mcp-not-connecting)
+> Having trouble? See [Figma MCP not connecting](06-troubleshooting.md#figma-mcp-not-connecting)
 
 ### 2. Get access to the Innovation Lab Design System in Figma
 
@@ -216,10 +216,10 @@ For new features use the starter prompts in the playbook to get
 → [03-building/prompts/](../03-building/prompts/README.md)
 
 > [!TIP]
-> Having trouble with CC? See [Claude Code not connecting](troubleshooting.md#claude-code-not-connecting)
+> Having trouble with CC? See [Claude Code not connecting](06-troubleshooting.md#claude-code-not-connecting)
 
 ---
 
 ## Something not working after spinup?
 
-→ [Troubleshooting](troubleshooting.md)
+→ [Troubleshooting](06-troubleshooting.md)

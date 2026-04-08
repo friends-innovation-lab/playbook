@@ -50,5 +50,5 @@ the email you'll use for each service. She'll get you added.
 
 ## Environment variables
 
-See [first-time-setup.md](first-time-setup.md) for the full list of
+See [first-time-setup.md](01-first-time-setup.md) for the full list of
 environment variables you need and where to get each value.

@@ -89,7 +89,7 @@ You should see `Homebrew 4.x.x`
 If you are on an older Intel Mac you can skip straight to verifying the version.
 
 > [!TIP]
-> Having trouble? See [Homebrew installation issues](troubleshooting.md#homebrew-not-found-after-installation)
+> Having trouble? See [Homebrew installation issues](06-troubleshooting.md#homebrew-not-found-after-installation)
 
 ---
 
@@ -236,7 +236,7 @@ vercel whoami
 You should see your Vercel username.
 
 > [!TIP]
-> Having trouble? See [Vercel CLI permissions error](troubleshooting.md#vercel-cli-install-fails-with-permissions-error)
+> Having trouble? See [Vercel CLI permissions error](06-troubleshooting.md#vercel-cli-install-fails-with-permissions-error)
 
 ---
 
@@ -401,7 +401,7 @@ echo $SUPABASE_ACCESS_TOKEN
 Each should print its value — not blank.
 
 > [!TIP]
-> Having trouble? See [Environment variable shows blank](troubleshooting.md#pre-flight-checks-fail-after-setup)
+> Having trouble? See [Environment variable shows blank](06-troubleshooting.md#pre-flight-checks-fail-after-setup)
 
 ---
 
@@ -516,7 +516,7 @@ it means the connection did not complete — try step 4 again.
    about this project before we start.`
 
 > [!TIP]
-> Having trouble? See [Claude Code not connecting](troubleshooting.md#claude-code-not-connecting)
+> Having trouble? See [Claude Code not connecting](06-troubleshooting.md#claude-code-not-connecting)
 
 ---
 
@@ -527,6 +527,6 @@ You will not need to do any of this again.
 
 **What's next depends on what you need to do:**
 
-→ Starting a new project? See [Creating a project](creating-a-project.md)
-→ Wrapping up a project? See [Ending a project](ending-a-project.md)
-→ Something not working? See [Troubleshooting](troubleshooting.md)
+→ Starting a new project? See [Creating a project](04-creating-a-project.md)
+→ Wrapping up a project? See [Ending a project](05-ending-a-project.md)
+→ Something not working? See [Troubleshooting](06-troubleshooting.md)

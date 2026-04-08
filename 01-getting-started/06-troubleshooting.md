@@ -7,7 +7,7 @@ work correctly. Find your issue below and follow the steps.
 
 ## Homebrew not found after installation
 
-*↩ Related to [Step 3 — Install Homebrew](first-time-setup.md#step-3--install-homebrew)*
+*↩ Related to [Step 3 — Install Homebrew](01-first-time-setup.md#step-3--install-homebrew)*
 
 **Symptom:** You run `brew --version` and see:
 ```
@@ -46,7 +46,7 @@ You should see `Homebrew 4.x.x`.
 
 ## Supabase keys are empty after spinup
 
-*↩ Related to [Step 7 — Install Supabase CLI](first-time-setup.md#step-7--install-supabase-cli)*
+*↩ Related to [Step 7 — Install Supabase CLI](01-first-time-setup.md#step-7--install-supabase-cli)*
 
 **Symptom:** The spinup script completed but `.env.local` has
 blank values for `NEXT_PUBLIC_SUPABASE_URL` and
@@ -93,7 +93,7 @@ were ready.
 
 ## Dev server crashes with Supabase error
 
-*↩ Related to [Step 7 — Install Supabase CLI](first-time-setup.md#step-7--install-supabase-cli)*
+*↩ Related to [Step 7 — Install Supabase CLI](01-first-time-setup.md#step-7--install-supabase-cli)*
 
 **Symptom:** You run `npm run dev` and see:
 ```
@@ -110,7 +110,7 @@ are empty.
 
 ## Vercel environment variables not set
 
-*↩ Related to [Step 11 — Set up your environment variables](first-time-setup.md#step-11--set-up-your-environment-variables)*
+*↩ Related to [Step 11 — Set up your environment variables](01-first-time-setup.md#step-11--set-up-your-environment-variables)*
 
 **Symptom:** The spinup script completed but when you open your
 project on the live URL it shows errors that don't happen locally.
@@ -141,7 +141,7 @@ variables may have failed silently.
 
 ## Subdomain not resolving
 
-*↩ Related to [Step 8 — Install Vercel CLI](first-time-setup.md#step-8--install-vercel-cli)*
+*↩ Related to [Step 8 — Install Vercel CLI](01-first-time-setup.md#step-8--install-vercel-cli)*
 
 **Symptom:** `[name].labs.cityfriends.tech` returns an error or
 does not load.
@@ -169,7 +169,7 @@ or the domain was not configured correctly in Vercel.
 
 ## GitHub repo was not created
 
-*↩ Related to [Step 6 — Install GitHub CLI](first-time-setup.md#step-6--install-github-cli)*
+*↩ Related to [Step 6 — Install GitHub CLI](01-first-time-setup.md#step-6--install-github-cli)*
 
 **Symptom:** The spinup script exited early or the GitHub repo
 does not appear under `github.com/friends-innovation-lab`.
@@ -200,7 +200,7 @@ does not appear under `github.com/friends-innovation-lab`.
 
 ## Pre-flight checks fail after setup
 
-*↩ Related to [Creating a project — Before you start](creating-a-project.md#before-you-start)*
+*↩ Related to [Creating a project — Before you start](04-creating-a-project.md#before-you-start)*
 
 **Symptom:** You ran through all of first-time-setup.md but
 the spinup script still shows ✗ for some checks.
@@ -241,7 +241,7 @@ supabase login
 
 ## Sentry DSN not set
 
-*↩ Related to [Step 11 — Set up your environment variables](first-time-setup.md#step-11--set-up-your-environment-variables)*
+*↩ Related to [Step 11 — Set up your environment variables](01-first-time-setup.md#step-11--set-up-your-environment-variables)*
 
 **Symptom:** The app runs but errors are not appearing in Sentry,
 or you see a warning about a missing DSN.
@@ -273,7 +273,7 @@ automatically.
 
 ## Vercel CLI install fails with permissions error
 
-*↩ Related to [Step 8 — Install Vercel CLI](first-time-setup.md#step-8--install-vercel-cli)*
+*↩ Related to [Step 8 — Install Vercel CLI](01-first-time-setup.md#step-8--install-vercel-cli)*
 
 **Symptom:** You see this error when running `npm install -g vercel`:
 ```
@@ -297,7 +297,7 @@ Nothing appears as you type — that is normal.
 
 ## Figma MCP not connecting
 
-*↩ Related to [If you are a builder — creating-a-project.md](creating-a-project.md#if-you-are-a-builder)*
+*↩ Related to [If you are a builder — creating-a-project.md](04-creating-a-project.md#if-you-are-a-builder)*
 
 **Symptom:** You run `/mcp` in Claude Code and don't see Figma
 listed, or CC says it cannot access Figma files.
@@ -325,7 +325,7 @@ Ask Lapedra about the lab's Figma plan.
 
 ## Claude Code not connecting
 
-*↩ Related to [Step 15 — Install Claude Code in VS Code](first-time-setup.md#step-15--install-claude-code-in-vs-code)*
+*↩ Related to [Step 15 — Install Claude Code in VS Code](01-first-time-setup.md#step-15--install-claude-code-in-vs-code)*
 
 **Symptom:** You installed the Claude Code extension but the panel
 shows a sign-in button even after logging in, or the Claude icon
@@ -353,7 +353,7 @@ to check the team plan.
 
 ## Something else is wrong
 
-*↩ Related to [Creating a project — Before you start](creating-a-project.md#before-you-start)*
+*↩ Related to [Creating a project — Before you start](04-creating-a-project.md#before-you-start)*
 
 If your issue is not listed here:
 

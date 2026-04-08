@@ -22,8 +22,8 @@ Every project we spin up is:
 ## How to use this playbook
 
 **New to the lab?** Start here:
-→ [First-time setup](01-getting-started/first-time-setup.md)
-→ [What we build](01-getting-started/what-we-build.md)
+→ [First-time setup](01-getting-started/01-first-time-setup.md)
+→ [What we build](01-getting-started/02-what-we-build.md)
 
 **Starting a new project?**
 → [Spinup script](operations/automation/README.md)

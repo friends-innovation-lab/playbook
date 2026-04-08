@@ -32,4 +32,4 @@ projects, and creates a teardown record.
 ## Before you run either script
 
 Make sure your machine is set up correctly:
-→ [First-time setup](../01-getting-started/first-time-setup.md)
+→ [First-time setup](../01-getting-started/01-first-time-setup.md)
