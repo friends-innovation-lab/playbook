@@ -18,6 +18,43 @@ The script will check everything before doing anything.
 
 ---
 
+## Before your first spinup
+
+Before running the spinup script for the first time you need two
+shared credentials added to your shell profile. These are managed
+by Lapedra and shared across all lab projects — you only set them
+once and every project uses them automatically.
+
+Ask Lapedra for:
+- `RESEND_API_KEY` — used for transactional emails
+- `UPSTASH_REDIS_REST_URL` — used for rate limiting
+- `UPSTASH_REDIS_REST_TOKEN` — used for rate limiting
+
+Once she gives you the values, open your shell profile:
+```bash
+code ~/.zshrc
+```
+
+Add these lines at the bottom:
+```bash
+# Shared lab services
+export RESEND_API_KEY=
+export UPSTASH_REDIS_REST_URL=
+export UPSTASH_REDIS_REST_TOKEN=
+```
+
+Paste each value after the `=` sign, save the file, then reload:
+```bash
+source ~/.zshrc
+```
+
+> [!IMPORTANT]
+> Do this before running the spinup script for the first time.
+> The script will automatically inject these into every project
+> you create from that point forward.
+
+---
+
 ## If you are a builder
 
 Builders work directly with CC to design and build prototypes.

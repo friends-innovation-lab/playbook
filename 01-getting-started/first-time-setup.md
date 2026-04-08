@@ -310,11 +310,6 @@ export GITHUB_ORG=friends-innovation-lab
 export SUPABASE_ORG_ID=
 export SUPABASE_ACCESS_TOKEN=
 export LABS_DOMAIN=labs.cityfriends.tech
-
-# Shared services — used across all projects
-export RESEND_API_KEY=
-export UPSTASH_REDIS_REST_URL=
-export UPSTASH_REDIS_REST_TOKEN=
 ```
 
 Now fill in the blank values using the steps below.
@@ -387,32 +382,6 @@ This tells the script which Supabase organization to create projects under.
    on your Supabase version
 6. Copy that value
 7. Paste it after `SUPABASE_ORG_ID=` in your `.zshrc`
-
----
-
-### RESEND_API_KEY
-
-Resend sends transactional emails across all lab projects.
-This is a shared credential managed by Lapedra.
-
-> [!IMPORTANT]
-> Ask Lapedra for this value — do not create your own Resend account.
-> She will provide the key directly.
-
-Paste the value she gives you after `RESEND_API_KEY=` in your `.zshrc`
-
----
-
-### Upstash credentials
-
-Upstash handles rate limiting across all lab projects.
-These are shared credentials managed by Lapedra.
-
-> [!IMPORTANT]
-> Ask Lapedra for these values — do not create your own Upstash account.
-> She will provide both values directly.
-
-Paste the values she gives you after the matching variables in your `.zshrc`
 
 ---
 
