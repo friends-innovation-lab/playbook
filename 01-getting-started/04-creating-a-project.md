@@ -6,6 +6,36 @@ you have a real project to spin up.
 
 ---
 
+## The build loop
+
+Every project follows this loop:
+
+```
+Brief arrives
+↓
+Discuss + extract requirements
+↓
+CC designs screens in Figma using starter prompt + design system
+↓
+You review and iterate in Figma until decisions are made
+↓
+Spinup script → infrastructure created
+↓
+CC builds from Figma designs → working prototype
+↓
+Polish + accessibility
+↓
+Submit or demo
+```
+
+Design comes before spinup because the spinup script creates
+real infrastructure — a live database, deployed app, costs
+accruing. The Figma design phase is free — CC draws screens,
+you change direction, nothing is committed. By the time you
+run spinup you know exactly what you're building.
+
+---
+
 ## Before you start
 
 Make sure you have completed [first-time-setup.md](01-first-time-setup.md)
@@ -132,6 +162,12 @@ It takes under 10 minutes. When it finishes you will have:
 
 For full details on what the script does:
 → [operations/automation/README.md](../operations/automation/README.md)
+
+> [!NOTE]
+> Run this once after spinup to install the accessibility test browser:
+> ```bash
+> npx playwright install chromium
+> ```
 
 ---
 
