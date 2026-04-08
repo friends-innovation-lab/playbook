@@ -33,8 +33,14 @@ Demo date: [date]
 
 Stack: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui,
 Supabase. Follow all standards in CLAUDE.md.
+Reference the project Storybook for component variants and states:
+https://storybook.[name].labs.cityfriends.tech
+(Replace [name] with the actual project name)
 
 VISUAL INTENT
+
+Reference Storybook component stories for exact variant and
+state implementations before building any UI.
 
 This prototype must look bold and high contrast — not safe or generic.
 Landing page: fftc-black (#0D0D0D) background, white headline,
