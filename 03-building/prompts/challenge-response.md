@@ -34,6 +34,18 @@ Demo date: [date]
 Stack: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui,
 Supabase. Follow all standards in CLAUDE.md.
 
+VISUAL INTENT
+
+This prototype must look bold and high contrast — not safe or generic.
+Landing page: fftc-black (#0D0D0D) background, white headline,
+yellow (#FFD230) CTA button with black text.
+App pages (forms, steps, results): fftc-white (#FEFAF1) warm
+off-white background, fftc-black text.
+Headers: always full-width fftc-black on every screen.
+Progress indicators: fftc-yellow.
+Selected/active states: fftc-yellow border and tint.
+Read the Visual Design Rules in CLAUDE.md before building any UI.
+
 This prototype will be evaluated by a federal panel. Every detail matters.
 Build the following:
 
