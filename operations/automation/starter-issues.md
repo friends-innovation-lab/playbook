@@ -1,20 +1,20 @@
 # Starter Issues
 
-Standard issues created for every project, organized by PIM phase.
+Standard issues created for every project, organized by project stage.
 
-> **Note:** This document contains detailed issue templates for reference. The `spinup.sh` script creates a simplified version of these issues automatically. Use this document when you need to manually create issues or want to understand the full scope of work for each phase.
+> **Note:** This document contains detailed issue templates for reference. The `spinup.sh` script creates a simplified version of these issues automatically. Use this document when you need to manually create issues or want to understand the full scope of work for each stage.
 
 ---
 
 ## Labels (Created First)
 
 ```bash
-# Phase labels (blue)
-gh label create "phase:ground" --color "0052CC" --description "Ground phase work"
-gh label create "phase:sense" --color "0052CC" --description "Sense phase work"
-gh label create "phase:shape" --color "0052CC" --description "Shape phase work"
-gh label create "phase:test" --color "0052CC" --description "Test phase work"
-gh label create "phase:embed" --color "0052CC" --description "Embed phase work"
+# Stage labels (blue)
+gh label create "stage:discovery" --color "0052CC" --description "Discovery stage work"
+gh label create "stage:research" --color "0052CC" --description "Research stage work"
+gh label create "stage:design" --color "0052CC" --description "Design stage work"
+gh label create "stage:build" --color "0052CC" --description "Build stage work"
+gh label create "stage:handoff" --color "0052CC" --description "Handoff stage work"
 
 # Type labels (green)
 gh label create "type:research" --color "0E8A16" --description "Interviews, discovery, analysis"
@@ -33,25 +33,25 @@ gh label create "client-review" --color "FBCA04" --description "Waiting on clien
 ## Milestones (Created Second)
 
 ```bash
-gh milestone create "1. Ground" --description "Establish legitimacy and constraints"
-gh milestone create "2. Sense" --description "Develop shared understanding of users and systems"
-gh milestone create "3. Shape" --description "Design viable pathways"
-gh milestone create "4. Test" --description "Validate in real conditions"
-gh milestone create "5. Embed" --description "Ensure work lasts beyond the project"
+gh milestone create "1. Discovery" --description "Establish legitimacy and constraints"
+gh milestone create "2. Research" --description "Develop shared understanding of users and systems"
+gh milestone create "3. Design" --description "Design viable pathways"
+gh milestone create "4. Build" --description "Validate in real conditions"
+gh milestone create "5. Handoff" --description "Ensure work lasts beyond the project"
 ```
 
 ---
 
-## Ground Phase Issues
+## Discovery Stage Issues
 
 ### G1: Identify stakeholders to interview
 
 ```markdown
 **Title:** Identify stakeholders to interview
 
-**Labels:** phase:ground, type:research
+**Labels:** stage:discovery, type:research
 
-**Milestone:** 1. Ground
+**Milestone:** 1. Discovery
 
 **Body:**
 ## Task
@@ -69,7 +69,7 @@ Identify 5-8 stakeholders across these categories:
 - [ ] Priority order determined
 
 ## Links
-- [Ground Phase Guide](../../methodology/ground/README.md)
+- [Getting Started Guide](../../operations/getting-started-guide.md)
 ```
 
 ---
@@ -79,9 +79,9 @@ Identify 5-8 stakeholders across these categories:
 ```markdown
 **Title:** Schedule stakeholder interviews
 
-**Labels:** phase:ground, type:internal
+**Labels:** stage:discovery, type:internal
 
-**Milestone:** 1. Ground
+**Milestone:** 1. Discovery
 
 **Body:**
 ## Task
@@ -94,7 +94,7 @@ Schedule 45-60 minute interviews with identified stakeholders.
 - [ ] Note-taking template ready
 
 ## Links
-- [Interview Questions](../../methodology/ground/README.md#ground-phase-interview-questions)
+- [Getting Started Guide](../../operations/getting-started-guide.md)
 ```
 
 ---
@@ -104,9 +104,9 @@ Schedule 45-60 minute interviews with identified stakeholders.
 ```markdown
 **Title:** Conduct stakeholder interviews
 
-**Labels:** phase:ground, type:research
+**Labels:** stage:discovery, type:research
 
-**Milestone:** 1. Ground
+**Milestone:** 1. Discovery
 
 **Body:**
 ## Task
@@ -119,7 +119,7 @@ Conduct all scheduled stakeholder interviews. Capture notes in `/notes/interview
 - [ ] Follow-up items noted
 
 ## Links
-- [Interview Note Template](../../methodology/ground/README.md)
+- [Getting Started Guide](../../operations/getting-started-guide.md)
 ```
 
 ---
@@ -129,9 +129,9 @@ Conduct all scheduled stakeholder interviews. Capture notes in `/notes/interview
 ```markdown
 **Title:** Technical discovery
 
-**Labels:** phase:ground, type:technical
+**Labels:** stage:discovery, type:technical
 
-**Milestone:** 1. Ground
+**Milestone:** 1. Discovery
 
 **Body:**
 ## Task
@@ -145,7 +145,7 @@ Review existing systems, APIs, data, and technical constraints.
 - [ ] Access requirements noted
 
 ## Links
-- [Ground Phase Guide](../../methodology/ground/README.md)
+- [Getting Started Guide](../../operations/getting-started-guide.md)
 ```
 
 ---
@@ -155,9 +155,9 @@ Review existing systems, APIs, data, and technical constraints.
 ```markdown
 **Title:** Draft stakeholder alignment snapshot
 
-**Labels:** phase:ground, type:deliverable
+**Labels:** stage:discovery, type:deliverable
 
-**Milestone:** 1. Ground
+**Milestone:** 1. Discovery
 
 **Body:**
 ## Task
@@ -171,7 +171,7 @@ Synthesize interview findings into stakeholder alignment snapshot.
 - [ ] Internal review completed
 
 ## Template
-See [Stakeholder Alignment Snapshot Template](../../methodology/ground/README.md#output-1-stakeholder-alignment-snapshot)
+See templates folder for Stakeholder Alignment Snapshot template
 ```
 
 ---
@@ -181,9 +181,9 @@ See [Stakeholder Alignment Snapshot Template](../../methodology/ground/README.md
 ```markdown
 **Title:** Draft constraint and opportunity map
 
-**Labels:** phase:ground, type:deliverable
+**Labels:** stage:discovery, type:deliverable
 
-**Milestone:** 1. Ground
+**Milestone:** 1. Discovery
 
 **Body:**
 ## Task
@@ -199,7 +199,7 @@ Document constraints (policy, technical, budget, political, timeline) and opport
 - [ ] Internal review completed
 
 ## Template
-See [Constraint and Opportunity Map Template](../../methodology/ground/README.md#output-2-constraint-and-opportunity-map)
+See templates folder for Constraint and Opportunity Map template
 ```
 
 ---
@@ -209,9 +209,9 @@ See [Constraint and Opportunity Map Template](../../methodology/ground/README.md
 ```markdown
 **Title:** Draft problem statement
 
-**Labels:** phase:ground, type:deliverable
+**Labels:** stage:discovery, type:deliverable
 
-**Milestone:** 1. Ground
+**Milestone:** 1. Discovery
 
 **Body:**
 ## Task
@@ -227,30 +227,30 @@ Articulate the problem clearly, including tradeoffs any solution must navigate.
 - [ ] Internal review completed
 
 ## Template
-See [Problem Statement Template](../../methodology/ground/README.md#output-3-problem-statement)
+See templates folder for Problem Statement template
 ```
 
 ---
 
-### G8: Ground phase client sign-off
+### G8: Discovery stage client sign-off
 
 ```markdown
-**Title:** Ground phase client sign-off
+**Title:** Discovery stage client sign-off
 
-**Labels:** phase:ground, type:internal, client-review
+**Labels:** stage:discovery, type:internal, client-review
 
-**Milestone:** 1. Ground
+**Milestone:** 1. Discovery
 
 **Body:**
 ## Task
-Present Ground phase findings to client and get sign-off to proceed to Sense.
+Present discovery findings to client and get sign-off to proceed to research.
 
 ## Acceptance Criteria
 - [ ] Findings presented to client
 - [ ] Client feedback incorporated
 - [ ] Problem statement agreed upon
 - [ ] Sign-off received
-- [ ] Ready to proceed to Sense
+- [ ] Ready to proceed to research
 
 ## Deliverables to Present
 - Stakeholder alignment snapshot
@@ -260,16 +260,16 @@ Present Ground phase findings to client and get sign-off to proceed to Sense.
 
 ---
 
-## Sense Phase Issues
+## Research Stage Issues
 
 ### S1: Define research questions
 
 ```markdown
 **Title:** Define research questions
 
-**Labels:** phase:sense, type:research
+**Labels:** stage:research, type:research
 
-**Milestone:** 2. Sense
+**Milestone:** 2. Research
 
 **Body:**
 ## Task
@@ -282,7 +282,7 @@ Define research questions tied to specific decisions. No research for research's
 - [ ] Sample size determined
 
 ## Links
-- [Decision-Driven Research](../../methodology/sense/README.md#key-principle-decision-driven-research)
+- [Operations Guide](../../operations/README.md)
 ```
 
 ---
@@ -292,9 +292,9 @@ Define research questions tied to specific decisions. No research for research's
 ```markdown
 **Title:** Recruit research participants
 
-**Labels:** phase:sense, type:research
+**Labels:** stage:research, type:research
 
-**Milestone:** 2. Sense
+**Milestone:** 2. Research
 
 **Body:**
 ## Task
@@ -322,9 +322,9 @@ Identify and recruit 5-8 participants per user segment.
 ```markdown
 **Title:** Conduct user research
 
-**Labels:** phase:sense, type:research
+**Labels:** stage:research, type:research
 
-**Milestone:** 2. Sense
+**Milestone:** 2. Research
 
 **Body:**
 ## Task
@@ -338,7 +338,7 @@ Conduct user interviews, observations, or other research methods. Capture notes 
 - [ ] Quotes captured
 
 ## Links
-- [Sense Interview Questions](../../methodology/sense/README.md#sense-phase-interview-questions)
+- [Operations Guide](../../operations/README.md)
 ```
 
 ---
@@ -348,9 +348,9 @@ Conduct user interviews, observations, or other research methods. Capture notes 
 ```markdown
 **Title:** Create journey map
 
-**Labels:** phase:sense, type:deliverable
+**Labels:** stage:research, type:deliverable
 
-**Milestone:** 2. Sense
+**Milestone:** 2. Research
 
 **Body:**
 ## Task
@@ -365,7 +365,7 @@ Map the current user journey in FigJam, including pain points and bright spots.
 - [ ] Exported to `/assets/`
 
 ## Links
-- [System Map Components](../../methodology/sense/README.md#system-map-components)
+- [Operations Guide](../../operations/README.md)
 ```
 
 ---
@@ -375,9 +375,9 @@ Map the current user journey in FigJam, including pain points and bright spots.
 ```markdown
 **Title:** Create system map
 
-**Labels:** phase:sense, type:deliverable, type:technical
+**Labels:** stage:research, type:deliverable, type:technical
 
-**Milestone:** 2. Sense
+**Milestone:** 2. Research
 
 **Body:**
 ## Task
@@ -393,7 +393,7 @@ Map how the current system works: user journey, service delivery, and technology
 - [ ] Exported to `/assets/`
 
 ## Links
-- [System Mapping](../../methodology/sense/README.md#systems-mapping)
+- [Operations Guide](../../operations/README.md)
 ```
 
 ---
@@ -403,9 +403,9 @@ Map how the current system works: user journey, service delivery, and technology
 ```markdown
 **Title:** Draft research findings
 
-**Labels:** phase:sense, type:deliverable
+**Labels:** stage:research, type:deliverable
 
-**Milestone:** 2. Sense
+**Milestone:** 2. Research
 
 **Body:**
 ## Task
@@ -421,7 +421,7 @@ Synthesize research into findings with decision implications.
 - [ ] Internal review completed
 
 ## Template
-See [Research Findings Template](../../methodology/sense/README.md#output-1-research-findings)
+See templates folder for Research Findings template
 ```
 
 ---
@@ -431,9 +431,9 @@ See [Research Findings Template](../../methodology/sense/README.md#output-1-rese
 ```markdown
 **Title:** Draft risk/impact register
 
-**Labels:** phase:sense, type:deliverable
+**Labels:** stage:research, type:deliverable
 
-**Milestone:** 2. Sense
+**Milestone:** 2. Research
 
 **Body:**
 ## Task
@@ -448,30 +448,30 @@ Document current state risks, change risks, equity risks, and dependencies.
 - [ ] Internal review completed
 
 ## Template
-See [Risk/Impact Register Template](../../methodology/sense/README.md#output-3-riskimpact-register)
+See templates folder for Risk/Impact Register template
 ```
 
 ---
 
-### S8: Sense phase client sign-off
+### S8: Research stage client sign-off
 
 ```markdown
-**Title:** Sense phase client sign-off
+**Title:** Research stage client sign-off
 
-**Labels:** phase:sense, type:internal, client-review
+**Labels:** stage:research, type:internal, client-review
 
-**Milestone:** 2. Sense
+**Milestone:** 2. Research
 
 **Body:**
 ## Task
-Present Sense phase findings to client and get sign-off to proceed to Shape.
+Present research findings to client and get sign-off to proceed to design.
 
 ## Acceptance Criteria
 - [ ] Findings presented to client
 - [ ] Client feedback incorporated
 - [ ] Agreement on key insights
 - [ ] Sign-off received
-- [ ] Ready to proceed to Shape
+- [ ] Ready to proceed to design
 
 ## Deliverables to Present
 - Research findings
@@ -482,16 +482,16 @@ Present Sense phase findings to client and get sign-off to proceed to Shape.
 
 ---
 
-## Shape Phase Issues
+## Design Stage Issues
 
 ### SH1: Run ideation session
 
 ```markdown
 **Title:** Run ideation session
 
-**Labels:** phase:shape, type:research
+**Labels:** stage:design, type:research
 
-**Milestone:** 3. Shape
+**Milestone:** 3. Design
 
 **Body:**
 ## Task
@@ -499,14 +499,14 @@ Facilitate ideation session to generate solution concepts.
 
 ## Acceptance Criteria
 - [ ] Session scheduled (2-3 hours)
-- [ ] Team reviewed Sense findings beforehand
+- [ ] Team reviewed research findings beforehand
 - [ ] HMW questions prepared
 - [ ] Session facilitated
 - [ ] Concepts clustered into approaches
 - [ ] Notes captured
 
 ## Links
-- [Ideation Session Guide](../../methodology/shape/README.md#ideation-session)
+- [Operations Guide](../../operations/README.md)
 ```
 
 ---
@@ -516,9 +516,9 @@ Facilitate ideation session to generate solution concepts.
 ```markdown
 **Title:** Develop solution options
 
-**Labels:** phase:shape, type:deliverable
+**Labels:** stage:design, type:deliverable
 
-**Milestone:** 3. Shape
+**Milestone:** 3. Design
 
 **Body:**
 ## Task
@@ -532,7 +532,7 @@ Develop 2-3 viable options from ideation output.
 - [ ] Tradeoffs named
 
 ## Template
-See [Option Development Template](../../methodology/shape/README.md#option-development-template)
+See templates folder for Option Development template
 ```
 
 ---
@@ -542,9 +542,9 @@ See [Option Development Template](../../methodology/shape/README.md#option-devel
 ```markdown
 **Title:** Feasibility assessment
 
-**Labels:** phase:shape, type:technical
+**Labels:** stage:design, type:technical
 
-**Milestone:** 3. Shape
+**Milestone:** 3. Design
 
 **Body:**
 ## Task
@@ -560,7 +560,7 @@ Builder assesses technical feasibility of each option.
 - [ ] Options compared
 
 ## Template
-See [Feasibility Assessment](../../methodology/shape/README.md#feasibility-assessment)
+See templates folder for Feasibility Assessment template
 ```
 
 ---
@@ -570,9 +570,9 @@ See [Feasibility Assessment](../../methodology/shape/README.md#feasibility-asses
 ```markdown
 **Title:** Create prototypes
 
-**Labels:** phase:shape, type:deliverable
+**Labels:** stage:design, type:deliverable
 
-**Milestone:** 3. Shape
+**Milestone:** 3. Design
 
 **Body:**
 ## Task
@@ -586,7 +586,7 @@ Create low-to-medium fidelity prototypes for each option in Figma.
 - [ ] Presentation-ready
 
 ## Links
-- [Prototyping Guidance](../../methodology/shape/README.md#prototyping)
+- [Operations Guide](../../operations/README.md)
 ```
 
 ---
@@ -596,9 +596,9 @@ Create low-to-medium fidelity prototypes for each option in Figma.
 ```markdown
 **Title:** Tradeoff analysis
 
-**Labels:** phase:shape, type:deliverable
+**Labels:** stage:design, type:deliverable
 
-**Milestone:** 3. Shape
+**Milestone:** 3. Design
 
 **Body:**
 ## Task
@@ -611,7 +611,7 @@ Map tradeoffs across options so client can make informed decision.
 - [ ] Comparison matrix complete
 
 ## Template
-See [Tradeoff Analysis](../../methodology/shape/README.md#tradeoff-analysis)
+See templates folder for Tradeoff Analysis template
 ```
 
 ---
@@ -621,9 +621,9 @@ See [Tradeoff Analysis](../../methodology/shape/README.md#tradeoff-analysis)
 ```markdown
 **Title:** Draft recommendation
 
-**Labels:** phase:shape, type:deliverable
+**Labels:** stage:design, type:deliverable
 
-**Milestone:** 3. Shape
+**Milestone:** 3. Design
 
 **Body:**
 ## Task
@@ -637,8 +637,8 @@ Draft Solution Options document and Recommendation Brief.
 - [ ] Internal review completed
 
 ## Templates
-- [Solution Options](../../methodology/shape/README.md#output-1-solution-options)
-- [Recommendation Brief](../../methodology/shape/README.md#output-2-recommendation-brief)
+- See templates folder for Solution Options template
+- See templates folder for Recommendation Brief template
 ```
 
 ---
@@ -648,9 +648,9 @@ Draft Solution Options document and Recommendation Brief.
 ```markdown
 **Title:** Present options to client
 
-**Labels:** phase:shape, type:internal, client-review
+**Labels:** stage:design, type:internal, client-review
 
-**Milestone:** 3. Shape
+**Milestone:** 3. Design
 
 **Body:**
 ## Task
@@ -664,19 +664,19 @@ Present options to client for decision.
 - [ ] Feedback captured
 
 ## Links
-- [Presentation Structure](../../methodology/shape/README.md#client-presentation)
+- [Operations Guide](../../operations/README.md)
 ```
 
 ---
 
-### SH8: Shape phase client decision
+### SH8: Design stage client decision
 
 ```markdown
-**Title:** Shape phase client decision
+**Title:** Design stage client decision
 
-**Labels:** phase:shape, type:internal, client-review
+**Labels:** stage:design, type:internal, client-review
 
-**Milestone:** 3. Shape
+**Milestone:** 3. Design
 
 **Body:**
 ## Task
@@ -687,25 +687,25 @@ Get client decision on which option to pursue.
 - [ ] Decision documented
 - [ ] Scope for pilot agreed
 - [ ] Sign-off received
-- [ ] Ready to proceed to Test
+- [ ] Ready to proceed to build
 ```
 
 ---
 
-## Test Phase Issues
+## Build Stage Issues
 
 ### T1: Write build brief
 
 ```markdown
 **Title:** Write build brief
 
-**Labels:** phase:test, type:deliverable
+**Labels:** stage:build, type:deliverable
 
-**Milestone:** 4. Test
+**Milestone:** 4. Build
 
 **Body:**
 ## Task
-Distill Shape outputs into CC-ready Build Brief.
+Distill design outputs into a build brief.
 
 ## Acceptance Criteria
 - [ ] What we're building documented
@@ -717,7 +717,7 @@ Distill Shape outputs into CC-ready Build Brief.
 - [ ] Open questions listed
 
 ## Template
-See [Build Brief Template](../../methodology/test/README.md#build-brief-template)
+See templates folder for Build Brief template
 ```
 
 ---
@@ -727,9 +727,9 @@ See [Build Brief Template](../../methodology/test/README.md#build-brief-template
 ```markdown
 **Title:** Build pilot
 
-**Labels:** phase:test, type:technical
+**Labels:** stage:build, type:technical
 
-**Milestone:** 4. Test
+**Milestone:** 4. Build
 
 **Body:**
 ## Task
@@ -751,9 +751,9 @@ Build MVP pilot based on Build Brief.
 ```markdown
 **Title:** Launch pilot
 
-**Labels:** phase:test, type:technical
+**Labels:** stage:build, type:technical
 
-**Milestone:** 4. Test
+**Milestone:** 4. Build
 
 **Body:**
 ## Task
@@ -774,9 +774,9 @@ Deploy pilot to target users.
 ```markdown
 **Title:** Monitor and collect feedback
 
-**Labels:** phase:test, type:research
+**Labels:** stage:build, type:research
 
-**Milestone:** 4. Test
+**Milestone:** 4. Build
 
 **Body:**
 ## Task
@@ -790,8 +790,7 @@ Monitor pilot performance and collect user/staff feedback.
 - [ ] Mid-pilot check completed
 
 ## Links
-- [Feedback Collection](../../methodology/test/README.md#feedback-collection)
-- [Pilot Feedback Questions](../../methodology/test/README.md#pilot-feedback-questions)
+- [Operations Guide](../../operations/README.md)
 ```
 
 ---
@@ -801,9 +800,9 @@ Monitor pilot performance and collect user/staff feedback.
 ```markdown
 **Title:** Compile test results
 
-**Labels:** phase:test, type:deliverable
+**Labels:** stage:build, type:deliverable
 
-**Milestone:** 4. Test
+**Milestone:** 4. Build
 
 **Body:**
 ## Task
@@ -817,7 +816,7 @@ Compile quantitative and qualitative results from pilot.
 - [ ] Internal review completed
 
 ## Template
-See [Test Results Template](../../methodology/test/README.md#output-1-test-results)
+See templates folder for Test Results template
 ```
 
 ---
@@ -827,9 +826,9 @@ See [Test Results Template](../../methodology/test/README.md#output-1-test-resul
 ```markdown
 **Title:** Go/no-go recommendation
 
-**Labels:** phase:test, type:deliverable
+**Labels:** stage:build, type:deliverable
 
-**Milestone:** 4. Test
+**Milestone:** 4. Build
 
 **Body:**
 ## Task
@@ -842,19 +841,19 @@ Prepare evidence-based go/no-go recommendation.
 - [ ] Requirements for next step listed
 
 ## Template
-See [Go/No-Go Template](../../methodology/test/README.md#output-2-gono-go-recommendation)
+See templates folder for Go/No-Go template
 ```
 
 ---
 
-### T7: Test phase client decision
+### T7: Build stage client decision
 
 ```markdown
-**Title:** Test phase client decision
+**Title:** Build stage client decision
 
-**Labels:** phase:test, type:internal, client-review
+**Labels:** stage:build, type:internal, client-review
 
-**Milestone:** 4. Test
+**Milestone:** 4. Build
 
 **Body:**
 ## Task
@@ -865,21 +864,21 @@ Present results and get client decision.
 - [ ] Questions answered
 - [ ] Decision made (Go/Iterate/No-Go)
 - [ ] Next steps agreed
-- [ ] Ready to proceed to Embed (if Go)
+- [ ] Ready to proceed to handoff (if Go)
 ```
 
 ---
 
-## Embed Phase Issues
+## Handoff Stage Issues
 
 ### E1: Technical documentation
 
 ```markdown
 **Title:** Technical documentation
 
-**Labels:** phase:embed, type:deliverable, type:technical
+**Labels:** stage:handoff, type:deliverable, type:technical
 
-**Milestone:** 5. Embed
+**Milestone:** 5. Handoff
 
 **Body:**
 ## Task
@@ -896,7 +895,7 @@ Document architecture, deployment, database, integrations, and troubleshooting.
 - [ ] Internal review completed
 
 ## Template
-See [Technical Documentation Template](../../methodology/embed/README.md#technical-documentation-builder)
+See templates folder for Technical Documentation template
 ```
 
 ---
@@ -906,9 +905,9 @@ See [Technical Documentation Template](../../methodology/embed/README.md#technic
 ```markdown
 **Title:** Operational runbook
 
-**Labels:** phase:embed, type:deliverable
+**Labels:** stage:handoff, type:deliverable
 
-**Milestone:** 5. Embed
+**Milestone:** 5. Handoff
 
 **Body:**
 ## Task
@@ -924,7 +923,7 @@ Document how to operate the solution day-to-day.
 - [ ] Internal review completed
 
 ## Template
-See [Operational Runbook Template](../../methodology/embed/README.md#operational-runbook-ux-strategist)
+See templates folder for Operational Runbook template
 ```
 
 ---
@@ -934,9 +933,9 @@ See [Operational Runbook Template](../../methodology/embed/README.md#operational
 ```markdown
 **Title:** Design documentation
 
-**Labels:** phase:embed, type:deliverable
+**Labels:** stage:handoff, type:deliverable
 
-**Milestone:** 5. Embed
+**Milestone:** 5. Handoff
 
 **Body:**
 ## Task
@@ -951,7 +950,7 @@ Document design files, design system, decisions, and future recommendations.
 - [ ] Internal review completed
 
 ## Template
-See [Design Documentation Template](../../methodology/embed/README.md#design-documentation-designer)
+See templates folder for Design Documentation template
 ```
 
 ---
@@ -961,9 +960,9 @@ See [Design Documentation Template](../../methodology/embed/README.md#design-doc
 ```markdown
 **Title:** Training
 
-**Labels:** phase:embed, type:internal
+**Labels:** stage:handoff, type:internal
 
-**Milestone:** 5. Embed
+**Milestone:** 5. Handoff
 
 **Body:**
 ## Task
@@ -985,9 +984,9 @@ Train client team to operate and maintain the solution.
 ```markdown
 **Title:** Transfer access
 
-**Labels:** phase:embed, type:technical
+**Labels:** stage:handoff, type:technical
 
-**Milestone:** 5. Embed
+**Milestone:** 5. Handoff
 
 **Body:**
 ## Task
@@ -1009,9 +1008,9 @@ Transfer all accounts, credentials, and access to client.
 ```markdown
 **Title:** Sustainability plan
 
-**Labels:** phase:embed, type:deliverable
+**Labels:** stage:handoff, type:deliverable
 
-**Milestone:** 5. Embed
+**Milestone:** 5. Handoff
 
 **Body:**
 ## Task
@@ -1027,7 +1026,7 @@ Document ownership, funding, maintenance, and evolution plan.
 - [ ] Internal review completed
 
 ## Template
-See [Sustainability Plan Template](../../methodology/embed/README.md#output-2-sustainability-plan)
+See templates folder for Sustainability Plan template
 ```
 
 ---
@@ -1037,9 +1036,9 @@ See [Sustainability Plan Template](../../methodology/embed/README.md#output-2-su
 ```markdown
 **Title:** Measurement framework
 
-**Labels:** phase:embed, type:deliverable
+**Labels:** stage:handoff, type:deliverable
 
-**Milestone:** 5. Embed
+**Milestone:** 5. Handoff
 
 **Body:**
 ## Task
@@ -1054,7 +1053,7 @@ Define how success will be tracked after engagement ends.
 - [ ] Internal review completed
 
 ## Template
-See [Measurement Framework Template](../../methodology/embed/README.md#output-3-measurement-framework)
+See templates folder for Measurement Framework template
 ```
 
 ---
@@ -1064,9 +1063,9 @@ See [Measurement Framework Template](../../methodology/embed/README.md#output-3-
 ```markdown
 **Title:** Engagement closeout
 
-**Labels:** phase:embed, type:internal, client-review
+**Labels:** stage:handoff, type:internal, client-review
 
-**Milestone:** 5. Embed
+**Milestone:** 5. Handoff
 
 **Body:**
 ## Task
@@ -1081,20 +1080,20 @@ Get final sign-off and close engagement.
 - [ ] Project archived
 
 ## Template
-See [Engagement Closeout](../../methodology/embed/README.md#engagement-closeout)
+See templates folder for Engagement Closeout template
 ```
 
 ---
 
 ## Summary
 
-| Phase | Issues | Milestone |
+| Stage | Issues | Milestone |
 |-------|--------|-----------|
-| Ground | 8 | 1. Ground |
-| Sense | 8 | 2. Sense |
-| Shape | 8 | 3. Shape |
-| Test | 7 | 4. Test |
-| Embed | 8 | 5. Embed |
+| Discovery | 8 | 1. Discovery |
+| Research | 8 | 2. Research |
+| Design | 8 | 3. Design |
+| Build | 7 | 4. Build |
+| Handoff | 8 | 5. Handoff |
 | **Total** | **39** | |
 
 ---

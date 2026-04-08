@@ -9,16 +9,16 @@ One-time setup before you can run `spinup.sh`. Do this once per machine.
 Already set up? Here's what you need:
 
 ```bash
-# PIM client project (phases, milestones, starter issues)
+# Client project (milestones, starter issues)
 spinup project-slug "Client Display Name"
 
-# PIM client project with database
+# Client project with database
 spinup project-slug "Client Display Name" --db
 
-# Non-PIM project (just infrastructure, no phases)
+# Lightweight project (just infrastructure, no milestones)
 spinup project-slug "Project Name" --lite
 
-# Non-PIM project with database
+# Lightweight project with database
 spinup project-slug "Project Name" --lite --db
 ```
 
@@ -129,21 +129,21 @@ Now you can run `spinup` from any directory.
 ```bash
 cd ~/projects  # or wherever you keep project folders
 
-# For a PIM client project
+# For a client project
 spinup project-slug "Client Display Name"
 
-# For a non-PIM project (no phases, milestones, or starter issues)
+# For a lightweight project (no milestones or starter issues)
 spinup project-slug "Project Name" --lite
 ```
 
 Add `--db` to either command if you need a Supabase database.
 
-The script will create your GitHub repo, deploy to Vercel, configure the domain, and (for PIM projects) set up milestones, labels, and starter issues. When it finishes, your project is live at `https://project-slug.lab.cityfriends.tech`.
+The script will create your GitHub repo, deploy to Vercel, configure the domain, and (for client projects) set up milestones, labels, and starter issues. When it finishes, your project is live at `https://project-slug.lab.cityfriends.tech`.
 
 **After the script finishes, you still need to manually:**
 
 1. Set up UptimeRobot monitoring for `https://project-slug.lab.cityfriends.tech/api/health` (5-minute interval)
-2. Set milestone due dates in GitHub (PIM projects only)
+2. Set milestone due dates in GitHub (client projects only)
 
 ---
 

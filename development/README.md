@@ -113,7 +113,7 @@ project-name/
 │   ├── hooks/                  # Custom React hooks
 │   └── types/                  # TypeScript types
 ├── public/                     # Static assets
-├── docs/                       # Project documentation (PIM deliverables)
+├── docs/                       # Project documentation (deliverables)
 ├── notes/                      # Internal notes
 ├── tests/                      # Test files
 ├── components.json             # shadcn/ui configuration

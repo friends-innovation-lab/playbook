@@ -49,14 +49,14 @@ Each project repo (created by spinup script) contains:
 ├── README.md                    # Project overview, links, status
 ├── CLAUDE.md                    # AI coding standards
 ├── docs/
-│   ├── ground/                  # Ground phase deliverables
+│   ├── discovery/               # Discovery stage deliverables
 │   │   ├── stakeholder-snapshot.md
 │   │   ├── constraint-map.md
 │   │   └── problem-statement.md
-│   ├── sense/                   # Sense phase deliverables
-│   ├── shape/                   # Shape phase deliverables
-│   ├── test/                    # Test phase deliverables
-│   └── embed/                   # Embed phase deliverables
+│   ├── research/                # Research stage deliverables
+│   ├── design/                  # Design stage deliverables
+│   ├── build/                   # Build stage deliverables
+│   └── handoff/                 # Handoff stage deliverables
 ├── notes/                       # Internal working notes
 │   ├── interviews/              # Interview notes
 │   ├── meetings/                # Meeting notes
@@ -76,11 +76,11 @@ Every task is a GitHub Issue. Use labels to track:
 
 | Label | Meaning |
 |-------|---------|
-| `phase:ground` | Ground phase work |
-| `phase:sense` | Sense phase work |
-| `phase:shape` | Shape phase work |
-| `phase:test` | Test phase work |
-| `phase:embed` | Embed phase work |
+| `stage:discovery` | Discovery stage work |
+| `stage:research` | Research stage work |
+| `stage:design` | Design stage work |
+| `stage:build` | Build stage work |
+| `stage:handoff` | Handoff stage work |
 | `type:research` | Interviews, discovery |
 | `type:deliverable` | Client-facing output |
 | `type:internal` | Internal task |
@@ -150,28 +150,28 @@ Templates live in a shared Google Drive folder. Each template links from the pla
 ```
 Friends Innovation Lab (Google Drive)
 └── Templates/
-    ├── Ground Phase/
+    ├── Discovery/
     │   ├── Stakeholder Alignment Snapshot
     │   ├── Constraint and Opportunity Map
     │   └── Problem Statement
-    ├── Sense Phase/
+    ├── Research/
     │   ├── [templates TBD]
-    ├── Shape Phase/
+    ├── Design/
     │   ├── [templates TBD]
-    ├── Test Phase/
+    ├── Build/
     │   ├── [templates TBD]
-    └── Embed Phase/
+    └── Handoff/
         ├── [templates TBD]
 ```
 
 ### How to Use Templates
 
-1. **Find template** — Link in playbook methodology guide
+1. **Find template** — Link in playbook
 2. **Make a copy** — File → Make a copy → Save to project folder
 3. **Rename** — `[Project Name] - [Template Name]`
 4. **Work in Google Docs** — Draft, iterate, get internal review
 5. **Export for client** — Download as Word (.docx) or PDF
-6. **Archive in repo** — Save final version to `docs/[phase]/` as markdown or PDF
+6. **Archive in repo** — Save final version to `docs/[stage]/` as markdown or PDF
 
 ### Why Google Docs for Templates?
 
@@ -241,7 +241,7 @@ Revise in Google Docs
     ↓
 Export final version
     ↓
-Archive to GitHub (docs/[phase]/)
+Archive to GitHub (docs/[stage]/)
 ```
 
 ### Naming Convention for Client Deliverables
@@ -256,13 +256,13 @@ CAMP - Problem Statement - FINAL - 2025-01-22.pdf
 
 ### What Clients Receive
 
-| Phase | Deliverables | Format |
+| Stage | Deliverables | Format |
 |-------|--------------|--------|
-| **Ground** | Problem Statement, Stakeholder Snapshot (optional) | Word or PDF |
-| **Sense** | Research Summary, Journey Map | Word/PDF + FigJam export |
-| **Shape** | Solution Options, Recommendation | Word or PDF + Figma links |
-| **Test** | Pilot Plan, Test Results | Word or PDF |
-| **Embed** | Handoff Documentation, Sustainability Plan | Word or PDF |
+| **Discovery** | Problem Statement, Stakeholder Snapshot (optional) | Word or PDF |
+| **Research** | Research Summary, Journey Map | Word/PDF + FigJam export |
+| **Design** | Solution Options, Recommendation | Word or PDF + Figma links |
+| **Build** | Pilot Plan, Test Results | Word or PDF |
+| **Handoff** | Handoff Documentation, Sustainability Plan | Word or PDF |
 
 ---
 
@@ -274,7 +274,7 @@ CAMP - Problem Statement - FINAL - 2025-01-22.pdf
 [project-repo]/notes/meetings/
 ├── 2025-01-10-kickoff.md
 ├── 2025-01-17-weekly-checkin.md
-├── 2025-01-24-ground-review.md
+├── 2025-01-24-discovery-review.md
 └── ...
 ```
 
@@ -370,7 +370,7 @@ Each project repo README should follow this structure:
 
 **Client:** [Client name]
 **Timeline:** [Start] — [End]
-**Phase:** [Current PIM phase]
+**Stage:** [Current project stage]
 **Status:** [On track / At risk / Blocked]
 
 ---
@@ -393,15 +393,15 @@ Each project repo README should follow this structure:
 - [Figma Design](link)
 - [Live Site](https://[project].lab.cityfriends.tech)
 
-## Phase Progress
+## Progress
 
-| Phase | Status | Dates |
+| Stage | Status | Dates |
 |-------|--------|-------|
-| Ground | ✅ Complete | Jan 10-24 |
-| Sense | 🔄 In Progress | Jan 24 - Feb 7 |
-| Shape | ⬜ Not Started | |
-| Test | ⬜ Not Started | |
-| Embed | ⬜ Not Started | |
+| Discovery | ✅ Complete | Jan 10-24 |
+| Research | 🔄 In Progress | Jan 24 - Feb 7 |
+| Design | ⬜ Not Started | |
+| Build | ⬜ Not Started | |
+| Handoff | ⬜ Not Started | |
 
 ## Key Deliverables
 - [x] Problem Statement — [link]
@@ -415,7 +415,7 @@ Each project repo README should follow this structure:
 
 ---
 
-*This project follows the [Public Impact Method](link to playbook).*
+*This project follows the [Friends Innovation Lab Playbook](link to playbook).*
 ```
 
 ---
@@ -426,7 +426,7 @@ Each project repo README should follow this structure:
 
 1. Run spinup: `spinup project-slug "Project Name"`
 2. Create GitHub Project board (kanban)
-3. Add phase labels to repo
+3. Add stage labels to repo
 4. Create project folder in Google Drive
 5. Copy relevant templates to Google Drive folder
 6. Update README with links
@@ -443,12 +443,12 @@ Each project repo README should follow this structure:
 - Monday: Plan the week, assign issues
 - Friday: Update README status, archive completed work
 
-### Phase Transitions
+### Stage Transitions
 
-- Ensure all deliverables are in `docs/[phase]/`
-- Update README phase status
-- Close phase-related issues
-- Create issues for next phase
+- Ensure all deliverables are in `docs/[stage]/`
+- Update README stage status
+- Close stage-related issues
+- Create issues for next stage
 - Client sign-off documented
 
 ---

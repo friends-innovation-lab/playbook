@@ -10,7 +10,7 @@
 
 You've won the project. The contract is signed. Now what?
 
-This guide covers the first 30 days — from internal prep through the end of the Ground phase. It defines who does what and when.
+This guide covers the first 30 days — from internal prep through the end of discovery. It defines who does what and when.
 
 Before starting, read [Project Operations](README.md) to understand our tools and workflows.
 
@@ -32,7 +32,7 @@ These are hats, not people. One person may wear multiple hats.
 ## The First 30 Days
 
 ```
-Contract     Internal        Kickoff        Ground Phase
+Contract     Internal        Kickoff        Discovery
 Signed       Prep            Meeting        Begins
   │          (10 days)          │           (2-3 weeks)
   ▼              ▼              ▼               ▼
@@ -92,7 +92,7 @@ This happens before the client kickoff. Use this time to get smart, get set up, 
 **Project Lead:**
 - [ ] Draft kickoff agenda (see template below)
 - [ ] Confirm attendees with client PM
-- [ ] Prepare "About Our Approach" slide (PIM overview, 1-2 slides max)
+- [ ] Prepare "About Our Approach" slide (rapid prototyping overview, 1-2 slides max)
 - [ ] Draft working rhythm proposal (meeting cadence, communication channels)
 
 **UX Strategist:**
@@ -135,7 +135,7 @@ Get everyone aligned on what success looks like, how you'll work together, and w
 | Time | Topic | Who Leads | Purpose |
 |------|-------|-----------|---------|
 | 10 min | Introductions | Project Lead | Names, roles, decision authority |
-| 10 min | Our approach | Project Lead | Brief PIM/BUILD overview (1-2 slides max) |
+| 10 min | Our approach | Project Lead | Brief rapid prototyping overview (1-2 slides max) |
 | 15 min | SOW walkthrough | Project Lead | Confirm shared understanding of scope |
 | 20 min | Success criteria | Project Lead | What does "done well" look like for them? |
 | 20 min | Constraints + context | UX Strategist | What should we know that's not written down? |
@@ -171,11 +171,11 @@ Get everyone aligned on what success looks like, how you'll work together, and w
 
 ---
 
-## Post-Kickoff: Entering Ground Phase (Days 11-30)
+## Post-Kickoff: Discovery (Days 11-30)
 
-After kickoff, you're officially in the **Ground** phase of PIM.
+After kickoff, you're in the **discovery** stage of the project.
 
-### Ground Phase Goal
+### Discovery Goal
 
 Establish legitimacy and constraints before proposing solutions.
 
@@ -208,21 +208,21 @@ Establish legitimacy and constraints before proposing solutions.
 - [ ] Complete stakeholder interviews
 - [ ] Synthesize findings into constraint/opportunity map
 - [ ] Draft problem statement with named tradeoffs
-- [ ] Prepare Ground phase deliverables for client review
+- [ ] Prepare discovery deliverables for client review
 
 **Project Lead:**
 - [ ] Mid-phase check-in with client
 - [ ] Review draft deliverables with team
-- [ ] Prepare for Ground → Sense transition
+- [ ] Prepare for transition to research stage
 
 **Builder:**
 - [ ] Complete technical assessment
 - [ ] Identify integration requirements
 - [ ] Document technical risks and dependencies
 
-### Ground Phase Outputs
+### Discovery Outputs
 
-Before moving to Sense, you should have:
+Before moving to research, you should have:
 
 - [ ] **Stakeholder alignment snapshot** — who matters, what they want, who decides
 - [ ] **Constraint and opportunity map** — policy, legal, technical, political realities
@@ -232,17 +232,15 @@ Before moving to Sense, you should have:
 
 ---
 
-## Role Responsibilities by Phase (Summary)
+## Role Responsibilities by Stage (Summary)
 
-| Phase | Project Lead | UX Strategist | UX/UI Designer | Builder |
+| Stage | Project Lead | UX Strategist | UX/UI Designer | Builder |
 |-------|--------------|---------------|----------------|---------|
-| **Ground** | Client alignment, risk management | Stakeholder research, constraint mapping | UX audit, pain points | Technical discovery |
-| **Sense** | Decision facilitation | User research, systems mapping | Journey maps, personas | Data analysis, feasibility |
-| **Shape** | Option review, recommendation | Solution framing, tradeoffs | Wireframes, concepts | Technical feasibility |
-| **Test** | Go/no-go decisions | Pilot design, feedback synthesis | UI implementation | Build prototype |
-| **Embed** | Handoff management | Knowledge transfer, documentation | Design system handoff | Deployment, training |
-
-*See methodology/[phase] folders for detailed phase guides.*
+| **Discovery** | Client alignment, risk management | Stakeholder research, constraint mapping | UX audit, pain points | Technical discovery |
+| **Research** | Decision facilitation | User research, systems mapping | Journey maps, personas | Data analysis, feasibility |
+| **Design** | Option review, recommendation | Solution framing, tradeoffs | Wireframes, concepts | Technical feasibility |
+| **Build** | Go/no-go decisions | Pilot design, feedback synthesis | UI implementation | Build prototype |
+| **Handoff** | Handoff management | Knowledge transfer, documentation | Design system handoff | Deployment, training |
 
 ---
 
@@ -262,7 +260,6 @@ https://project-slug.lab.cityfriends.tech
 ### Key Folders
 ```
 playbook/
-├── methodology/     # PIM phases and templates
 ├── operations/      # Sales, contracts, automation, dev standards
 ├── products/        # TrueBid, etc.
 └── templates/       # Reusable templates
@@ -277,7 +274,7 @@ playbook/
 |---------|---------|-----------|---------|
 | Weekly | Client check-in | Project Lead + Client PM | Status, blockers, decisions |
 | Weekly | Internal sync | All team | Coordination, planning |
-| End of phase | Phase review | All + Client stakeholders | Present deliverables, get sign-off |
+| End of stage | Stage review | All + Client stakeholders | Present deliverables, get sign-off |
 
 ---
 
@@ -297,7 +294,7 @@ playbook/
 - [ ] Working rhythm agreed
 - [ ] Next steps clear
 
-### Ground Phase (Days 11-30)
+### Discovery (Days 11-30)
 - [ ] Stakeholder interviews completed
 - [ ] Constraint/opportunity map drafted
 - [ ] Problem statement articulated
@@ -306,4 +303,4 @@ playbook/
 
 ---
 
-*This guide gets you through the first 30 days. For detailed phase guidance, see the methodology folder.*
+*This guide gets you through the first 30 days.*

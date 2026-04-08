@@ -57,7 +57,7 @@ Claude Code will generate:
 
 ## When to Use
 
-- Shape phase: Creating initial design direction
+- Design stage: Creating initial design direction
 - New project kickoff: Establishing visual language
 - Client demos: Showing design capabilities
 
