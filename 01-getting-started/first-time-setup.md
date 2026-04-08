@@ -19,7 +19,7 @@ VS Code is the code editor the entire lab uses. You write and view
 code inside it, and it connects to all the tools below.
 
 1. Go to **[code.visualstudio.com](https://code.visualstudio.com)**
-2. Click the big blue button that says **Download for macOS**
+2. Click the big white button that says **Download for macOS**
 3. Open your Downloads folder and double-click the file that downloaded
 4. Drag the VS Code icon into your Applications folder when prompted
 5. Open VS Code from your Applications folder or Spotlight search
