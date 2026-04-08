@@ -18,8 +18,8 @@ will pass and you will be ready to start your first project.
 VS Code is the code editor the entire lab uses. You write and view
 code inside it, and it connects to all the tools below.
 
-1. Go to **code.visualstudio.com**
-2. Click the big blue **Download for Mac** button
+1. Go to **[code.visualstudio.com](https://code.visualstudio.com)**
+2. Click the big blue button that says **Download for macOS**
 3. Open your Downloads folder and double-click the file that downloaded
 4. Drag the VS Code icon into your Applications folder when prompted
 5. Open VS Code from your Applications folder or Spotlight search
@@ -392,30 +392,27 @@ This tells the script which Supabase organization to create projects under.
 
 ### RESEND_API_KEY
 
-Resend sends transactional emails. One key works across all projects.
-Ask Lapedra for access to the Resend account first.
+Resend sends transactional emails across all lab projects.
+This is a shared credential managed by Lapedra.
 
-1. Go to **resend.com** and log in
-2. Click **API Keys** in the left sidebar
-3. Click **Create API Key**
-4. Name: `fftc-lab`
-5. Click **Add**
-6. Copy the key immediately
-7. Paste it after `RESEND_API_KEY=` in your `.zshrc`
+> [!IMPORTANT]
+> Ask Lapedra for this value — do not create your own Resend account.
+> She will provide the key directly.
+
+Paste the value she gives you after `RESEND_API_KEY=` in your `.zshrc`
 
 ---
 
 ### Upstash credentials
 
-Upstash handles rate limiting. One database works across all projects.
-Ask Lapedra for access to the Upstash account first.
+Upstash handles rate limiting across all lab projects.
+These are shared credentials managed by Lapedra.
 
-1. Go to **upstash.com** and log in
-2. Click your Redis database
-3. Click the **REST API** tab
-4. Copy the value next to **UPSTASH_REDIS_REST_URL**
-5. Copy the value next to **UPSTASH_REDIS_REST_TOKEN**
-6. Paste each after the matching variable in your `.zshrc`
+> [!IMPORTANT]
+> Ask Lapedra for these values — do not create your own Upstash account.
+> She will provide both values directly.
+
+Paste the values she gives you after the matching variables in your `.zshrc`
 
 ---
 
@@ -494,28 +491,7 @@ code .
 
 ---
 
-## Step 14 — Run the pre-flight checks
-
-This confirms your machine is set up correctly.
-
-Run this in Terminal:
-
-```bash
-bash ~/projects/playbook/operations/automation/spinup.sh
-```
-
-All checks should show a green ✓. If any show ✗, the script will
-tell you exactly what to fix. Fix it and run the script again.
-
-You do not need to complete a full spinup right now — just confirm
-all the checks pass and then press Control + C to exit.
-
-> [!TIP]
-> Having trouble? See [Troubleshooting guide](troubleshooting.md)
-
----
-
-## Step 15 — Get added to team accounts
+## Step 14 — Get added to team accounts
 
 Ask Lapedra to add you to:
 
@@ -529,7 +505,7 @@ Send her your GitHub username and the email you use for each service.
 
 ---
 
-## Step 16 — Install Claude Code in VS Code
+## Step 15 — Install Claude Code in VS Code
 
 Claude Code (CC) is the AI assistant the lab uses to build projects.
 It works directly inside VS Code with full access to your project files.
@@ -573,83 +549,15 @@ it means the connection did not complete — try step 4 again.
 > [!TIP]
 > Having trouble? See [Claude Code not connecting](troubleshooting.md#claude-code-not-connecting)
 
-### If you are a builder (working on prototypes)
-
-You also need to install the Figma plugin so CC can read and write
-to Figma files directly. This is only needed for people building
-prototypes — not everyone on the team needs this.
-
-Open the terminal inside VS Code (View → Terminal) and run:
-```bash
-claude plugin install figma@claude-plugins-official
-```
-
-Follow the prompts to authenticate with your Figma account.
-Make sure you are logged into the correct Figma account before
-clicking Allow — the one connected to the Innovation Lab org.
-
-**Verify it worked:** In the terminal type `claude` to open CC,
-then type `/mcp` and look for `figma` in the installed list.
-
-> [!TIP]
-> Having trouble? See [Figma MCP not connecting](troubleshooting.md#figma-mcp-not-connecting)
-
----
-
-## Daily Git commands
-
-You will use these every day on projects.
-Run them from inside your project folder.
-
-**Check what has changed:**
-```bash
-git status
-```
-
-**Stage your changes:**
-```bash
-git add .
-```
-
-**Save your changes with a message:**
-```bash
-git commit -m "describe what you changed"
-```
-Keep messages short and descriptive.
-Examples: `"add login form"` or `"fix mobile layout on dashboard"`
-
-**Push to GitHub:**
-```bash
-git push
-```
-This sends your commits to GitHub and triggers a Vercel deployment.
-
-**Pull the latest changes from the team:**
-```bash
-git pull
-```
-Run this at the start of every work session.
-
-**Switch to a branch:**
-```bash
-git checkout develop
-```
-Always work on `develop`, not `main`.
-The spinup script sets this up automatically.
-
-**Create a new branch for a feature:**
-```bash
-git checkout -b feature/your-feature-name
-```
-Use descriptive names like `feature/login-page` or `fix/mobile-nav`.
-
 ---
 
 ## You're ready
 
-When all pre-flight checks pass you are set up correctly.
+When all the steps above are complete your machine is set up correctly.
+You will not need to do any of this again.
 
-Your next step: read [what we build](what-we-build.md).
+**What's next depends on what you need to do:**
 
-If anything goes wrong when you run the spinup script on a real
-project, see [troubleshooting.md](troubleshooting.md).
+→ Starting a new project? See [Creating a project](creating-a-project.md)
+→ Wrapping up a project? See [Ending a project](ending-a-project.md)
+→ Something not working? See [Troubleshooting](troubleshooting.md)

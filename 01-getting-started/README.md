@@ -1,21 +1,26 @@
 # Getting Started
 
-Everything you need to get set up and oriented before your first project.
+Everything you need from your first day to your last project.
 
 ## Steps
 
 1. [First-time setup](first-time-setup.md) — Install tools and configure
-   access. Do this once on your first day.
+   access. Do this once on your first day. Never again.
+
 2. [What we build](what-we-build.md) — Understand the types of projects
    we work on.
+
 3. [Tools and access](tools-and-access.md) — Every tool we use and how
    to get access.
 
-Once you're set up, your first task on any project is to read the
-project's `CLAUDE.md` file. That file tells you everything specific
-to that project.
+## When you're ready to work
+
+→ [Creating a project](creating-a-project.md) — How to spin up a new
+project and daily Git commands
+
+→ [Ending a project](ending-a-project.md) — How to cleanly decommission
+a project when it's done
 
 ## Something not working?
 
-> [Troubleshooting](troubleshooting.md) — What to do when the spinup
-script runs but something doesn't work correctly.
+→ [Troubleshooting](troubleshooting.md)
