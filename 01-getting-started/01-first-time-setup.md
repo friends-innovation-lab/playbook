@@ -110,6 +110,23 @@ git --version
 ```
 You should see something like `git version 2.x.x`
 
+Now set your Git identity so your commits are linked to your GitHub account.
+
+Run this in Terminal:
+
+```bash
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+```
+
+> [!IMPORTANT]
+> Use the email address that is on your GitHub account.
+> Ask Lapedra if you are not sure which email to use.
+> This is required before your first commit. You only need to do it once.
+
+> [!TIP]
+> Having trouble? See [Git identity not configured](06-troubleshooting.md#git-commit-fails--user-identity-not-configured)
+
 ---
 
 ## Step 5 — Install Node.js
@@ -506,14 +523,6 @@ It works directly inside VS Code with full access to your project files.
 You should see your account email or name at the top of the
 Claude Code panel in VS Code. If you see a sign-in button
 it means the connection did not complete — try step 4 again.
-
-**How to use CC on a project:**
-1. Open your project folder in VS Code
-2. Click the Claude icon in the left sidebar
-3. Type your request in the chat panel
-4. Always start by telling CC to read the project context:
-   `Read CLAUDE.md first, then tell me what you understand
-   about this project before we start.`
 
 > [!TIP]
 > Having trouble? See [Claude Code not connecting](06-troubleshooting.md#claude-code-not-connecting)
