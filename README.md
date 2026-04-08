@@ -9,8 +9,7 @@ and project leads working on government prototypes and internal tools.
 ## What we do
 
 Friends Innovation Lab is the rapid prototyping division of Friends From The
-City (FFTC), a Service-Disabled Veteran-Owned Small Business. We build
-working prototypes for government procurement challenges and internal tools
+City (FFTC). We build working prototypes for government procurement challenges and internal tools
 for FFTC operations.
 
 Every project we spin up is:
