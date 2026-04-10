@@ -42,16 +42,33 @@ Every project we spin up is:
 
 ## Playbook structure
 
-```
-01-getting-started/   # New team member setup and orientation
-02-spinup/            # How to spin up and tear down projects
-03-building/          # Design system, AI workflow, starter prompts
-04-delivering/        # Demo standards, submission checklists, handoff
-05-operations/        # Lifecycle, costs, access management
-development/          # Technical standards (code, testing, security, deployment)
-operations/           # Automation scripts, design standards, lab tooling
-products/             # Standalone product documentation (Qori, Truebid)
-```
+The playbook has two parts:
+
+### Workflow docs (numbered folders)
+Read these in order. They cover the end-to-end process of
+working in the Innovation Lab — from getting set up to
+building and shipping prototypes.
+
+- `01-getting-started/` — Setup, onboarding, creating and ending projects
+- `02-spinup/` — Spinup and teardown scripts
+- `03-building/` — Design system, AI workflow, starter prompts, Storybook
+- `04-delivering/` — Demo standards, submission checklists, handoff
+- `05-operations/` — Prototype lifecycle, costs, offboarding
+
+### Reference docs (unnumbered folders)
+Dip into these as needed. They are SOPs and reference material
+for specific topics — not meant to be read start to finish.
+
+- `development/` — Technical standards: code quality, testing,
+  security, deployment, git workflow
+- `operations/` — Automation scripts and lab tooling
+- `products/` — Standalone product documentation (Qori, Truebid)
+- `_archive/` — Retired content preserved for reference
+
+---
+New to the lab? Start with `01-getting-started/`.
+Starting a project? Go to `01-getting-started/04-creating-a-project.md`.
+Looking for technical standards? Go to `development/`.
 
 ---
 
