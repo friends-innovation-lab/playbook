@@ -1,6 +1,6 @@
 # Offboarding
 
-What to do when a contractor or team member leaves the lab.
+What to do when a team member leaves the lab.
 
 ## When someone leaves
 
@@ -50,9 +50,9 @@ After rotating, update the environment variables in:
 2. All active Vercel projects (environment variables section)
 3. Notify remaining team members to update their local env vars
 
-## Contractor handoff
+## Team member offboarding
 
-When a contractor's engagement ends:
+When a team member leaves:
 1. Complete the offboarding checklist above
 2. Ensure their work is committed and pushed before their last day
 3. Run a code review on their last PRs before archiving
