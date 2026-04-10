@@ -13,7 +13,7 @@ City (FFTC). We build working prototypes for government procurement challenges a
 for FFTC operations.
 
 Every project we spin up is:
-- Live at a real URL (`[name].labs.cityfriends.tech`) in under 10 minutes
+- Live at a real URL (`[name].labs.cityfriends.tech`) in under 3 minutes
 - Built on a consistent stack (Next.js, TypeScript, Supabase, Vercel)
 - Accessible by default (WCAG 2.1 AA, Section 508)
 - Ready to demo to a client or evaluator
