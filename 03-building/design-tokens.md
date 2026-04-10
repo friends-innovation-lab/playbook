@@ -110,4 +110,5 @@ brand tokens with the agency's colors and typography. The prototype
 instantly looks like it belongs in that agency's ecosystem without
 any code changes.
 
-Agency token sets are coming. Ask Lapedra about the timeline.
+Agency token sets are available now. See
+[agency-theming.md](agency-theming.md) for how to apply them.

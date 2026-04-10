@@ -11,14 +11,18 @@ Standards, tools, and starter prompts for building projects.
    higher fidelity output
 4. Need to update a color or spacing value? See
    [design-tokens.md](design-tokens.md)
-5. Pull the right starter prompt from [prompts/](prompts/) to get 50% there fast
-6. Follow the [AI workflow](ai-workflow.md) for working with CC
+5. Building for a specific agency? See
+   [agency-theming.md](agency-theming.md)
+6. Pull the right starter prompt from [prompts/](prompts/) to get 50% there fast
+7. Follow the [AI workflow](ai-workflow.md) for working with CC
 
 ## Sections
 
 - [Design system](design-system.md) — Colors, typography, components
 - [Design tokens](design-tokens.md) — How tokens work, how to
   update them, and how they connect to Figma
+- [Agency theming](agency-theming.md) — How to apply VA, CMS,
+  and USWDS token sets to a prototype
 - [Storybook](storybook.md) — Component documentation, accessibility
   testing, and CC reference
 - [AI workflow](ai-workflow.md) — How to work with CC effectively
