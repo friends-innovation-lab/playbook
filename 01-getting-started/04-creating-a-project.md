@@ -6,6 +6,14 @@ you have a real project to spin up.
 
 ---
 
+> [!IMPORTANT]
+> Spinup credentials are set up by Lapedra when you join the lab
+> as a developer or project lead. If your role does not require
+> spinning up new projects — for example if you are joining an
+> existing project as a researcher or designer — you will not
+> need these credentials and can skip this doc entirely.
+> Ask Lapedra which sections apply to your role.
+
 ## The build loop
 
 Every project follows this loop:

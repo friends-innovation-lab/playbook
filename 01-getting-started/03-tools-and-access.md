@@ -52,3 +52,10 @@ the email you'll use for each service. She'll get you added.
 
 See [first-time-setup.md](01-first-time-setup.md) for the full list of
 environment variables you need and where to get each value.
+
+> [!NOTE]
+> Not all team members need all of these credentials.
+> Spinup credentials (VERCEL_TOKEN, SUPABASE_ACCESS_TOKEN, etc.)
+> are only needed by developers and project leads who will be
+> spinning up new projects. Lapedra will let you know which
+> credentials apply to your role when you join the lab.
