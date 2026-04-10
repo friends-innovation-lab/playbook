@@ -49,7 +49,7 @@ Every project we spin up is:
 04-delivering/        # Demo standards, submission checklists, handoff
 05-operations/        # Lifecycle, costs, access management
 development/          # Technical standards (code, testing, security, deployment)
-operations/           # Scripts, sales, contracts, design standards
+operations/           # Automation scripts, design standards, lab tooling
 products/             # Standalone product documentation (Qori, Truebid)
 ```
 
