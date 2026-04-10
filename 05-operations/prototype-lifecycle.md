@@ -21,7 +21,7 @@ Every project follows this lifecycle. Know where your project is.
 
 ## Stage 2 — Build
 
-**Duration:** 1–4 weeks depending on project type
+**Duration:** 1–2 weeks depending on project type
 
 **What happens:**
 - Features built using CC with starter prompts as starting points
