@@ -21,7 +21,7 @@ vendor can defend their decisions under pressure.
 - The design system, code quality, and documentation must be defensible
 - We should be able to make a change request live during an evaluation meeting
 
-**Timeline:** Typically 2–4 weeks from spinup to demo-ready.
+**Timeline:** Typically 1–2 weeks from spinup to demo-ready.
 
 **Examples of what we build:**
 - Veteran intake and eligibility screening tools
