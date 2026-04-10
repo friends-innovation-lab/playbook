@@ -55,4 +55,4 @@ products/             # Standalone product documentation (Qori, Truebid)
 
 ---
 
-:Friends Innovation Lab is a division of Friends From The City (FFTC)
+*Friends Innovation Lab is a division of Friends From The City (FFTC)
