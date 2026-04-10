@@ -93,14 +93,21 @@ Then add it as a variable in the Figma Tokens file.
 
 ---
 
-## Tokens Studio (future)
+## Coming next
 
+### Tokens Studio (automation layer)
 When Tokens Studio is configured with GitHub sync, tokens.json
 will be updated automatically when a designer changes values in
 Figma. The manual update process above will no longer be needed.
-
 The tokens.json file is already structured in the format Tokens
 Studio expects — connecting the plugin is the only remaining step.
 
-See Phase 5 on the roadmap for agency-specific token sets
-(USWDS, VA, CMS).
+### Agency token sets
+The token system is designed to support multiple agencies. When
+building a prototype for a specific agency — VA, HHS, CMS — an
+agency-specific token set can be applied that overrides the FFTC
+brand tokens with the agency's colors and typography. The prototype
+instantly looks like it belongs in that agency's ecosystem without
+any code changes.
+
+Agency token sets are coming. Ask Lapedra about the timeline.
