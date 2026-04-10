@@ -254,6 +254,66 @@ fi
 
 echo ""
 
+# --- Question 2b: Agency selection (government projects only) ---
+if [ "$PROJECT_TYPE" = "Government" ]; then
+  while true; do
+    echo "Which agency is this prototype for?"
+    echo ""
+    echo "  1. Department of Veterans Affairs (VA)"
+    echo "  2. Department of Health and Human Services (HHS)"
+    echo "  3. Centers for Medicare and Medicaid Services (CMS)"
+    echo "  4. General Services Administration (GSA)"
+    echo "  5. Other federal agency"
+    echo "  6. Not agency-specific"
+    echo ""
+    printf "> "
+    read -r AGENCY_NUM
+
+    case "$AGENCY_NUM" in
+      1)
+        AGENCY_THEME="va"
+        AGENCY_NAME="Department of Veterans Affairs"
+        break
+        ;;
+      2)
+        AGENCY_THEME="uswds"
+        AGENCY_NAME="Department of Health and Human Services"
+        break
+        ;;
+      3)
+        AGENCY_THEME="cms"
+        AGENCY_NAME="Centers for Medicare and Medicaid Services"
+        break
+        ;;
+      4)
+        AGENCY_THEME="uswds"
+        AGENCY_NAME="General Services Administration"
+        break
+        ;;
+      5)
+        AGENCY_THEME="uswds"
+        AGENCY_NAME="Federal Agency"
+        break
+        ;;
+      6)
+        AGENCY_THEME="fftc"
+        AGENCY_NAME="Not agency-specific"
+        break
+        ;;
+      *)
+        echo ""
+        echo -e "${RED}Please enter 1-6.${NC}"
+        echo ""
+        ;;
+    esac
+  done
+  echo ""
+else
+  # Internal projects skip agency selection
+  AGENCY_THEME="fftc"
+  AGENCY_NAME="Internal"
+fi
+
 # --- Question 3: Client or description ---
 if [ "$PROJECT_TYPE" = "Government" ]; then
   echo "Who is this for? (e.g. Department of Veterans Affairs, HHS, internal FFTC)"
@@ -302,6 +362,9 @@ echo "Here's what we're about to create:"
 echo ""
 echo "  Project name:   $PROJECT_NAME"
 echo "  Type:           $PROJECT_TYPE"
+if [ "$PROJECT_TYPE" = "Government" ]; then
+  echo "  Agency:         $AGENCY_NAME ($AGENCY_THEME)"
+fi
 echo "  For:            $PROJECT_FOR"
 echo "  Database:       $DB_DISPLAY"
 echo "  GitHub repo:    github.com/${GITHUB_ORG}/${PROJECT_NAME}"
@@ -641,7 +704,15 @@ if [ -f "$CLAUDE_TEMPLATE" ]; then
     -e "s|{{SUPABASE_URL}}|${SUPABASE_URL_DISPLAY}|g" \
     -e "s|{{DATE_CREATED}}|${TODAY}|g" \
     -e "s|{{STACK}}|${STACK}|g" \
+    -e "s|{{AGENCY_THEME}}|${AGENCY_THEME}|g" \
+    -e "s|{{AGENCY_NAME}}|${AGENCY_NAME}|g" \
     "$CLAUDE_TEMPLATE" > CLAUDE.md
+
+  # Remove agency lines for internal projects or when not agency-specific
+  if [ "$AGENCY_THEME" = "fftc" ] || [ "$AGENCY_NAME" = "Internal" ]; then
+    sed -i '' '/^- \*\*Agency:\*\*/d' CLAUDE.md
+    sed -i '' '/^- \*\*Theme:\*\*/d' CLAUDE.md
+  fi
 
   git add CLAUDE.md
   git commit -m "chore: configure project for ${PROJECT_NAME}"
@@ -714,6 +785,9 @@ cat > .env.local <<ENVEOF
 NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
 NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
 SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+
+# Agency theme — fftc (default), uswds, va, or cms
+NEXT_PUBLIC_AGENCY_THEME=${AGENCY_THEME}
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -863,6 +937,11 @@ fi
 # App name (all environments)
 set_vercel_env "NEXT_PUBLIC_APP_NAME" "$PROJECT_NAME" "$ALL_ENVS"
 
+# Agency theme (all environments)
+set_vercel_env "NEXT_PUBLIC_AGENCY_THEME" "$AGENCY_THEME" "$PROD_ONLY"
+set_vercel_env "NEXT_PUBLIC_AGENCY_THEME" "$AGENCY_THEME" "$PREVIEW_ONLY"
+set_vercel_env "NEXT_PUBLIC_AGENCY_THEME" "$AGENCY_THEME" "$DEV_ONLY"
+
 # App URL (per environment)
 set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}.${LABS_DOMAIN}" "$PROD_ONLY"
 set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}-*.vercel.app" "$PREVIEW_ONLY"
@@ -953,6 +1032,10 @@ echo ""
 echo "PROJECT"
 echo "  Name:          ${PROJECT_NAME}"
 echo "  Type:          ${PROJECT_TYPE}"
+if [ "$PROJECT_TYPE" = "Government" ]; then
+  echo "  Agency:        ${AGENCY_NAME}"
+  echo "  Theme:         ${AGENCY_THEME}"
+fi
 echo "  Created:       $(date +%Y-%m-%d)"
 echo ""
 echo "LINKS"

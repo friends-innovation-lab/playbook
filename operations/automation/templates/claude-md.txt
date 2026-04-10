@@ -8,6 +8,8 @@
 **{{PROJECT_NAME}}** — {{PROJECT_FOR}}
 
 - **Type:** {{PROJECT_TYPE}}
+- **Agency:** {{AGENCY_NAME}}
+- **Theme:** {{AGENCY_THEME}}
 - **Stack:** {{STACK}}
 - **Deployed:** {{VERCEL_URL}}
 - **Repo:** {{GITHUB_URL}}
