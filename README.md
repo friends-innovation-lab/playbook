@@ -72,4 +72,4 @@ Looking for technical standards? Go to `development/`.
 
 ---
 
-*Friends Innovation Lab is a division of Friends From The City (FFTC)
+Friends Innovation Lab is a division of Friends From The City (FFTC)
