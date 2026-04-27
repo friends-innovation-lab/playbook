@@ -13,10 +13,19 @@ contains everything needed to spin up, build, and ship government
 prototypes and internal tools.
 
 **Key files:**
-- `operations/automation/spinup.sh` — creates a new project in under 10 minutes
+- `operations/automation/spinup-typed.sh` — type-aware project spinup (recommended)
+- `operations/automation/spinup.sh` — original interactive spinup (deprecated fallback)
 - `operations/automation/teardown.sh` — decommissions a project cleanly
+- `docs/spinup-typed.md` — full guide for the type-aware spinup script
 - `03-building/prompts/` — starter prompts for each type of project
 - `01-getting-started/` — onboarding for new team members
+
+## Lab Standards
+
+This playbook works in conjunction with the Friends Innovation Lab engineering
+standards at https://github.com/friends-innovation-lab/lab-standards (v1.0.0).
+The spinup script applies extensions from https://github.com/friends-innovation-lab/project-template
+based on the project type.
 
 ---
 

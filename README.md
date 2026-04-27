@@ -25,7 +25,8 @@ Every project we spin up is:
 → [What we build](01-getting-started/02-what-we-build.md)
 
 **Starting a new project?**
-→ [Spinup script](operations/automation/README.md)
+→ [Type-aware spinup guide](docs/spinup-typed.md) (recommended)
+→ [Spinup scripts](operations/automation/README.md)
 
 **Building a feature?**
 → [AI workflow with CC](03-building/ai-workflow.md)
