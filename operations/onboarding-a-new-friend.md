@@ -2,6 +2,9 @@
 
 The operational checklist for adding someone to the Treehouse — and removing them when they leave. Both halves matter equally. Skipping a step on offboarding leaves access dangling; skipping a step on onboarding leaves the new person stuck before they start.
 
+> [!IMPORTANT]
+> Offboarding matters as much as onboarding. Lingering access creates real risk. When someone leaves, work through the offboarding checklist on their last day — every platform, every credential.
+
 Use this as a working document. Copy it for each person, check off as you go.
 
 ---
@@ -41,22 +44,22 @@ Copy the template below. Fill in the values from your records.
 
 ---
 
-**Subject:** Treehouse Innovation Lab — your credentials
+```text
+Subject: Treehouse Innovation Lab — your credentials
 
 Hi [Name],
 
 Welcome to the Treehouse. A few values you'll need during first-time setup. Add them to your shell profile when the playbook tells you to.
 
-```bash
 # Friends Innovation Lab — shared credentials
 export LAB_SUPABASE_ORG_ID="vbnqtawlnyzaioqbgwtw"
-```
 
 Some projects will need additional credentials (transactional email, rate limiting, AI APIs). Those get provisioned per-project when each one starts. You don't need them for setup or for your first test project.
 
 Let me know if you have any trouble during setup. Better to ask early than struggle quietly.
 
 — Lapedra
+```
 
 ---
 
@@ -71,7 +74,8 @@ Copy the template below. Adjust the tone if you know them well.
 
 ---
 
-**Subject:** Welcome to the Treehouse — start here when you have an hour
+```text
+Subject: Welcome to the Treehouse — start here when you have an hour
 
 Hi [Name],
 
@@ -84,6 +88,7 @@ That's the entry point. It walks you through what the lab is, how to set up your
 I'm available all of [day/week] if anything gets stuck or unclear. Better to flag a confusing step ten times than struggle quietly.
 
 — Lapedra
+```
 
 ---
 
@@ -115,7 +120,8 @@ Before revoking anything, confirm with the departing Friend:
 - [ ] Whether they have any in-progress work that needs handoff
 - [ ] Whether they need access preserved for any specific period (rare, but happens for contract reasons)
 
-Revoke access *on* their last day, not before. They may need to wrap up work, export anything they want to keep, or do final handoffs.
+> [!WARNING]
+> Revoke access *on* their last day, not before. They may need to wrap up work, export anything they want to keep, or do final handoffs.
 
 ### Step 2: Revoke platform access
 
@@ -139,7 +145,10 @@ If they had access to shared lab credentials (`LAB_SUPABASE_ORG_ID` and any othe
 - [ ] Project-specific credentials they had access to (Anthropic API keys for specific projects, third-party services configured for projects they worked on) — rotate if there's any reason for concern
 - [ ] Shared lab credentials (`LAB_SUPABASE_ORG_ID`) — generally don't need rotation since they're effectively public infrastructure identifiers, but reassess if circumstances warrant
 
-For most amicable departures, no rotation is needed. For terminations or sensitive situations, rotate liberally and update the credentials email template above.
+For most amicable departures, no rotation is needed.
+
+> [!CAUTION]
+> For terminations or sensitive situations, rotate credentials liberally and update the credentials email template above. The cost of unnecessary rotation is small. The cost of leaving access in place after a difficult departure can be very large.
 
 ### Step 4: Reassign their work
 
@@ -172,7 +181,8 @@ This document is the operational record of how Friends manages access. It needs 
 - A platform changes how invitations work (update the relevant step)
 - Something goes wrong during onboarding or offboarding that this checklist didn't catch (add the missing step)
 
-Treat this as a living document. Updates are good. Stale checklists fail people.
+> [!TIP]
+> Treat this as a living document. Updates are good. Stale checklists fail people.
 
 ---
 

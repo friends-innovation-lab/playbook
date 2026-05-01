@@ -74,7 +74,8 @@ The standards are:
 - **Retrofit playbook** — Bringing existing projects up to standard
 - **AI-assisted development** — Working with AI tools and agents
 
-You don't need to read all nine before your first project. You'll find that most of them describe what's already built into the foundation. They're there when a question arises and you want the authoritative answer.
+> [!TIP]
+> You don't need to read all nine before your first project. You'll find that most of them describe what's already built into the foundation. They're there when a question arises and you want the authoritative answer.
 
 When the lab updates a standard, projects don't auto-update. Each project decides whether to sync the new version or document a deviation in an ADR (architecture decision record).
 
@@ -100,7 +101,8 @@ These three environments are *mostly* the same code, but they read configuration
 - **CI config** lives in workflow YAML files. The lab uses placeholder values here so dependabot PRs don't break.
 - **Live config** lives in Vercel's environment variable settings. The spinup script puts the right values there automatically.
 
-The thing that confuses people: **adding a value to `.env.local` does not put it in Vercel.** Your local dev works, your deployed site doesn't, and the difference is invisible until you check. If you ever encounter a "works on my machine" mystery, this is the cause 80% of the time.
+> [!IMPORTANT]
+> Adding a value to `.env.local` does not put it in Vercel. Your local dev works, your deployed site doesn't, and the difference is invisible until you check. If you ever encounter a "works on my machine" mystery, this is the cause 80% of the time.
 
 When you add a new environment variable to a project, you have to add it in both places — `.env.local` for your local work, and Vercel's settings for the live site. The spinup script and CC handle most of these for you. The cases where you'll add them manually are rare but worth knowing about.
 
@@ -122,7 +124,8 @@ For lab projects, CI runs eight or more checks:
 - **Dependency scan** — Checks for known vulnerabilities in libraries
 - **License check** — Ensures all dependencies have approved licenses
 
-A pull request can't merge until these pass (with rare exceptions you'll learn about). Green checkmarks in your PR mean you're safe to merge.
+> [!NOTE]
+> A pull request can't merge until these pass (with rare exceptions you'll learn about). Green checkmarks in your PR mean you're safe to merge.
 
 This sounds like a lot. In practice, you'll rarely think about it. You write code, you push, you see green checks, you merge. The system catches problems before they reach production. When it fails, the error message tells you what broke.
 
@@ -150,7 +153,8 @@ A short tour of the tools that show up during a project. You'll learn them by us
 
 **Railway** — Where backend services and scheduled jobs run, when projects need them. Less common than Vercel for typical lab work.
 
-You don't need accounts you create yourself for these. The lab handles your access during onboarding.
+> [!NOTE]
+> You don't need accounts you create yourself for these. The lab handles your access during onboarding.
 
 ---
 
