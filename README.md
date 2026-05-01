@@ -14,7 +14,7 @@ for FFTC operations.
 
 Every project we spin up is:
 - Live at a real URL (`[name].lab.cityfriends.tech`) in under 3 minutes
-- Built on a consistent stack (Next.js, TypeScript, Supabase, Vercel)
+- Built on a consistent stack (Next.js, TypeScript, Supabase, Vercel, Railway)
 - Accessible by default (WCAG 2.1 AA, Section 508)
 - Ready to demo to a client or evaluator
 
