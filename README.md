@@ -20,26 +20,23 @@ Every project we spin up is:
 
 ## How to use this playbook
 
-**New to the lab?** Start here:
-→ [First-time setup](01-getting-started/01-first-time-setup.md)
-→ [What we build](01-getting-started/02-what-we-build.md)
+> [!IMPORTANT]
+> **New here? Start with [START-HERE.md](START-HERE.md).** It's a quick read that explains what the lab is, what it can do, and how the rest of the docs walk you through getting set up.
 
-**Starting a new project?**
-→ [Type-aware spinup guide](docs/spinup-typed.md) (recommended)
-→ [Spinup scripts](operations/automation/README.md)
+Once you've read START-HERE, the path forward is laid out there. Below is a quick reference for finding specific docs once you know what you're looking for.
 
-**Building a feature?**
-→ [AI workflow with CC](03-building/ai-workflow.md)
-→ [Starter prompts](03-building/prompts/README.md)
-→ [Design system](03-building/design-system.md)
+**Already set up and looking for something specific?**
 
-**Preparing for a demo or submission?**
-→ [Demo standards](04-delivering/demo-standards.md)
-→ [Submission checklist](04-delivering/submission-checklist.md)
-
-**Wrapping up a project?**
-→ [Prototype lifecycle](05-operations/prototype-lifecycle.md)
-→ [Teardown script](operations/automation/README.md)
+- [First-time setup](01-getting-started/01-first-time-setup.md) — for new machines
+- [Creating a project](01-getting-started/04-creating-a-project.md) — for real projects
+- [Type-aware spinup guide](docs/spinup-typed.md) — full spinup script reference
+- [AI workflow with CC](03-building/ai-workflow.md) — working with Claude Code
+- [Starter prompts](03-building/prompts/README.md) — prompt templates for common tasks
+- [Design system](03-building/design-system.md) — Friends brand and component conventions
+- [Demo standards](04-delivering/demo-standards.md) — preparing for client demos
+- [Submission checklist](04-delivering/submission-checklist.md) — preparing for submissions
+- [Prototype lifecycle](05-operations/prototype-lifecycle.md) — wrapping up a project
+- [Teardown script](operations/automation/README.md) — removing a project's resources
 
 ## Playbook structure
 
