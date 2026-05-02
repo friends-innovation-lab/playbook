@@ -147,7 +147,7 @@ fi
 if [ -n "$LABS_DOMAIN" ]; then
   ok "LABS_DOMAIN is set ($LABS_DOMAIN)"
 else
-  fail "LABS_DOMAIN is not set. Add this to your shell profile: export LABS_DOMAIN=labs.cityfriends.tech"
+  fail "LABS_DOMAIN is not set. Add this to your shell profile: export LABS_DOMAIN=lab.cityfriends.tech"
   CHECKS_PASSED=false
 fi
 

@@ -143,7 +143,7 @@ variables may have failed silently.
 
 *↩ Related to [Step 8 — Install Vercel CLI](../01-getting-started/01-first-time-setup.md#step-8--install-vercel-cli)*
 
-**Symptom:** `[name].labs.cityfriends.tech` returns an error or
+**Symptom:** `[name].lab.cityfriends.tech` returns an error or
 does not load.
 
 **Why it happens:** DNS changes can take up to 24 hours to propagate,
@@ -152,7 +152,7 @@ or the domain was not configured correctly in Vercel.
 **How to fix it:**
 
 1. Go to vercel.com → your project → Settings → Domains
-2. Check that `[name].labs.cityfriends.tech` is listed
+2. Check that `[name].lab.cityfriends.tech` is listed
 3. If it shows a warning or error, click the domain and follow
    Vercel's instructions to verify it
 4. If it is not listed at all, add it:
@@ -160,7 +160,7 @@ or the domain was not configured correctly in Vercel.
    curl -X POST "https://api.vercel.com/v10/projects/[name]/domains" \
      -H "Authorization: Bearer $VERCEL_TOKEN" \
      -H "Content-Type: application/json" \
-     -d '{"name": "[name].labs.cityfriends.tech"}'
+     -d '{"name": "[name].lab.cityfriends.tech"}'
    ```
 5. If it still does not work after 24 hours, message Lapedra —
    the DNS record may need updating at the domain registrar

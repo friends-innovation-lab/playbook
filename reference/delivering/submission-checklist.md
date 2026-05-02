@@ -6,7 +6,7 @@ Complete this checklist before submitting anything.
 ## Technical
 
 - [ ] Live URL is working and stable
-- [ ] URL is `[name].labs.cityfriends.tech` — not a `.vercel.app` URL
+- [ ] URL is `[name].lab.cityfriends.tech` — not a `.vercel.app` URL
 - [ ] All challenge requirements are addressed (re-read the brief)
 - [ ] Primary user flow works end to end
 - [ ] Auth works with demo credentials

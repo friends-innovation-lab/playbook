@@ -34,7 +34,7 @@ Demo date: [date]
 Stack: Next.js 14 App Router, TypeScript, Tailwind CSS, shadcn/ui,
 Supabase. Follow all standards in CLAUDE.md.
 Reference the project Storybook for component variants and states:
-https://storybook.[name].labs.cityfriends.tech
+https://storybook.[name].lab.cityfriends.tech
 (Replace [name] with the actual project name)
 
 VISUAL INTENT
