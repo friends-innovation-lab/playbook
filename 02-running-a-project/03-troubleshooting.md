@@ -327,7 +327,7 @@ Then retry your commit.
 
 ## Spinup fails pushing develop branch
 
-*↩ Related to [Creating a project — Spinning up a project](01-creating-a-project.md#spinning-up-a-project)*
+*↩ Related to [Creating a project — Spin up the project](01-creating-a-project.md#phase-3--spin-up-the-project)*
 
 **Symptom:** The spinup script fails when trying to push the
 `develop` branch. You see an error like:
