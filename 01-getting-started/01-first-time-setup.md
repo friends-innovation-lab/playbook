@@ -11,6 +11,15 @@ will pass and you will be ready to start your first project.
 > If you closed Terminal, reopen it before continuing.
 > Press **Command + Space**, type `Terminal`, press Enter.
 
+> [!IMPORTANT]
+> **Before you start, make sure you have accounts at all of these services and that Lapedra has added you to the relevant Friends Innovation Lab organizations:**
+>
+> - **GitHub** — account at github.com, added to the `friends-innovation-lab` org
+> - **Vercel** — account at vercel.com, added to the Friends Innovation Lab Vercel team
+> - **Supabase** — account at supabase.com, added to the Friends Innovation Lab Supabase organization
+>
+> If any of these are missing, message Lapedra before continuing. Without them, you won't be able to retrieve the credentials you need to provision projects.
+
 ---
 
 ## Step 1 — Download and install VS Code
@@ -83,13 +92,13 @@ source ~/.zprofile
 ```bash
 brew --version
 ```
-You should see `Homebrew 4.x.x`
+You should see a version number — any recent version of Homebrew (4.x or 5.x) works fine. If you see "command not found," Homebrew didn't install correctly.
 
 **Note:** This extra step is only required on Macs with Apple Silicon (M1, M2, M3 chips).
 If you are on an older Intel Mac you can skip straight to verifying the version.
 
 > [!TIP]
-> Having trouble? See [Homebrew installation issues](06-troubleshooting.md#homebrew-not-found-after-installation)
+> Having trouble? See [Homebrew installation issues](../02-running-a-project/03-troubleshooting.md#homebrew-not-found-after-installation)
 
 ---
 
@@ -119,13 +128,22 @@ git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 ```
 
+**Verify your git config saved correctly:**
+
+```bash
+git config --global user.name
+git config --global user.email
+```
+
+These should return your name and email. If they return nothing, the previous step didn't save — try the config commands again.
+
 > [!IMPORTANT]
 > Use the email address that is on your GitHub account.
 > Ask Lapedra if you are not sure which email to use.
 > This is required before your first commit. You only need to do it once.
 
 > [!TIP]
-> Having trouble? See [Git identity not configured](06-troubleshooting.md#git-commit-fails--user-identity-not-configured)
+> Having trouble? See [Git identity not configured](../02-running-a-project/03-troubleshooting.md#git-commit-fails--user-identity-not-configured)
 
 ---
 
@@ -147,7 +165,7 @@ requires Node.js version 20 or higher.
 ```bash
 node --version
 ```
-You should see `v20.x.x` or higher.
+You should see `v20.0.0` or higher (any version starting with `v20`, `v22`, `v24`, or above is fine). If your version is below v20, you need to update.
 
 ---
 
@@ -222,19 +240,22 @@ You should see a list of projects (or an empty list — both are fine).
 The Vercel CLI lets the spinup script create and deploy projects
 automatically.
 
-Run this in Terminal:
+**Install the Vercel CLI:**
 
 ```bash
 npm install -g vercel
 ```
 
-If you see a permissions error, run it with sudo instead:
-
-Run this in Terminal:
+If you get a permissions error, use this instead:
 
 ```bash
 sudo npm install -g vercel
 ```
+
+You'll be prompted for your Mac password. Type it (the cursor won't move as you type — that's normal) and press Enter.
+
+> [!NOTE]
+> When the install finishes, Vercel will ask if you want to install the Vercel Plugin for Claude Code. **Answer no.** This plugin is optional and not needed for first-time setup. The Vercel CLI itself (which you just installed) is all you need.
 
 Then log in to Vercel:
 
@@ -253,7 +274,7 @@ vercel whoami
 You should see your Vercel username.
 
 > [!TIP]
-> Having trouble? See [Vercel CLI permissions error](06-troubleshooting.md#vercel-cli-install-fails-with-permissions-error)
+> Having trouble? See [Vercel CLI permissions error](../02-running-a-project/03-troubleshooting.md#vercel-cli-install-fails-with-permissions-error)
 
 ---
 
@@ -303,7 +324,27 @@ across every project forever.
 They live in a file called `.zshrc` which Terminal reads every
 time it opens.
 
+### Set up the `code` command in your terminal
+
+VS Code installs the visual editor, but it doesn't automatically add a terminal command for opening files. You need to add this once.
+
+1. Open VS Code (the application)
+2. Press `Cmd+Shift+P` to open the Command Palette
+3. Type: `Shell Command: Install 'code' command in PATH`
+4. Press Enter
+
+Now you can open any file from the terminal with `code [filename]`. Verify it works:
+
+```bash
+code --version
+```
+
+You should see version info. If you see "command not found," go back through the steps above.
+
 ### Open your shell profile in VS Code
+
+> [!NOTE]
+> It doesn't matter which folder you're in when running this command. The `~/` part of the path always points to your home directory, no matter where you are in the file system.
 
 Run this in Terminal:
 
@@ -311,25 +352,23 @@ Run this in Terminal:
 code ~/.zshrc
 ```
 
-If VS Code says "command not found", open VS Code manually,
-press **Command + Shift + P**, type `shell command`, and click
-**Shell Command: Install 'code' command in PATH**. Then try again.
+### Add the Friends Innovation Lab environment variables
 
-### Add these lines at the bottom of the file
+With `~/.zshrc` open in VS Code, scroll to the bottom of the file. The file may already have content from other tools you've installed — don't delete or replace anything that's there. You're adding new lines at the bottom.
 
-Copy and paste all of these:
+Add these lines:
 
 ```bash
 # Friends Innovation Lab
 export VERCEL_TOKEN=
 export VERCEL_ORG_ID=
 export GITHUB_ORG=friends-innovation-lab
-export SUPABASE_ORG_ID=
+export LAB_SUPABASE_ORG_ID=
 export SUPABASE_ACCESS_TOKEN=
 export LABS_DOMAIN=lab.cityfriends.tech
 ```
 
-Now fill in the blank values using the steps below.
+The blank values (`=` with nothing after) get filled in below. Save the file (Cmd+S in VS Code) but leave it open — you'll come back to add the actual values.
 
 ---
 
@@ -386,7 +425,7 @@ This lets the spinup script create Supabase projects on your behalf.
 
 ---
 
-### SUPABASE_ORG_ID
+### LAB_SUPABASE_ORG_ID
 
 This tells the script which Supabase organization to create projects under.
 
@@ -398,7 +437,7 @@ This tells the script which Supabase organization to create projects under.
    these are the same value, just labeled differently depending
    on your Supabase version
 6. Copy that value
-7. Paste it after `SUPABASE_ORG_ID=` in your `.zshrc`
+7. Paste it after `LAB_SUPABASE_ORG_ID=` in your `.zshrc`
 
 ---
 
@@ -418,7 +457,7 @@ echo $SUPABASE_ACCESS_TOKEN
 Each should print its value — not blank.
 
 > [!TIP]
-> Having trouble? See [Environment variable shows blank](06-troubleshooting.md#pre-flight-checks-fail-after-setup)
+> Having trouble? See [Environment variable shows blank](../02-running-a-project/03-troubleshooting.md#pre-flight-checks-fail-after-setup)
 
 ---
 
@@ -525,7 +564,7 @@ Claude Code panel in VS Code. If you see a sign-in button
 it means the connection did not complete — try step 4 again.
 
 > [!TIP]
-> Having trouble? See [Claude Code not connecting](06-troubleshooting.md#claude-code-not-connecting)
+> Having trouble? See [Claude Code not connecting](../02-running-a-project/03-troubleshooting.md#claude-code-not-connecting)
 
 ---
 
@@ -538,4 +577,4 @@ You will not need to do any of this again.
 
 → Starting a new project? See [Creating a project](04-creating-a-project.md)
 → Wrapping up a project? See [Ending a project](05-ending-a-project.md)
-→ Something not working? See [Troubleshooting](06-troubleshooting.md)
+→ Something not working? See [Troubleshooting](../02-running-a-project/03-troubleshooting.md)
