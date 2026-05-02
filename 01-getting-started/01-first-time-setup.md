@@ -17,27 +17,13 @@ will pass and you will be ready to start your first project.
 > - **GitHub** — account at github.com, added to the `friends-innovation-lab` org
 > - **Vercel** — account at vercel.com, added to the Friends Innovation Lab Vercel team
 > - **Supabase** — account at supabase.com, added to the Friends Innovation Lab Supabase organization
+> - **Figma** — account at figma.com, added to the FFTC Figma team (especially important for designers)
 >
-> If any of these are missing, message Lapedra before continuing. Without them, you won't be able to retrieve the credentials you need to provision projects.
+> If any of these are missing, message Lapedra before continuing. Without them, you won't be able to retrieve the credentials you need to provision projects or access design files.
 
 ---
 
-## Step 1 — Download and install VS Code
-
-VS Code is the code editor the entire lab uses. You write and view
-code inside it, and it connects to all the tools below.
-
-1. Go to **[code.visualstudio.com](https://code.visualstudio.com)**
-2. Click the big white button that says **Download for macOS**
-3. Open your Downloads folder and double-click the file that downloaded
-4. Drag the VS Code icon into your Applications folder when prompted
-5. Open VS Code from your Applications folder or Spotlight search
-
-**Verify it worked:** VS Code opens and you see a welcome screen.
-
----
-
-## Step 2 — Open Terminal
+## Step 1 — Open Terminal
 
 Terminal is the command-line interface on your Mac. You type commands
 here to install tools, run scripts, and manage your projects.
@@ -53,7 +39,7 @@ Keep Terminal open. You will use it for every step below.
 
 ---
 
-## Step 3 — Install Homebrew
+## Step 2 — Install Homebrew
 
 Homebrew is a package manager for Mac. It lets you install developer
 tools with a single command. Install it first — everything else
@@ -102,7 +88,7 @@ If you are on an older Intel Mac you can skip straight to verifying the version.
 
 ---
 
-## Step 4 — Install Git
+## Step 3 — Install Git
 
 Git tracks changes to code and lets the team share work.
 Every project uses it.
@@ -147,7 +133,7 @@ These should return your name and email. If they return nothing, the previous st
 
 ---
 
-## Step 5 — Install Node.js
+## Step 4 — Install Node.js
 
 Node.js runs JavaScript on your computer. Every project in the lab
 requires Node.js version 20 or higher.
@@ -166,6 +152,75 @@ requires Node.js version 20 or higher.
 node --version
 ```
 You should see `v20.0.0` or higher (any version starting with `v20`, `v22`, `v24`, or above is fine). If your version is below v20, you need to update.
+
+---
+
+## Step 5 — Install VS Code and Claude Code
+
+VS Code is the editor you'll use for working on lab projects. Claude Code is the AI coding assistant that runs inside VS Code. Install both now.
+
+### Install VS Code
+
+1. Go to **[code.visualstudio.com](https://code.visualstudio.com)**
+2. Click the big white button that says **Download for macOS**
+3. Open your Downloads folder and double-click the file that downloaded
+4. Drag the VS Code icon into your Applications folder when prompted
+5. Open VS Code from your Applications folder or Spotlight search
+
+**Verify it worked:** VS Code opens and you see a welcome screen.
+
+### Set up the `code` command in your terminal
+
+VS Code installs the visual editor, but it doesn't automatically add a terminal command for opening files. You need to add this once.
+
+1. Open VS Code (the application)
+2. Press `Cmd+Shift+P` to open the Command Palette
+3. Type: `Shell Command: Install 'code' command in PATH`
+4. Press Enter
+
+Now you can open any file from the terminal with `code [filename]`. Verify it works:
+
+```bash
+code --version
+```
+
+You should see version info. If you see "command not found," go back through the steps above.
+
+### Install Claude Code
+
+Claude Code (CC) is the AI assistant the lab uses to build projects.
+It works directly inside VS Code with full access to your project files.
+
+**Install the Claude Code extension:**
+1. Open VS Code
+2. Click the **Extensions** icon in the left sidebar —
+   it looks like four small squares stacked together
+3. A search bar appears at the top of the Extensions panel
+4. Type `Claude Code` in the search bar
+5. Look for the extension named **Claude Code** published by **Anthropic**
+6. Click the blue **Install** button next to it
+7. Wait for it to finish installing
+
+**Connect to your Anthropic account:**
+1. After installing, look at the left sidebar in VS Code —
+   you will see a new icon that looks like the Claude logo
+   (a small diamond/sparkle shape)
+2. Click that icon
+3. A panel opens on the left side of VS Code
+4. Click **Sign in to Claude**
+5. A browser window opens automatically
+6. Log in with your Anthropic account email and password
+7. Click **Authorize** when prompted
+8. Switch back to VS Code — you should now see Claude Code
+   is connected and ready
+
+**Verify it worked:**
+You should see your account email or name at the top of the
+Claude Code panel in VS Code. If you see a sign-in button
+it means the connection did not complete — try step 4 again.
+
+> [!TIP]
+> Having trouble? See [Claude Code not connecting](../02-running-a-project/03-troubleshooting.md#claude-code-not-connecting)
 
 ---
 
@@ -324,23 +379,6 @@ across every project forever.
 They live in a file called `.zshrc` which Terminal reads every
 time it opens.
 
-### Set up the `code` command in your terminal
-
-VS Code installs the visual editor, but it doesn't automatically add a terminal command for opening files. You need to add this once.
-
-1. Open VS Code (the application)
-2. Press `Cmd+Shift+P` to open the Command Palette
-3. Type: `Shell Command: Install 'code' command in PATH`
-4. Press Enter
-
-Now you can open any file from the terminal with `code [filename]`. Verify it works:
-
-```bash
-code --version
-```
-
-You should see version info. If you see "command not found," go back through the steps above.
-
 ### Open your shell profile in VS Code
 
 > [!NOTE]
@@ -385,7 +423,22 @@ This lets the spinup script create Vercel projects on your behalf.
 7. Expiration: **1 year**
 8. Click **Create**
 9. **Copy the token immediately** — Vercel only shows it once
-10. Paste it after `VERCEL_TOKEN=` in your `.zshrc`
+
+**Paste your Vercel token into your shell profile.**
+
+Switch back to VS Code, where `~/.zshrc` should still be open from earlier. Find the line you added that says:
+
+```bash
+export VERCEL_TOKEN=
+```
+
+Paste your token value after the `=` sign so it looks like:
+
+```bash
+export VERCEL_TOKEN=your-actual-token-value-here
+```
+
+Save the file (Cmd+S in VS Code).
 
 > [!IMPORTANT]
 > Copy the token immediately. Vercel only shows it once — if you
@@ -401,7 +454,8 @@ This tells the script which Vercel team to create projects under.
 2. Click **General** in the left sidebar
 3. Scroll down to find the field labeled **Team ID**
 4. Copy that value
-5. Paste it after `VERCEL_ORG_ID=` in your `.zshrc`
+
+**Paste into your shell profile.** Switch to VS Code, find `export VERCEL_ORG_ID=`, and paste the Team ID after the `=` sign. Save the file.
 
 ---
 
@@ -417,7 +471,8 @@ This lets the spinup script create Supabase projects on your behalf.
 6. Name: `fftc-lab`
 7. Click **Generate**
 8. **Copy the token immediately** — Supabase only shows it once
-9. Paste it after `SUPABASE_ACCESS_TOKEN=` in your `.zshrc`
+
+**Paste into your shell profile.** Switch to VS Code, find `export SUPABASE_ACCESS_TOKEN=`, and paste the token after the `=` sign. Save the file.
 
 > [!IMPORTANT]
 > Copy the token immediately. Supabase only shows it once — if you
@@ -437,7 +492,8 @@ This tells the script which Supabase organization to create projects under.
    these are the same value, just labeled differently depending
    on your Supabase version
 6. Copy that value
-7. Paste it after `LAB_SUPABASE_ORG_ID=` in your `.zshrc`
+
+**Paste into your shell profile.** Switch to VS Code, find `export LAB_SUPABASE_ORG_ID=`, and paste the org ID after the `=` sign. Save the file.
 
 ---
 
@@ -457,7 +513,7 @@ echo $SUPABASE_ACCESS_TOKEN
 Each should print its value — not blank.
 
 > [!TIP]
-> Having trouble? See [Environment variable shows blank](../02-running-a-project/03-troubleshooting.md#pre-flight-checks-fail-after-setup)
+> Having trouble? See [Environment variable shows blank](../02-running-a-project/03-troubleshooting.md#environment-variable-shows-blank)
 
 ---
 
@@ -516,65 +572,8 @@ code .
 
 ---
 
-## Step 14 — Get added to team accounts
+## You're set up
 
-Ask Lapedra to add you to:
+You're ready to use the lab. Next, read the lab orientation to understand how the lab works:
 
-- GitHub org: `friends-innovation-lab`
-- Vercel team: `friends-innovation-lab`
-- Supabase org
-- Figma org (if you are doing design work)
-- Sentry org: `friends-innovation-lab`
-
-Send her your GitHub username and the email you use for each service.
-
----
-
-## Step 15 — Install Claude Code in VS Code
-
-Claude Code (CC) is the AI assistant the lab uses to build projects.
-It works directly inside VS Code with full access to your project files.
-
-**Install the Claude Code extension:**
-1. Open VS Code
-2. Click the **Extensions** icon in the left sidebar —
-   it looks like four small squares stacked together
-3. A search bar appears at the top of the Extensions panel
-4. Type `Claude Code` in the search bar
-5. Look for the extension named **Claude Code** published by **Anthropic**
-6. Click the blue **Install** button next to it
-7. Wait for it to finish installing
-
-**Connect to your Anthropic account:**
-1. After installing, look at the left sidebar in VS Code —
-   you will see a new icon that looks like the Claude logo
-   (a small diamond/sparkle shape)
-2. Click that icon
-3. A panel opens on the left side of VS Code
-4. Click **Sign in to Claude**
-5. A browser window opens automatically
-6. Log in with your Anthropic account email and password
-7. Click **Authorize** when prompted
-8. Switch back to VS Code — you should now see Claude Code
-   is connected and ready
-
-**Verify it worked:**
-You should see your account email or name at the top of the
-Claude Code panel in VS Code. If you see a sign-in button
-it means the connection did not complete — try step 4 again.
-
-> [!TIP]
-> Having trouble? See [Claude Code not connecting](../02-running-a-project/03-troubleshooting.md#claude-code-not-connecting)
-
----
-
-## You're ready
-
-When all the steps above are complete your machine is set up correctly.
-You will not need to do any of this again.
-
-**What's next depends on what you need to do:**
-
-→ Starting a new project? See [Creating a project](04-creating-a-project.md)
-→ Wrapping up a project? See [Ending a project](05-ending-a-project.md)
-→ Something not working? See [Troubleshooting](../02-running-a-project/03-troubleshooting.md)
+→ [Lab orientation](02-lab-orientation.md)

@@ -7,7 +7,7 @@ work correctly. Find your issue below and follow the steps.
 
 ## Homebrew not found after installation
 
-*↩ Related to [Step 3 — Install Homebrew](../01-getting-started/01-first-time-setup.md#step-3--install-homebrew)*
+*↩ Related to [Step 2 — Install Homebrew](../01-getting-started/01-first-time-setup.md#step-2--install-homebrew)*
 
 **Symptom:** You run `brew --version` and see:
 ```
@@ -207,11 +207,13 @@ the spinup script still shows ✗ for some checks.
 
 **Common causes and fixes:**
 
-**Tool not found after installing:**
+### Tool not found after installing
+
 Close Terminal completely and reopen it. Some installs require
 a fresh Terminal session to take effect.
 
-**Environment variable shows blank:**
+### Environment variable shows blank
+
 ```bash
 echo $VERCEL_TOKEN
 ```
@@ -221,18 +223,21 @@ again, check the values are there, save, and run:
 source ~/.zshrc
 ```
 
-**GitHub CLI not authenticated:**
+### GitHub CLI not authenticated
+
 ```bash
 gh auth login
 ```
 Follow the prompts again.
 
-**Vercel CLI not authenticated:**
+### Vercel CLI not authenticated
+
 ```bash
 vercel login
 ```
 
-**Supabase CLI not authenticated:**
+### Supabase CLI not authenticated
+
 ```bash
 supabase login
 ```
@@ -297,7 +302,7 @@ Nothing appears as you type — that is normal.
 
 ## Git commit fails — user identity not configured
 
-*↩ Related to [Step 4 — Install Git](../01-getting-started/01-first-time-setup.md#step-4--install-git)*
+*↩ Related to [Step 3 — Install Git](../01-getting-started/01-first-time-setup.md#step-3--install-git)*
 
 **Symptom:** You try to commit and see:
 ```
@@ -383,7 +388,7 @@ Ask Lapedra about the lab's Figma plan.
 
 ## Claude Code not connecting
 
-*↩ Related to [Step 15 — Install Claude Code in VS Code](../01-getting-started/01-first-time-setup.md#step-15--install-claude-code-in-vs-code)*
+*↩ Related to [Step 5 — Install VS Code and Claude Code](../01-getting-started/01-first-time-setup.md#step-5--install-vs-code-and-claude-code)*
 
 **Symptom:** You installed the Claude Code extension but the panel
 shows a sign-in button even after logging in, or the Claude icon
