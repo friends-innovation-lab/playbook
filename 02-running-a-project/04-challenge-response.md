@@ -155,7 +155,7 @@ For submission checklist:
 
 After the challenge response is submitted and the evaluation
 period ends, decommission the project:
-→ [01-getting-started/05-ending-a-project.md](../01-getting-started/05-ending-a-project.md)
+→ [02-ending-a-project.md](02-ending-a-project.md)
 
 Do not tear down until you have confirmed the evaluation is
 complete and no further demos or revisions are needed.

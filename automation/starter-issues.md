@@ -69,7 +69,7 @@ Identify 5-8 stakeholders across these categories:
 - [ ] Priority order determined
 
 ## Links
-- [Getting Started Guide](../../operations/getting-started-guide.md)
+- [Creating a Project](https://github.com/friends-innovation-lab/playbook/blob/main/02-running-a-project/01-creating-a-project.md)
 ```
 
 ---
@@ -94,7 +94,7 @@ Schedule 45-60 minute interviews with identified stakeholders.
 - [ ] Note-taking template ready
 
 ## Links
-- [Getting Started Guide](../../operations/getting-started-guide.md)
+- [Creating a Project](https://github.com/friends-innovation-lab/playbook/blob/main/02-running-a-project/01-creating-a-project.md)
 ```
 
 ---
@@ -119,7 +119,7 @@ Conduct all scheduled stakeholder interviews. Capture notes in `/notes/interview
 - [ ] Follow-up items noted
 
 ## Links
-- [Getting Started Guide](../../operations/getting-started-guide.md)
+- [Creating a Project](https://github.com/friends-innovation-lab/playbook/blob/main/02-running-a-project/01-creating-a-project.md)
 ```
 
 ---
@@ -145,7 +145,7 @@ Review existing systems, APIs, data, and technical constraints.
 - [ ] Access requirements noted
 
 ## Links
-- [Getting Started Guide](../../operations/getting-started-guide.md)
+- [Creating a Project](https://github.com/friends-innovation-lab/playbook/blob/main/02-running-a-project/01-creating-a-project.md)
 ```
 
 ---
@@ -282,7 +282,7 @@ Define research questions tied to specific decisions. No research for research's
 - [ ] Sample size determined
 
 ## Links
-- [Operations Guide](../../operations/README.md)
+- [Project Operations Guide](https://github.com/friends-innovation-lab/playbook/blob/main/reference/operations/project-operations-guide.md)
 ```
 
 ---
@@ -338,7 +338,7 @@ Conduct user interviews, observations, or other research methods. Capture notes 
 - [ ] Quotes captured
 
 ## Links
-- [Operations Guide](../../operations/README.md)
+- [Project Operations Guide](https://github.com/friends-innovation-lab/playbook/blob/main/reference/operations/project-operations-guide.md)
 ```
 
 ---
@@ -365,7 +365,7 @@ Map the current user journey in FigJam, including pain points and bright spots.
 - [ ] Exported to `/assets/`
 
 ## Links
-- [Operations Guide](../../operations/README.md)
+- [Project Operations Guide](https://github.com/friends-innovation-lab/playbook/blob/main/reference/operations/project-operations-guide.md)
 ```
 
 ---
@@ -393,7 +393,7 @@ Map how the current system works: user journey, service delivery, and technology
 - [ ] Exported to `/assets/`
 
 ## Links
-- [Operations Guide](../../operations/README.md)
+- [Project Operations Guide](https://github.com/friends-innovation-lab/playbook/blob/main/reference/operations/project-operations-guide.md)
 ```
 
 ---
@@ -506,7 +506,7 @@ Facilitate ideation session to generate solution concepts.
 - [ ] Notes captured
 
 ## Links
-- [Operations Guide](../../operations/README.md)
+- [Project Operations Guide](https://github.com/friends-innovation-lab/playbook/blob/main/reference/operations/project-operations-guide.md)
 ```
 
 ---
@@ -586,7 +586,7 @@ Create low-to-medium fidelity prototypes for each option in Figma.
 - [ ] Presentation-ready
 
 ## Links
-- [Operations Guide](../../operations/README.md)
+- [Project Operations Guide](https://github.com/friends-innovation-lab/playbook/blob/main/reference/operations/project-operations-guide.md)
 ```
 
 ---
@@ -664,7 +664,7 @@ Present options to client for decision.
 - [ ] Feedback captured
 
 ## Links
-- [Operations Guide](../../operations/README.md)
+- [Project Operations Guide](https://github.com/friends-innovation-lab/playbook/blob/main/reference/operations/project-operations-guide.md)
 ```
 
 ---
@@ -790,7 +790,7 @@ Monitor pilot performance and collect user/staff feedback.
 - [ ] Mid-pilot check completed
 
 ## Links
-- [Operations Guide](../../operations/README.md)
+- [Project Operations Guide](https://github.com/friends-innovation-lab/playbook/blob/main/reference/operations/project-operations-guide.md)
 ```
 
 ---

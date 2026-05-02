@@ -168,13 +168,21 @@ When you're happy with how it looks, stop the dev server: click in the terminal 
 
 Now you'll get the changes into the deployed site. The path is: branch → stage → commit → push → PR → CI → merge. Each of those is a small step. We'll do them one at a time.
 
-**Branch.** A branch is a separate copy of the code where you can make changes without affecting the main version. Always work on a branch. Create one:
+**Switch to develop and create a feature branch.** The spinup script set up your project with two branches: `main` (protected, production-ready) and `develop` (where active work happens). For real projects, you always work on a feature branch off develop, never directly on main or develop. The test project follows the same pattern so you learn it once.
+
+First, switch to develop:
 
 ```bash
-git checkout -b first-project-changes
+git checkout develop
 ```
 
-That command creates a new branch called `first-project-changes` and switches to it. Anything you commit from now on goes onto this branch, not onto main.
+Then create a feature branch off develop:
+
+```bash
+git checkout -b feature/first-project-changes
+```
+
+That command creates a new branch called `feature/first-project-changes` and switches to it. Anything you commit from now on goes onto this branch, not onto develop or main.
 
 **Stage.** Staging means telling git which files you want to include in your next commit. CC has changed several files; you want all of them in the commit. Stage them all:
 
@@ -195,16 +203,18 @@ The `-m` flag attaches a message. You'll see a confirmation that the commit was 
 **Push.** Pushing sends your local commit up to GitHub.
 
 ```bash
-git push -u origin first-project-changes
+git push -u origin feature/first-project-changes
 ```
 
-The `-u origin first-project-changes` part tells git "push this branch to GitHub for the first time." Future pushes from this branch can just use `git push`.
+The `-u origin feature/first-project-changes` part tells git "push this branch to GitHub for the first time." Future pushes from this branch can just use `git push`.
 
-**Open the pull request.** A pull request (PR) is how you propose merging your branch into main. From the terminal:
+**Open the pull request.** A pull request (PR) is how you propose merging your branch into another branch. For lab projects, feature branches always merge into develop (not directly into main). From the terminal:
 
 ```bash
-gh pr create --base main --title "First project test changes" --body "Personalizing the landing page as part of my first project walkthrough."
+gh pr create --base develop --title "First project test changes" --body "Personalizing the landing page as part of my first project walkthrough."
 ```
+
+The `--base develop` part tells git the PR target is develop. For real projects, getting changes from develop into main happens later as a separate release step (covered in `02-running-a-project/01-creating-a-project.md`). For this test, merging to develop is enough.
 
 The command will print a URL when it finishes. Open that URL in a browser. You're now looking at GitHub's pull request view.
 
@@ -226,15 +236,15 @@ Either works. The `--admin` flag bypasses the branch protection requirement for 
 
 ## Step 5 — See it live
 
-Once the PR is merged, Vercel notices the change to the main branch and starts a new deployment automatically.
+Two things happen when your PR is created and then merged.
 
-Open the Vercel dashboard URL from Step 1. You'll see the new deployment in progress. It takes about 90 seconds.
+**While the PR is open, Vercel creates a preview deployment.** Every PR gets its own preview URL — separate from production, accessible to anyone with the link. Open the Vercel dashboard URL from Step 1. You'll see the preview deployment in progress, and once it finishes, the preview URL appears in the PR comments and on the Vercel dashboard. Click that URL — your changes are visible there.
 
-When the deployment finishes (you'll see the green checkmark in Vercel), open the live site URL: `https://test-one.lab.cityfriends.tech`.
+**Once you merge the PR to develop**, Vercel deploys the develop branch to its own URL. For real projects, this is the staging URL where you can verify changes are integrated correctly before releasing to production.
 
-You should see your changes live. Your name. The yellow button. The bio section. On the actual internet, at a real URL, anyone can see it.
+For this test project, seeing your changes on the preview URL (or the develop deployment after merge) is enough to confirm the loop worked. The production URL at `https://test-one.lab.cityfriends.tech` would only update if you did a separate release from develop to main — which we won't do for the test.
 
-This is the moment. From running one script to seeing your code live: you just did the full Treehouse loop.
+This is the moment. From running one script to seeing your code live on a real preview URL: you just did the full Treehouse loop.
 
 ---
 
