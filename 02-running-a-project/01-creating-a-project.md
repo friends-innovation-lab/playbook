@@ -4,7 +4,7 @@ Run this when you are ready to start a real project.
 Do not run this as part of first-time setup — only run it when
 you have a real project to spin up.
 
-This doc covers the full lifecycle of a real project: planning, design, spinup, build, and ship. It assumes you've already completed [`02-lab-orientation.md`](02-lab-orientation.md) and [`03-your-first-project.md`](03-your-first-project.md), so the basic loop is familiar. Real projects add a planning phase, a design phase, and a different shape for the build itself.
+This doc covers the full lifecycle of a real project: planning, design, spinup, build, and ship. It assumes you've already completed [`02-lab-orientation.md`](../01-getting-started/02-lab-orientation.md) and [`03-your-first-project.md`](../01-getting-started/03-your-first-project.md), so the basic loop is familiar. Real projects add a planning phase, a design phase, and a different shape for the build itself.
 
 > [!IMPORTANT]
 > Spinup credentials are set up by Lapedra when you join the lab as a developer or project lead. If your role does not require spinning up new projects — for example if you are joining an existing project as a researcher or designer — you will not need these credentials and can skip the spinup section. Ask Lapedra which sections apply to your role.
@@ -39,12 +39,12 @@ Planning and design come before spinup because the spinup script creates real in
 
 ## Before you start
 
-Make sure you have completed [`01-first-time-setup.md`](01-first-time-setup.md) and run through [`03-your-first-project.md`](03-your-first-project.md) at least once. The test project teaches you the spinup-to-deploy loop. This doc assumes you've done that loop and adds the planning, design, and real-project work around it.
+Make sure you have completed [`01-first-time-setup.md`](../01-getting-started/01-first-time-setup.md) and run through [`03-your-first-project.md`](../01-getting-started/03-your-first-project.md) at least once. The test project teaches you the spinup-to-deploy loop. This doc assumes you've done that loop and adds the planning, design, and real-project work around it.
 
 If you're not sure all your tools are set up, run a dry-run of the spinup script — it checks everything before doing anything:
 
 ```bash
-./operations/automation/spinup-typed.sh --type=prototype --name=dry-run-check --dry-run
+./automation/spinup-typed.sh --type=prototype --name=dry-run-check --dry-run
 ```
 
 The script will report what's missing if anything. Fix any issues before continuing.
@@ -198,7 +198,7 @@ Follow the prompts to authenticate with your Figma account.
 **Verify it worked:** Type `claude` in the terminal to open CC, then type `/mcp` and look for `figma` in the installed list.
 
 > [!TIP]
-> Having trouble? See [Figma MCP not connecting](06-troubleshooting.md#figma-mcp-not-connecting)
+> Having trouble? See [Figma MCP not connecting](03-troubleshooting.md#figma-mcp-not-connecting)
 
 ### 2. Get access to the Innovation Lab Design System in Figma
 
@@ -244,7 +244,7 @@ Pick a name that's descriptive and lowercase with hyphens. For example: `va-bene
 Run the spinup script with your type and name:
 
 ```bash
-./operations/automation/spinup-typed.sh --type=[type] --name=[project-name]
+./automation/spinup-typed.sh --type=[type] --name=[project-name]
 ```
 
 The script doesn't ask you anything during execution. It just runs. You'll see a banner showing what it's about to do, then pre-flight checks, then provisioning steps. Takes 5-10 minutes.
@@ -442,7 +442,7 @@ using the project's existing ADR template.
 ```
 
 > [!TIP]
-> Having trouble with CC? See [Claude Code not connecting](06-troubleshooting.md#claude-code-not-connecting)
+> Having trouble with CC? See [Claude Code not connecting](03-troubleshooting.md#claude-code-not-connecting)
 
 ---
 
@@ -465,4 +465,4 @@ For demos before release, every PR gets a Vercel preview URL — you can share p
 
 ## Something not working after spinup?
 
-→ [Troubleshooting](06-troubleshooting.md)
+→ [Troubleshooting](03-troubleshooting.md)

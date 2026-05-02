@@ -29,14 +29,14 @@ cd ~/projects
 
 Then run:
 ```bash
-bash ~/projects/playbook/operations/automation/teardown.sh
+bash ~/projects/playbook/automation/teardown.sh
 ```
 
 The script will ask you which project to remove and what to tear down.
 It will export the database before deleting anything.
 
 For full details on what the script does:
-→ [operations/automation/README.md](../operations/automation/README.md)
+→ [automation/README.md](../automation/README.md)
 
 ---
 

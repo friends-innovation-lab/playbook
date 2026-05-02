@@ -1100,4 +1100,4 @@ See templates folder for Engagement Closeout template
 
 ## Usage
 
-These issues are created automatically by the spinup script. See `playbook/operations/automation/spinup.sh`.
+These issues are created automatically by the spinup script. See `playbook/automation/spinup.sh`.
