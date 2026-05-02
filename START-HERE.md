@@ -107,7 +107,7 @@ When something feels easy, it's because the work is done. The Treehouse handles 
 **Then the team meets.** A debrief after the test project. What felt good, what was confusing, what didn't work. The lab gets better from what gets surfaced in those conversations.
 
 **When a real project comes:** The detailed how-to is ready. By then, the steps will already feel familiar.
-→ [`01-getting-started/04-creating-a-project.md`](01-getting-started/04-creating-a-project.md)
+→ [`02-running-a-project/01-creating-a-project.md`](02-running-a-project/01-creating-a-project.md)
 
 ---
 
@@ -133,7 +133,7 @@ If this is a first read, that's enough for now. Close the doc. Come back when th
 | Just finished reading this | [First-time setup](01-getting-started/01-first-time-setup.md) |
 | Setup is done | [Lab orientation](01-getting-started/02-lab-orientation.md) |
 | Setup and orientation are done | [Your first project](01-getting-started/03-your-first-project.md) |
-| Ready for a real project | [Creating a project](01-getting-started/04-creating-a-project.md) |
+| Ready for a real project | [Creating a project](02-running-a-project/01-creating-a-project.md) |
 
 Welcome to the Treehouse.
 

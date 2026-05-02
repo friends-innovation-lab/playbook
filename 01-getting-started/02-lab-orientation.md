@@ -134,6 +134,8 @@ When you work on a project, three different environments are running the same co
 
 **Live deployment** — Vercel's servers. Runs the actual public website at `[your-project].lab.cityfriends.tech`. Updates automatically when code merges to main. This is what real users see.
 
+**Preview deployments** — Vercel also creates a preview URL for every pull request. These let you (and reviewers) see changes in a real browser before they merge. Preview URLs appear automatically in PR comments. They're throwaway — they disappear when the PR closes.
+
 These three environments are *mostly* the same code, but they read configuration values from different places.
 
 **Configuration values** are things like database URLs, API keys, secret tokens. They can't be in the code itself (security), so they live in environment files.
