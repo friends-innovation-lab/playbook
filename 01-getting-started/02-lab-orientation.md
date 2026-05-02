@@ -85,11 +85,38 @@ When the lab updates a standard, projects don't auto-update. Each project decide
 
 The lab supports two design workflows depending on the designer and the project. Both end at Claude Code (CC) implementing the design.
 
-**Workflow 1 — Claude Design straight to CC.** Claude Design is the lab's primary design tool. The Friends design system is loaded into it at the org level, so every designer starts with Friends conventions baked in — colors, typography, components, spacing. A designer iterates on screens, then clicks "Hand off to Claude Code" to download a folder of design specs (HTML, CSS, tokens, a README explaining the components). That folder goes into the spun-up project, and CC implements it using the project-template's React + Tailwind + shadcn/ui stack. Icons in Claude Design use Lucide, which is the same icon library the project-template uses — no translation needed. No Figma involved. Fast and reliable. Best for prototypes and rapid work.
+### Workflow 1 — Claude Design straight to CC
 
-**Workflow 2 — Claude Design through Figma to CC.** For professional designers who want full design-tool control, Anima's Figma agent bridges from Claude Design into Figma. Designers continue refining on the Figma canvas — fine detail, custom interactions, detailed specs. The Figma file then goes to CC via the Figma MCP integration. Best for complex projects where designs need precise refinement before implementation.
+The lab's primary design path. Best for prototypes and rapid work.
 
-**For federal projects,** designs follow USWDS conventions (the U.S. Web Design System). Right now the lab has USWDS conventions in Figma and Storybook — federal designers reference those existing files. A USWDS design system in Claude Design is being set up; until that exists, federal designs come from Figma + Storybook directly.
+1. Designer opens Claude Design (the Friends design system is loaded at the org level — colors, typography, components, spacing all come pre-configured)
+2. Designer iterates on screens
+3. Designer clicks "Hand off to Claude Code" — downloads a folder of design specs (HTML, CSS, tokens, a README explaining the components)
+4. The folder goes into the spun-up project
+5. CC implements it using the project-template's React + Tailwind + shadcn/ui stack
+
+Icons in Claude Design use Lucide, which is the same icon library the project-template uses. No translation needed. No Figma involved.
+
+### Workflow 2 — Claude Design through Figma to CC
+
+For professional designers who want full design-tool refinement. Best for complex projects where designs need precise control before implementation.
+
+1. Designer starts in Claude Design (same Friends design system loaded)
+2. Designer uses Anima's Figma agent to bridge the design into Figma
+3. Designer continues refining on the Figma canvas — fine detail, custom interactions, detailed specs
+4. The Figma file goes to CC via the Figma MCP integration
+5. CC implements
+
+### For federal projects
+
+Designs follow USWDS conventions (the U.S. Web Design System).
+
+- Right now: federal designers use existing Figma files for USWDS conventions, plus Storybook for USWDS components
+- Coming soon: a USWDS design system in Claude Design (in setup)
+
+Until the USWDS Claude Design system is live, federal designs come from Figma + Storybook directly.
+
+---
 
 The choice between workflows isn't strict. A designer might start in Claude Design, decide a screen needs more refinement, move to Figma via Anima, then hand to CC. The point is that designs always end up at CC, and CC always implements against the project-template's code conventions. The path through is flexible.
 
