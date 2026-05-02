@@ -13,7 +13,7 @@ City (FFTC). We build working prototypes for government procurement challenges a
 for FFTC operations.
 
 Every project we spin up is:
-- Live at a real URL (`[name].lab.cityfriends.tech`) in under 3 minutes
+- Live at a real URL (`[name].lab.cityfriends.tech`) in under ten minutes
 - Built on a consistent stack (Next.js, TypeScript, Supabase, Vercel, Railway)
 - Accessible by default (WCAG 2.1 AA, Section 508)
 - Ready to demo to a client or evaluator
@@ -29,45 +29,55 @@ Once you've read START-HERE, the path forward is laid out there. Below is a quic
 
 - [First-time setup](01-getting-started/01-first-time-setup.md) — for new machines
 - [Creating a project](02-running-a-project/01-creating-a-project.md) — for real projects
+- [Claude.ai project starter](02-running-a-project/claude-ai-project-starter.md) — orchestrator config for new projects
+- [Challenge response playbook](02-running-a-project/04-challenge-response.md) — for federal procurement responses
+- [Troubleshooting](02-running-a-project/03-troubleshooting.md) — when things break
 - [Type-aware spinup guide](docs/spinup-typed.md) — full spinup script reference
 - [AI workflow with CC](reference/building/ai-workflow.md) — working with Claude Code
-- [Starter prompts](reference/prompts/README.md) — prompt templates for common tasks
+- [Starter prompts](reference/prompts/) — prompt templates for common tasks
 - [Design system](reference/building/design-system.md) — Friends brand and component conventions
 - [Demo standards](reference/delivering/demo-standards.md) — preparing for client demos
 - [Submission checklist](reference/delivering/submission-checklist.md) — preparing for submissions
 - [Prototype lifecycle](reference/operations/prototype-lifecycle.md) — wrapping up a project
-- [Teardown script](automation/README.md) — removing a project's resources
+- [Lab automation](automation/README.md) — spinup, teardown, lab tooling
+- [Onboarding a new Friend](reference/operations/onboarding-a-new-friend.md) — adding team members
 
 ## Playbook structure
 
-The playbook has two parts:
+The playbook has three parts:
 
-### Workflow docs (numbered folders)
-Read these in order. They cover the end-to-end process of
-working in the Innovation Lab — from getting set up to
-building and shipping prototypes.
+### Sequenced docs (numbered folders)
+Read these in order. They cover what new Friends do — first when
+joining the lab, then when running real projects.
 
-- `01-getting-started/` — Setup, orientation, first test project
-- `02-running-a-project/` — Creating, running, troubleshooting, and ending projects
+- `01-getting-started/` — Setup, orientation, your first test project
+- `02-running-a-project/` — Creating, running, and ending real projects
 
-### Reference docs
-Dip into these as needed. They are SOPs and reference material
-for specific topics — not meant to be read start to finish.
+### Reference material (look up when needed)
+Topic-organized reference docs. Dip in when you need them; not
+meant to be read start to finish.
 
-- `automation/` — Spinup and teardown scripts
-- `reference/building/` — Design system, AI workflow, Storybook
-- `reference/prompts/` — Starter prompts for common tasks
-- `reference/delivering/` — Demo standards, submission checklists, handoff
-- `reference/operations/` — Prototype lifecycle, costs, offboarding
-- `reference/development/` — Technical standards: code quality, testing, security, deployment
+- `reference/building/` — AI workflow, design system, design tokens, agency theming, Storybook
+- `reference/prompts/` — Starter prompts for common project types
+- `reference/delivering/` — Demo standards, submission checklist, handoff
+- `reference/operations/` — Costs, offboarding, prototype lifecycle, onboarding-a-new-friend
+- `reference/design/` — UI/UX guide
+- `reference/development/` — Technical standards: code quality, testing, security, deployment, git workflow
 - `reference/products/` — Standalone product documentation (Qori, Truebid)
-- `_archive/` — Retired content preserved for reference
+- `reference/_archive/` — Retired content preserved for reference
+
+### Lab automation
+Scripts and supporting files for the lab itself.
+
+- `automation/` — Spinup script, teardown script, templates, lab tooling
+- `docs/` — Deeper technical docs the playbook references
+- `_archive/old-pre-reorg/` — Files retired during the May 2026 reorganization
 
 ---
-New to the lab? Start with `01-getting-started/`.
-Starting a project? Go to `02-running-a-project/01-creating-a-project.md`.
-Looking for technical standards? Go to `reference/development/`.
+New to the lab? Start with [`START-HERE.md`](START-HERE.md).
+Starting a project? Go to [`02-running-a-project/01-creating-a-project.md`](02-running-a-project/01-creating-a-project.md).
+Looking for technical standards? Go to [`reference/development/`](reference/development/).
 
 ---
 
-Friends Innovation Lab is a division of Friends From The City (FFTC)
+Friends Innovation Lab is a division of Friends From The City (FFTC). The Treehouse is what we call it.
