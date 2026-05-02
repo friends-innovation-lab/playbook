@@ -32,7 +32,7 @@
 #   VERCEL_ORG_ID           Vercel team/org ID
 #   LAB_SUPABASE_ORG_ID     Supabase org ID (recommended: set to Friends Lab CI org)
 #   SUPABASE_ORG_ID         Supabase org ID (fallback if LAB_SUPABASE_ORG_ID not set)
-#   LABS_DOMAIN             Base domain (default: labs.cityfriends.tech)
+#   LABS_DOMAIN             Base domain (default: lab.cityfriends.tech)
 #
 # See also:
 #   docs/spinup-typed.md — full guide with examples and troubleshooting
@@ -149,7 +149,7 @@ fi
 # ── Environment defaults ───────────────────────────────────────────────────
 
 GITHUB_ORG="${GITHUB_ORG:-friends-innovation-lab}"
-LABS_DOMAIN="${LABS_DOMAIN:-labs.cityfriends.tech}"
+LABS_DOMAIN="${LABS_DOMAIN:-lab.cityfriends.tech}"
 
 # Resolve Supabase org ID: --supabase-org flag > LAB_SUPABASE_ORG_ID > SUPABASE_ORG_ID
 if [[ -n "$SUPABASE_ORG_ARG" ]]; then

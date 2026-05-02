@@ -24,7 +24,7 @@ export VERCEL_ORG_ID=        # vercel.com → Settings → General → Team ID
 export GITHUB_ORG=friends-innovation-lab
 export SUPABASE_ORG_ID=      # supabase.com → org settings
 export SUPABASE_ACCESS_TOKEN= # supabase.com → account → access tokens
-export LABS_DOMAIN=labs.cityfriends.tech
+export LABS_DOMAIN=lab.cityfriends.tech
 ```
 
 Then reload your shell:

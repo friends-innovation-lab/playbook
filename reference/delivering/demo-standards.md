@@ -5,7 +5,7 @@ No exceptions for "we'll explain it during the demo."
 
 ## Non-negotiable (do not demo if any of these fail)
 
-- [ ] Live at `[name].labs.cityfriends.tech` and accessible without VPN
+- [ ] Live at `[name].lab.cityfriends.tech` and accessible without VPN
 - [ ] Primary user flow works end to end without errors
 - [ ] No console errors in browser (open DevTools and check)
 - [ ] Auth works — demo credentials exist and function

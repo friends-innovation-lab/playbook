@@ -11,7 +11,7 @@ Every project follows this lifecycle. Know where your project is.
 **What happens:**
 - Run `bash automation/spinup.sh`
 - GitHub repo, Supabase project, and Vercel deployment created automatically
-- Live URL assigned at `[name].labs.cityfriends.tech`
+- Live URL assigned at `[name].lab.cityfriends.tech`
 - CLAUDE.md generated with project context
 - GitHub issues created for the first sprint
 

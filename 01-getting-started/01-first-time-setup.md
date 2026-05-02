@@ -326,7 +326,7 @@ export VERCEL_ORG_ID=
 export GITHUB_ORG=friends-innovation-lab
 export SUPABASE_ORG_ID=
 export SUPABASE_ACCESS_TOKEN=
-export LABS_DOMAIN=labs.cityfriends.tech
+export LABS_DOMAIN=lab.cityfriends.tech
 ```
 
 Now fill in the blank values using the steps below.

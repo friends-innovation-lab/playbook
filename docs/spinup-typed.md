@@ -56,7 +56,7 @@ export VERCEL_TOKEN=your-vercel-token            # vercel.com → Settings → T
 export VERCEL_ORG_ID=your-vercel-team-id         # vercel.com → Settings → General
 export LAB_SUPABASE_ORG_ID=your-ci-org-id        # recommended: Friends Lab CI org
 export SUPABASE_ORG_ID=your-supabase-org-id      # fallback if LAB_SUPABASE_ORG_ID not set
-export LABS_DOMAIN=labs.cityfriends.tech
+export LABS_DOMAIN=lab.cityfriends.tech
 export SUPABASE_ACCESS_TOKEN=your-token          # optional, for auth config
 ```
 
