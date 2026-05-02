@@ -6,7 +6,7 @@ You don't need to memorize any of this. You need to recognize the words when you
 
 **Reading time:** about 10 minutes.
 
-**Jump to:** [The four repos](#the-four-repos) · [Project types](#project-types) · [Extensions](#extensions) · [Lab standards](#lab-standards) · [Local vs. live](#local-vs-live) · [What CI does](#what-ci-does-for-you) · [Tools you'll touch](#tools-youll-touch) · [Quick reference](#quick-reference)
+**Jump to:** [The four repos](#the-four-repos) · [Project types](#project-types) · [Extensions](#extensions) · [Lab standards](#lab-standards) · [How design connects to code](#how-design-connects-to-code) · [Local vs. live](#local-vs-live) · [What CI does](#what-ci-does-for-you) · [Tools you'll touch](#tools-youll-touch) · [Quick reference](#quick-reference)
 
 ---
 
@@ -81,6 +81,20 @@ When the lab updates a standard, projects don't auto-update. Each project decide
 
 ---
 
+## How design connects to code
+
+The lab supports two design workflows depending on the designer and the project. Both end at Claude Code (CC) implementing the design.
+
+**Workflow 1 — Claude Design straight to CC.** Claude Design is the lab's primary design tool. The Friends design system is loaded into it at the org level, so every designer starts with Friends conventions baked in — colors, typography, components, spacing. A designer iterates on screens, then clicks "Hand off to Claude Code" to download a folder of design specs (HTML, CSS, tokens, a README explaining the components). That folder goes into the spun-up project, and CC implements it using the project-template's React + Tailwind + shadcn/ui stack. Icons in Claude Design use Lucide, which is the same icon library the project-template uses — no translation needed. No Figma involved. Fast and reliable. Best for prototypes and rapid work.
+
+**Workflow 2 — Claude Design through Figma to CC.** For professional designers who want full design-tool control, Anima's Figma agent bridges from Claude Design into Figma. Designers continue refining on the Figma canvas — fine detail, custom interactions, detailed specs. The Figma file then goes to CC via the Figma MCP integration. Best for complex projects where designs need precise refinement before implementation.
+
+**For federal projects,** designs follow USWDS conventions (the U.S. Web Design System). Right now the lab has USWDS conventions in Figma and Storybook — federal designers reference those existing files. A USWDS design system in Claude Design is being set up; until that exists, federal designs come from Figma + Storybook directly.
+
+The choice between workflows isn't strict. A designer might start in Claude Design, decide a screen needs more refinement, move to Figma via Anima, then hand to CC. The point is that designs always end up at CC, and CC always implements against the project-template's code conventions. The path through is flexible.
+
+---
+
 ## Local vs. live
 
 This concept catches people more than any other. Worth understanding clearly.
@@ -137,13 +151,15 @@ Most lab CI runs complete in under three minutes.
 
 A short tour of the tools that show up during a project. You'll learn them by using them — this is just so the names aren't strangers.
 
-**VS Code** — Your code editor. Where you spend most of the day. Has a built-in terminal you'll use for git commands.
+**VS Code** — Your code editor. Where you spend most of the day. Includes a built-in terminal (View → Terminal) — most of the lab's command-line work happens there: git commands, `npm` commands, the `gh`, `vercel`, `supabase`, and `railway` CLIs, and running the spinup script itself. You don't need a separate terminal app; the one inside VS Code is enough.
 
 **Claude Code (CC)** — Lives inside VS Code as a sidebar. You talk to it in plain English, it writes code. Most lab work happens through CC, not by you typing code line by line.
 
-**Claude Design** — Browser-based. Where designs get drafted and iterated. Connects to Figma. Runs before any code gets written.
+**Claude Design** — Browser-based. The lab's primary design tool. The Friends design system is loaded at the org level, so designs start with Friends conventions baked in. Produces handoff folders (HTML, CSS, tokens, README) that go directly to CC for implementation. No Figma required for most lab work.
 
-**Figma** — Where finished designs live. CC can read Figma files directly through a plugin and implement designs from them.
+**Figma** — Where designs continue when professional designers want full design-tool refinement. The Anima Figma agent bridges from Claude Design into Figma when needed. Federal projects also use existing Figma files for USWDS conventions until the USWDS Claude Design system is set up.
+
+**Storybook** — Component documentation that ships inside every project. Run `npm run storybook` to see it. Useful for verifying components in isolation. Federal projects reference USWDS components in Storybook.
 
 **GitHub** — Where the code lives. You won't usually visit it in a browser; the `gh` command-line tool handles most interactions.
 
@@ -170,6 +186,9 @@ Things to recognize when you encounter them:
 | `lab.cityfriends.tech` | The lab's domain for deployed prototypes |
 | `friends-innovation-lab` on GitHub | The org all lab projects live under |
 | `/docs/standards/` in a project | The lab standards copied into that project |
+| Hand off to Claude Code | Claude Design's export that produces a folder of design specs for CC to implement |
+| Anima Figma agent | The bridge from Claude Design into Figma for designers who want full design-tool control |
+| Lucide icons | The icon library used in both Claude Design and the project-template — the same icons end up in your code |
 | Green checkmarks on a PR | CI checks passed; safe to merge |
 | Red X on a PR | A check failed; click for details |
 | The Treehouse | What we call the Innovation Lab internally |
