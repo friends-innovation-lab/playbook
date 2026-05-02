@@ -16,7 +16,7 @@ NC='\033[0m'
 
 # Resolve the directory where this script lives (for playbook repo path)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLAYBOOK_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PLAYBOOK_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # ─────────────────────────────────────────────────────────
 # Helper functions

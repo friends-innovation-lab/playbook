@@ -26,5 +26,5 @@ Standards, tools, and starter prompts for building projects.
 - [Storybook](storybook.md) — Component documentation, accessibility
   testing, and CC reference
 - [AI workflow](ai-workflow.md) — How to work with CC effectively
-- [Starter prompts](prompts/README.md) — Get to 50% for any project type
+- [Starter prompts](../prompts/README.md) — Get to 50% for any project type
 - [Development standards](../development/) — Technical code standards

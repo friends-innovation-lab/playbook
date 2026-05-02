@@ -47,7 +47,7 @@ Open CC and use the design system files to design screens:
 - Templates: https://www.figma.com/design/vqKtu40TwBNNUYnPH87PvB/Templates
 
 Use the challenge-response starter prompt to orient CC:
-→ [03-building/prompts/challenge-response.md](../03-building/prompts/challenge-response.md)
+→ [reference/prompts/challenge-response.md](../reference/prompts/challenge-response.md)
 
 Iterate until you are confident in the layout, flow, and copy.
 This is the cheapest time to change direction.
@@ -66,7 +66,7 @@ Lock the design. After this point, changes should be small.
 
 Run the spinup script from `~/projects`:
 ```bash
-bash ~/projects/playbook/operations/automation/spinup.sh
+bash ~/projects/playbook/automation/spinup.sh
 ```
 
 After spinup, install the accessibility test browser:
@@ -215,4 +215,4 @@ Teardown (after evaluation ends)
 ---
 
 *This playbook is part of the Friends Innovation Lab operational guide.
-See [04-delivering/](../04-delivering/) for related delivery standards.*
+See [reference/delivering/](../reference/delivering/) for related delivery standards.*

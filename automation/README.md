@@ -36,7 +36,7 @@ source ~/.zshrc
 
 From anywhere on your machine:
 ```bash
-bash ~/projects/playbook/operations/automation/spinup.sh
+bash ~/projects/playbook/automation/spinup.sh
 ```
 
 Follow the prompts. The script will ask you questions and do everything else.
@@ -44,7 +44,7 @@ Follow the prompts. The script will ask you questions and do everything else.
 ## Tearing down a project
 
 ```bash
-bash ~/projects/playbook/operations/automation/teardown.sh
+bash ~/projects/playbook/automation/teardown.sh
 ```
 
 ## What each script does

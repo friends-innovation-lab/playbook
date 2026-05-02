@@ -7,7 +7,7 @@ By the end, you'll have done the full lab loop once. The next time a real projec
 **Time:** about 45 minutes from start to finish.
 
 > [!NOTE]
-> For real projects, there's an additional planning step using Claude.ai as a project orchestrator — especially helpful for non-developers. That's covered in [`04-creating-a-project.md`](04-creating-a-project.md). For this test project, we're keeping it simple and going direct so you can feel each piece of the loop work.
+> For real projects, there's an additional planning step using Claude.ai as a project orchestrator — especially helpful for non-developers. That's covered in [`01-creating-a-project.md`](../02-running-a-project/01-creating-a-project.md). For this test project, we're keeping it simple and going direct so you can feel each piece of the loop work.
 
 **Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-pull-the-code-locally) · [Make changes with CC](#step-3--make-changes-with-cc) · [Open a pull request](#step-4--open-a-pull-request) · [See it live](#step-5--see-it-live) · [Tear it down](#step-6--tear-it-down) · [Debrief](#debrief)
 
@@ -40,7 +40,7 @@ cd ~/Projects/playbook
 Now run the spinup script. Copy the entire command below and paste it into the terminal:
 
 ```bash
-./operations/automation/spinup-typed.sh --type=prototype --name=test-one
+./automation/spinup-typed.sh --type=prototype --name=test-one
 ```
 
 Press enter. The script will start running automatically — it doesn't ask any questions. It just goes.
@@ -251,7 +251,7 @@ cd ~/Projects/playbook
 Then run teardown:
 
 ```bash
-./operations/automation/teardown.sh --name=test-one
+./automation/teardown.sh --name=test-one
 ```
 
 The script will list everything it's about to delete and ask you to confirm. Read the list, type `y`, and press enter.
@@ -300,6 +300,6 @@ When a real project lands, this will all feel familiar. You won't be learning th
 
 You've finished the test. You're ready for real work.
 
-When a real project comes, the detailed how-to is at [`04-creating-a-project.md`](04-creating-a-project.md). That doc covers real-project work — including the orchestrated workflow with Claude.ai for project planning, PRDs, and ongoing operational guidance. The spin-up, build, and deploy steps are the same as what you just did.
+When a real project comes, the detailed how-to is at [`01-creating-a-project.md`](../02-running-a-project/01-creating-a-project.md). That doc covers real-project work — including the orchestrated workflow with Claude.ai for project planning, PRDs, and ongoing operational guidance. The spin-up, build, and deploy steps are the same as what you just did.
 
 Welcome to the Treehouse. For real this time.
