@@ -1,6 +1,6 @@
 # Lab Orientation
 
-A short read before your first project. The Treehouse has a few moving parts that are worth understanding before you encounter them. This doc explains what they are, why they exist, and how they fit together.
+A short read before your first project. The Friends Innovation Lab has a few moving parts that are worth understanding before you encounter them. This doc explains what they are, why they exist, and how they fit together.
 
 You don't need to memorize any of this. You need to recognize the words when you see them.
 
@@ -12,17 +12,50 @@ You don't need to memorize any of this. You need to recognize the words when you
 
 ## The four repos
 
-The Treehouse is built across four GitHub repositories. Knowing what each one does helps everything else make sense.
+The Friends Innovation Lab is built across four GitHub repositories. Knowing what each one does helps everything else make sense.
 
-**`lab-standards`** — The rulebook. Nine documents describing how the lab builds software (security, performance, accessibility, data governance, and more). Also contains an audit script that can check any project against those standards. You won't edit this. You'll read it when you want to understand why something works the way it does.
+```
+lab-standards
+  │ defines standards
+  ▼
+project-template
+  │ inherits standards, adds base code + extensions
+  ▼
+playbook
+  │ spinup script pulls from project-template
+  ▼
+Your Project (e.g. qori, truebid)
+  ├── docs/standards/    ← copy of standards
+  ├── docs/decisions/    ← project-specific ADRs
+  ├── .github/workflows/ ← workflows from templates
+  └── CLAUDE.md          ← AI assistant context
+```
 
-**`project-template`** — The seed. Every new project gets created from this template. It contains the base code, the CI workflows, the design system foundation, and three reusable extensions (more on those below). When the template improves, future projects get the improvements. Existing projects don't auto-update.
+**[`lab-standards`](https://github.com/friends-innovation-lab/lab-standards)** — The rulebook. Nine documents describing how the lab builds software (security, performance, accessibility, data governance, and more). Also contains an audit script that can check any project against those standards. You won't edit this. You'll read it when you want to understand why something works the way it does.
 
-**`playbook`** — Where you are right now. The operational manual. How to set up your machine, how to start projects, how to build features, how to demo and ship. Documentation for humans, not code.
+**[`project-template`](https://github.com/friends-innovation-lab/project-template)** — The seed. Every new project gets created from this template. It contains the base code, the CI workflows, the design system foundation, and three reusable extensions (more on those below). When the template improves, future projects get the improvements. Existing projects don't auto-update.
+
+**[`playbook`](https://github.com/friends-innovation-lab/playbook)** — Where you are right now. The operational manual. How to set up your machine, how to start projects, how to build features, how to demo and ship. Documentation for humans, not code.
 
 **Your project repo** — Created when you run the spinup script. Lives under `friends-innovation-lab` on GitHub. Inherits the tech stack, the CI workflows, the standards, and whichever extensions match the project type you chose.
 
 The relationship is one-directional: lab-standards informs project-template, project-template seeds your project repo, and the playbook tells you how to use all of it.
+
+### What you get when you spin up
+
+When you run the spinup script, the new project automatically gets:
+
+- **The base code** — Next.js, TypeScript, Tailwind, shadcn/ui scaffolding from the project-template
+- **Lab standards** — All nine standards copied into `docs/standards/` for reference
+- **Extensions** — Whichever of the three extensions match your project type (more on those below)
+- **CI workflows** — All eight-plus automated checks configured in `.github/workflows/`
+- **Branch protection** — `main` branch protected; you work on `develop` and feature branches
+- **CLAUDE.md** — A starter file that gives Claude Code context about the project
+- **Initial issues** — A starter set of GitHub issues based on the project type (when applicable)
+- **Live URL** — A subdomain at `[your-project].lab.cityfriends.tech`
+- **Live database** — A Supabase project with credentials auto-populated to `.env.local`
+
+You don't configure any of this. The spinup script does it. Your job is to start building.
 
 ---
 
@@ -46,13 +79,28 @@ The choice isn't permanent. A prototype that turns out to be promising can be re
 
 ## Extensions
 
-An extension is a packaged piece of functionality that the spinup script can layer onto a base project. The Treehouse has three.
+An extension is a packaged piece of functionality that the spinup script can layer onto a base project. The Friends Innovation Lab has three.
 
-**Multi-tenancy** — The system that makes a single piece of software work for multiple separate customers without their data mixing. If you've ever used Slack and noticed your company's workspace doesn't see other companies' messages, that's multi-tenancy. SaaS products need it. Prototypes usually don't. The extension adds the database tables (organizations, members), the rules (RLS policies that enforce who sees what), and the helper code that ties them to the application.
+**Multi-tenancy** — System for serving multiple separate customers from a single application without their data mixing. Like how Slack keeps your company's workspace separate from other companies'.
 
-**Audit logging** — Every important action gets recorded. Who did what, when, and to what. Required for security compliance and useful for debugging. The extension creates an `audit_log` table, makes it append-only (entries can't be edited or deleted), and provides a small helper for recording entries from application code.
+- Adds: organizations and members tables
+- Enforces: RLS policies that determine who sees what
+- For: SaaS products with multiple paying customers
+- Skipped on: prototypes (usually) and federal projects
 
-**Soft deletes** — Instead of permanently deleting records, mark them as deleted with a timestamp. Recoverable, auditable, safer. Especially important for products handling sensitive data. The extension adds a `deleted_at` column to relevant tables, updates queries to ignore deleted rows by default, and provides helpers for recovery.
+**Audit logging** — Records every important action: who did what, when, and to what.
+
+- Adds: an `audit_log` table (append-only — entries can't be edited or deleted)
+- Provides: a helper for recording entries from application code
+- For: security compliance and debugging
+- Required: anywhere data sensitivity matters
+
+**Soft deletes** — Marks records as deleted with a timestamp instead of permanently removing them.
+
+- Adds: a `deleted_at` column to relevant tables
+- Updates: queries to ignore deleted rows by default
+- Provides: helpers for recovery
+- For: products handling sensitive data, where accidental deletion is costly
 
 When you pick a project type, the spinup script applies the right extensions automatically. You don't choose individually.
 
@@ -60,7 +108,11 @@ When you pick a project type, the spinup script applies the right extensions aut
 
 ## Lab standards
 
-Nine documents in `lab-standards`. They describe how the lab builds — what counts as good code, how data should be handled, what accessibility means in practice. They get copied into every spun-up project at `/docs/standards/`.
+Nine documents in [`lab-standards`](https://github.com/friends-innovation-lab/lab-standards). They describe how the lab builds — what counts as good code, how data should be handled, what accessibility means in practice.
+
+The lab does federal and civic technology work. That means accessibility, data governance, and security aren't optional — they're contractual requirements baked into how every project gets built. The standards exist so the lab can ship work that holds up under federal evaluation, agency security review, and accessibility audits without scrambling at the end.
+
+Standards get copied into every spun-up project at `/docs/standards/`. Your project owns its copy. When the lab updates a standard, projects don't auto-update — each project decides whether to sync the new version or document a deviation in an ADR (architecture decision record).
 
 The standards are:
 
@@ -77,7 +129,15 @@ The standards are:
 > [!TIP]
 > You don't need to read all nine before your first project. You'll find that most of them describe what's already built into the foundation. They're there when a question arises and you want the authoritative answer.
 
-When the lab updates a standard, projects don't auto-update. Each project decides whether to sync the new version or document a deviation in an ADR (architecture decision record).
+### Checking your project against standards
+
+The `lab-standards` repo includes an audit script that checks any project against the standards. Run it from your project root:
+
+```bash
+bash ~/Projects/lab-standards/lab-templates/scripts/audit-project.sh
+```
+
+It reports which standards your project meets, which it deviates from, and which it doesn't address. The output is informational — it doesn't change anything in your project. Useful before submission to confirm a project is in good shape, or any time you want a structured view of where your project stands.
 
 ---
 
@@ -128,21 +188,21 @@ This concept catches people more than any other. Worth understanding clearly.
 
 When you work on a project, three different environments are running the same code:
 
-**Local development** — Your machine. You run `npm run dev` in your terminal. The site loads at `http://localhost:3000`. Only you can see it. Changes appear instantly when you save files.
+- **Local development** — Your machine. Run `npm run dev` in your terminal. Site loads at `http://localhost:3000`. Only you can see it. Changes appear instantly when you save files.
 
-**CI environment** — GitHub's servers, briefly, every time you push code. Runs all the automated checks (tests, security scans, accessibility, bundle budgets). Doesn't deploy anywhere. Just confirms the code is okay before letting it merge.
+- **CI environment** — GitHub's servers, briefly, every time you push code. Runs all the automated checks (tests, security scans, accessibility, bundle budgets). Doesn't deploy anywhere — just confirms the code is okay before letting it merge.
 
-**Live deployment** — Vercel's servers. Runs the actual public website at `[your-project].lab.cityfriends.tech`. Updates automatically when code merges to main. This is what real users see.
+- **Live deployment** — Vercel's servers. Runs the actual public website at `[your-project].lab.cityfriends.tech`. Updates automatically when code merges to main. This is what real users see.
 
-**Preview deployments** — Vercel also creates a preview URL for every pull request. These let you (and reviewers) see changes in a real browser before they merge. Preview URLs appear automatically in PR comments. They're throwaway — they disappear when the PR closes.
+- **Preview deployments** — Vercel also creates a preview URL for every pull request. These let you (and reviewers) see changes in a real browser before they merge. Preview URLs appear automatically in PR comments. They're throwaway — they disappear when the PR closes.
 
 These three environments are *mostly* the same code, but they read configuration values from different places.
 
-**Configuration values** are things like database URLs, API keys, secret tokens. They can't be in the code itself (security), so they live in environment files.
+**Configuration values** are things like database URLs, API keys, secret tokens. They can't be in the code itself (security), so they live in environment files:
 
-- **Local config** lives in `.env.local` in your project folder. You add values there for local development.
-- **CI config** lives in workflow YAML files. The lab uses placeholder values here so dependabot PRs don't break.
-- **Live config** lives in Vercel's environment variable settings. The spinup script puts the right values there automatically.
+- **Local config** — `.env.local` in your project folder. You add values there for local development.
+- **CI config** — workflow YAML files. The lab uses placeholder values so dependabot PRs don't break.
+- **Live config** — Vercel's environment variable settings. The spinup script puts the right values there automatically.
 
 > [!IMPORTANT]
 > Adding a value to `.env.local` does not put it in Vercel. Your local dev works, your deployed site doesn't, and the difference is invisible until you check. If you ever encounter a "works on my machine" mystery, this is the cause 80% of the time.
@@ -180,26 +240,55 @@ Most lab CI runs complete in under three minutes.
 
 A short tour of the tools that show up during a project. You'll learn them by using them — this is just so the names aren't strangers.
 
-**VS Code** — Your code editor. Where you spend most of the day. Includes a built-in terminal (View → Terminal) — most of the lab's command-line work happens there: git commands, `npm` commands, the `gh`, `vercel`, `supabase`, and `railway` CLIs, and running the spinup script itself. You don't need a separate terminal app; the one inside VS Code is enough.
+**VS Code** — Your code editor. Where you spend most of the day.
 
-**Claude Code (CC)** — Lives inside VS Code as a sidebar. You talk to it in plain English, it writes code. Most lab work happens through CC, not by you typing code line by line.
+- Includes a built-in terminal (View → Terminal) for git, npm, gh, vercel, supabase, railway commands
+- Lab work runs from the VS Code terminal — no separate terminal app needed
 
-**Claude Design** — Browser-based. The lab's primary design tool. The Friends design system is loaded at the org level, so designs start with Friends conventions baked in. Produces handoff folders (HTML, CSS, tokens, README) that go directly to CC for implementation. No Figma required for most lab work.
+**Claude Code (CC)** — Your AI coding assistant. Lives inside VS Code as a sidebar.
 
-**Figma** — Where designs continue when professional designers want full design-tool refinement. The Anima Figma agent bridges from Claude Design into Figma when needed. Federal projects also use existing Figma files for USWDS conventions until the USWDS Claude Design system is set up.
+- Talk to it in plain English; it writes and modifies code
+- Most lab work happens through CC, not by typing code line by line
 
-**Storybook** — Component documentation that ships inside every project. Run `npm run storybook` to see it. Useful for verifying components in isolation. Federal projects reference USWDS components in Storybook.
+**Claude Design** — The lab's primary design tool. Browser-based.
 
-**GitHub** — Where the code lives. You won't usually visit it in a browser; the `gh` command-line tool handles most interactions.
+- Friends design system pre-loaded at the org level
+- Produces handoff folders (HTML, CSS, tokens, README) that go directly to CC
+- No Figma required for most lab work
 
-**Vercel** — Where deployed sites live. You'll glance at the dashboard occasionally to see deploy status. Most of the time, deploys just happen automatically when you push.
+**Figma** — Where designs continue when designers want full design-tool refinement.
 
-**Supabase** — The database. You'll see it during spinup and rarely after. The application talks to it; you mostly don't.
+- Anima Figma agent bridges from Claude Design into Figma when needed
+- Federal projects also use existing Figma files for USWDS conventions
 
-**Railway** — Where backend services and scheduled jobs run, when projects need them. Less common than Vercel for typical lab work.
+**Storybook** — Component documentation that ships inside every project.
+
+- Run `npm run storybook` in your project to view it
+- Useful for verifying components in isolation
+- Federal projects reference USWDS components in Storybook
+
+**GitHub** — Where the code lives.
+
+- You'll usually interact via the `gh` command-line tool, not the website
+- Browser visits are mostly for PR review and project board
+
+**Vercel** — Where deployed sites live.
+
+- You'll glance at the dashboard to see deploy status
+- Most of the time, deploys just happen automatically when you push
+
+**Supabase** — The database.
+
+- You'll see it during spinup, rarely after
+- The application talks to it; you mostly don't
+
+**Railway** — Where backend services and scheduled jobs run, when projects need them.
+
+- Less common than Vercel for typical lab work
+- Used for things like background workers, scheduled tasks, persistent backend services
 
 > [!NOTE]
-> You don't need accounts you create yourself for these. The lab handles your access during onboarding.
+> You don't need to create accounts for these yourself. The lab provisions your access during onboarding.
 
 ---
 
@@ -220,7 +309,7 @@ Things to recognize when you encounter them:
 | Lucide icons | The icon library used in both Claude Design and the project-template — the same icons end up in your code |
 | Green checkmarks on a PR | CI checks passed; safe to merge |
 | Red X on a PR | A check failed; click for details |
-| The Treehouse | What we call the Innovation Lab internally |
+| The Treehouse | What we call the Friends Innovation Lab internally |
 
 ---
 
