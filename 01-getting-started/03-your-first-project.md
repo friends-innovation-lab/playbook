@@ -15,15 +15,39 @@ By the end, you'll have done the full lab loop once. The next time a real projec
 
 ## A few things before you start
 
-**Open VS Code.** Then open the built-in terminal: **View → Terminal** (or press `` Ctrl+` `` — that's the backtick key, just below the Escape key on most Macs). The terminal will appear at the bottom of the VS Code window. Every command in this doc gets typed into that terminal.
+A few things to know before you start.
 
-**Terminal cursor behavior.** You can't click in the middle of a line and move your cursor there. The terminal cursor stays at the end. To fix typos, use the left and right arrow keys. To delete, use backspace. This catches everyone the first time.
+**Open VS Code and the terminal**
 
-**Copy and paste is your friend.** Every command in this doc is in a code block with a copy button at the right edge. Click the button to copy the whole command, then paste it into the terminal. Copying is more reliable than typing — fewer mistakes.
+- Open VS Code, then open the built-in terminal: **View → Terminal** (or press `` Ctrl+` ``)
+- The backtick is the key just below Escape on most Macs
+- The terminal appears at the bottom of the VS Code window
+- Every command in this doc gets typed into that terminal
 
-**Where projects live on your computer.** All your lab projects live in a folder called `~/Projects/` on your Mac. The `~` is shorthand for your home folder. The lab playbook itself lives at `~/Projects/playbook/`. When you spin up a new project, you'll clone it into the same `~/Projects/` folder so you can find it easily.
+**Terminal cursor behavior**
 
-**Why your project needs to be local.** When you make changes with Claude Code, CC reads the actual files on your computer. The site you see live on the internet is built from those files after you push them to GitHub. Local is where you change things; live is what the world sees.
+- You can't click in the middle of a line and move your cursor there
+- The terminal cursor stays at the end
+- Use left/right arrow keys to move; backspace to delete
+- This catches everyone the first time
+
+**Copy and paste is your friend**
+
+- Every command in this doc is in a code block with a copy button
+- Click the button, paste into the terminal — fewer mistakes than typing
+
+**Where projects live on your computer**
+
+- All your lab projects live in `~/Projects/` on your Mac
+- The `~` is shorthand for your home folder
+- The lab playbook itself lives at `~/Projects/playbook/`
+- New projects clone into `~/Projects/` so they're easy to find
+
+**Why your project needs to be local**
+
+- When you make changes with Claude Code, CC reads the actual files on your computer
+- The site you see live on the internet is built from those files after you push them to GitHub
+- Local is where you change things; live is what the world sees
 
 OK. Let's go.
 
@@ -40,26 +64,28 @@ cd ~/Projects/playbook
 Now run the spinup script. Copy the entire command below and paste it into the terminal:
 
 ```bash
-./automation/spinup-typed.sh --type prototype --name=test-one
+./automation/spinup-typed.sh --type prototype --name test-one
 ```
 
-Press enter. The script will start running automatically — it doesn't ask any questions. It just goes.
+Press enter. The script runs automatically — it doesn't ask any questions.
 
-**What happens first.** The script prints a banner showing what it's about to do — your project name, type, the extensions being applied (none for a prototype), the GitHub repo it'll create, the URL it'll deploy to. Read it. If anything looks wrong, press `Ctrl+C` to cancel before it starts.
+**The script runs in three phases:**
 
-**Pre-flight checks.** Next, the script verifies that all the tools and credentials it needs are in place — GitHub authentication, Vercel CLI, Supabase CLI, and your Supabase org ID. You'll see a list of green checkmarks scroll by.
+1. **Banner** — Prints what it's about to do: project name, type, extensions being applied, GitHub repo to create, URL to deploy to. Read it. If anything looks wrong, press `Ctrl+C` to cancel.
+
+2. **Pre-flight checks** — Verifies all tools and credentials are in place: GitHub authentication, Vercel CLI, Supabase CLI, Supabase org ID. You'll see green checkmarks scroll by.
+
+3. **Provisioning** — Does the real work. Takes 5-10 minutes the first time. The script walks through:
+
+   1. **GitHub** — Creates a repo at `github.com/friends-innovation-lab/test-one` from the project-template
+   2. **Apply extensions** — For a prototype, none. (Other project types add multi-tenancy, audit logging, etc.)
+   3. **Vercel** — Creates a Vercel project linked to the GitHub repo, configures env vars, sets up the custom domain
+   4. **Supabase** — Creates a database project in the Friends Lab CI org, retrieves connection details, runs initial migrations
+   5. **CI secrets** — Adds credentials GitHub Actions needs for automated checks
+   6. **Starter issues** — Creates a few starter issues and a project board on GitHub
 
 > [!IMPORTANT]
-> If any pre-flight check fails, the script will stop with a clear error message telling you what's missing. Read the message — it usually tells you exactly what to fix (a missing env var, an unauthenticated CLI, etc.). If you're stuck, ask Lapedra. Don't try to push past pre-flight failures.
-
-**Provisioning.** Once pre-flight passes, the script does the real work. This takes 5-10 minutes the first time. You'll see step banners as it progresses through:
-
-1. **GitHub** — Creates a new repository at `github.com/friends-innovation-lab/test-one` from the project-template
-2. **Apply extensions** — For a prototype, none. (For other project types, this is where multi-tenancy, audit logging, etc. get added.)
-3. **Vercel** — Creates a new Vercel project linked to the GitHub repo, configures environment variables, sets up the custom domain at `test-one.lab.cityfriends.tech`
-4. **Supabase** — Creates a new database project in the Friends Lab CI org, retrieves connection details, runs initial migrations
-5. **CI secrets** — Adds the credentials GitHub Actions needs for automated checks
-6. **Starter issues** — Creates a few starter issues and a project board on GitHub
+> If any pre-flight check fails, the script stops with a clear error message. Read it — it usually tells you exactly what to fix (a missing env var, an unauthenticated CLI, etc.). If you're stuck, ask Lapedra. Don't push past pre-flight failures.
 
 Don't close the terminal until it finishes. When it does, it'll print a success summary with the URLs you'll need:
 
@@ -76,13 +102,15 @@ Copy those four links somewhere you can find them — a sticky note, a scratch d
 
 Before changing anything, take three minutes to see what you have.
 
-**Open the live site.** Paste the live URL (the `lab.cityfriends.tech` one) into a browser. You'll see the project-template's default landing page. Generic but functional. This is what's running in production right now — yours, on the internet.
+**Open each of these in a new browser tab:**
 
-**Open the GitHub repo.** Paste the GitHub URL into a browser. You'll see the codebase, the README, the file structure. Notice the `/docs/standards/` folder — those are the lab standards, copied into your project automatically. You don't need to read them now.
+- **Live site** (the `lab.cityfriends.tech` URL) — The default landing page from the project-template. Generic but functional. This is what's running in production right now — yours, on the internet.
 
-**Open the Vercel dashboard.** Paste the Vercel URL into a browser. You'll see your project listed with a green checkmark indicating the latest deploy succeeded. The dashboard shows every deployment, deploy logs, and environment variables. You won't usually visit Vercel — it just runs in the background — but it's good to know it exists.
+- **GitHub repo** — The codebase, README, and file structure. Notice `/docs/standards/` — those are the lab standards copied into your project automatically. You don't need to read them now.
 
-**Open the Supabase dashboard.** Paste the Supabase URL into a browser. You'll see your database project. The Tables view shows the database schema (mostly empty for a prototype, but the structure is there). The API view shows the connection details that were already added to your project's environment variables. You'll rarely visit Supabase directly — your application code talks to it — but knowing where to find it matters when something needs debugging.
+- **Vercel dashboard** — Your project listed with a green checkmark for the latest deploy. Shows every deployment, deploy logs, and environment variables. You won't usually visit Vercel — it just runs in the background.
+
+- **Supabase dashboard** — Your database project. The Tables view shows the schema (mostly empty for a prototype). The API view shows connection details already wired into your project's env vars. You'll rarely visit Supabase directly.
 
 **Now pull the code to your computer.** Back in your VS Code terminal, run these commands one at a time:
 
@@ -285,15 +313,27 @@ Either works. The `--admin` flag bypasses the branch protection requirement for 
 ## Step 6 — See it live
 
 > [!NOTE]
-> When your project first deploys, Vercel may briefly show "Production Domain is not serving traffic." This is expected — Vercel is waiting for the CI checks to complete before serving the URL. Wait a few minutes and refresh; the URL will work.
+> When your project first deploys, Vercel may briefly show "Production Domain is not serving traffic." This is expected — Vercel is waiting for CI checks to complete before serving the URL. Wait a few minutes and refresh; the URL will work.
 
-Two things happen when your PR is created and then merged.
+Two deployments happen during the PR cycle:
 
-**While the PR is open, Vercel creates a preview deployment.** Every PR gets its own preview URL — separate from production, accessible to anyone with the link. Open the Vercel dashboard URL from Step 1. You'll see the preview deployment in progress, and once it finishes, the preview URL appears in the PR comments and on the Vercel dashboard. Click that URL — your changes are visible there.
+**While the PR is open: preview deployment**
 
-**Once you merge the PR to develop**, Vercel deploys the develop branch to its own URL. For real projects, this is the staging URL where you can verify changes are integrated correctly before releasing to production.
+- Vercel creates a preview URL for every pull request
+- Separate from production; accessible to anyone with the link
+- The preview URL appears automatically in PR comments and on the Vercel dashboard
+- Click it — your changes are visible there
 
-For this test project, seeing your changes on the preview URL (or the develop deployment after merge) is enough to confirm the loop worked. The production URL at `https://test-one.lab.cityfriends.tech` would only update if you did a separate release from develop to main — which we won't do for the test.
+**After you merge the PR to develop: develop deployment**
+
+- Vercel deploys the develop branch to its own URL
+- For real projects, this is the staging URL where you verify changes are integrated correctly before releasing to production
+
+**Production stays untouched until release**
+
+- The production URL at `https://test-one.lab.cityfriends.tech` only updates when you do a separate release from develop to main
+- We won't do that for this test
+- Seeing your changes on the preview URL (or the develop deployment after merge) is enough to confirm the loop worked
 
 This is the moment. From running one script to seeing your code live on a real preview URL: you just did the full Treehouse loop.
 
@@ -312,7 +352,7 @@ cd ~/Projects/playbook
 Then run teardown:
 
 ```bash
-./automation/teardown.sh --name=test-one
+./automation/teardown.sh --name test-one
 ```
 
 The script will list everything it's about to delete and ask you to confirm. Read the list, type `y`, and press enter.
