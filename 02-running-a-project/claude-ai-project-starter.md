@@ -73,7 +73,7 @@ Standard spinup command (the user adjusts the type and name):
 
 ```bash
 cd ~/Projects/playbook
-./automation/spinup-typed.sh --type=prototype --name=[project-name]
+./automation/spinup-typed.sh --type prototype --name=[project-name]
 ```
 
 After spinup completes, the user should:

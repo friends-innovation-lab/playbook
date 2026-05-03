@@ -209,7 +209,7 @@ Things to recognize when you encounter them:
 
 | When you see... | It means... |
 |-----------------|-------------|
-| `--type=prototype` (or any other type) | The kind of project being created |
+| `--type prototype` (or any other type) | The kind of project being created |
 | `multi-tenancy`, `audit-log`, `soft-deletes` | The three extensions |
 | `.env.local` | Configuration values for your local development |
 | `lab.cityfriends.tech` | The lab's domain for deployed prototypes |
