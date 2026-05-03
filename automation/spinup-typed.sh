@@ -943,10 +943,70 @@ else
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
-# STEP 10 — Success summary
+# STEP 10 — Clone to ~/Projects for local development
 # ════════════════════════════════════════════════════════════════════════════
 
-step "10" "Complete"
+step "10" "Clone to ~/Projects"
+
+PROJECTS_DIR="${HOME}/Projects"
+LOCAL_PROJECT_PATH="${PROJECTS_DIR}/${PROJECT_NAME}"
+
+# Create ~/Projects if it doesn't exist
+if [[ ! -d "$PROJECTS_DIR" ]]; then
+    mkdir -p "$PROJECTS_DIR"
+    info "Created ${PROJECTS_DIR} directory"
+fi
+
+# Check if target already exists
+if [[ -d "$LOCAL_PROJECT_PATH" ]]; then
+    warn "Folder already exists at ${LOCAL_PROJECT_PATH}"
+    warn "Skipping clone to avoid overwriting existing work"
+    warn "Your existing .env.local was not modified"
+    info "If you need fresh Supabase credentials for this project, get them from:"
+    echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+    info "To get a fresh clone, remove the folder and run:"
+    echo "  rm -rf ${LOCAL_PROJECT_PATH}"
+    echo "  git clone https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git ${LOCAL_PROJECT_PATH}"
+else
+    # Clone to ~/Projects
+    if git clone "https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git" "$LOCAL_PROJECT_PATH" 2>&1; then
+        ok "Cloned to ${LOCAL_PROJECT_PATH}"
+
+        # Populate .env.local with Supabase credentials
+        if [[ -n "$SUPABASE_URL_VALUE" && -n "$SUPABASE_ANON_KEY" ]]; then
+            LOCAL_ENV_PATH="${LOCAL_PROJECT_PATH}/.env.local"
+
+            # Create .env.local from .env.example as base
+            if [[ -f "${LOCAL_PROJECT_PATH}/.env.example" ]]; then
+                cp "${LOCAL_PROJECT_PATH}/.env.example" "$LOCAL_ENV_PATH"
+            else
+                touch "$LOCAL_ENV_PATH"
+            fi
+
+            # Append Supabase credentials
+            cat >> "$LOCAL_ENV_PATH" <<EOF
+
+# Supabase (auto-populated by spinup-typed.sh)
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+EOF
+            ok ".env.local populated with Supabase credentials"
+        else
+            warn "Supabase credentials not available — .env.local needs manual setup"
+            echo "  Get credentials from: https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+        fi
+    else
+        warn "Failed to clone to ${LOCAL_PROJECT_PATH}"
+        info "Clone manually with:"
+        echo "  git clone https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git ~/Projects/${PROJECT_NAME}"
+    fi
+fi
+
+# ════════════════════════════════════════════════════════════════════════════
+# STEP 11 — Success summary
+# ════════════════════════════════════════════════════════════════════════════
+
+step "11" "Complete"
 
 SUPABASE_DASHBOARD="(skipped)"
 if [[ -n "$SUPABASE_PROJECT_REF" ]]; then
@@ -975,15 +1035,14 @@ echo -e "${BOLD}║${NC}   Vercel:        $VERCEL_DASH"
 echo -e "${BOLD}║${NC}   Supabase:      $SUPABASE_DASHBOARD"
 echo -e "${BOLD}║${NC}"
 echo -e "${BOLD}║${NC} ${BOLD}LOCAL${NC}"
-echo -e "${BOLD}║${NC}   Working dir:   $WORK_DIR"
+echo -e "${BOLD}║${NC}   Project dir:   ~/Projects/${PROJECT_NAME}"
 echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${BOLD}Next steps:${NC}"
-echo "  1. cd $WORK_DIR"
-echo "  2. Your .env.local has Supabase credentials. You can run 'npm run dev' immediately."
-echo "  3. npm install"
-echo "  4. npm run dev"
-echo "  5. Read CLAUDE.md before asking CC to build anything"
+echo "  1. cd ~/Projects/${PROJECT_NAME}"
+echo "  2. npm install"
+echo "  3. npm run dev"
+echo "  4. Read CLAUDE.md before asking CC to build anything"
 echo ""
 if [[ -n "$EXTENSIONS" ]]; then
     echo -e "${BOLD}Extensions applied:${NC}"
@@ -992,9 +1051,9 @@ if [[ -n "$EXTENSIONS" ]]; then
     done
     echo ""
 fi
-echo -e "${BOLD}Manual setup still needed:${NC}"
-echo "  [ ] Create Sentry project and add DSN to .env.local"
-echo "  [ ] Add Resend API key if project sends emails"
+echo -e "${BOLD}Optional integrations:${NC}"
+echo "  [ ] Resend — add RESEND_API_KEY to .env.local if project sends emails"
+echo "  [ ] Sentry — add SENTRY_DSN to .env.local if you want error reporting (project runs cleanly without it)"
 if [[ -n "$EXTENSIONS" ]]; then
     echo "  [ ] Review extension migrations in supabase/migrations/"
     echo "  [ ] Run extension tests: npm test"
