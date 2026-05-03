@@ -44,7 +44,7 @@ Make sure you have completed [`01-first-time-setup.md`](../01-getting-started/01
 If you're not sure all your tools are set up, run a dry-run of the spinup script — it checks everything before doing anything:
 
 ```bash
-./automation/spinup-typed.sh --type=prototype --name=dry-run-check --dry-run
+./automation/spinup-typed.sh --type prototype --name=dry-run-check --dry-run
 ```
 
 The script will report what's missing if anything. Fix any issues before continuing.

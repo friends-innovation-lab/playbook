@@ -9,7 +9,7 @@ By the end, you'll have done the full lab loop once. The next time a real projec
 > [!NOTE]
 > For real projects, there's an additional planning step using Claude.ai as a project orchestrator — especially helpful for non-developers. That's covered in [`01-creating-a-project.md`](../02-running-a-project/01-creating-a-project.md). For this test project, we're keeping it simple and going direct so you can feel each piece of the loop work.
 
-**Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-pull-the-code-locally) · [Make changes with CC](#step-3--make-changes-with-cc) · [Open a pull request](#step-4--open-a-pull-request) · [See it live](#step-5--see-it-live) · [Tear it down](#step-6--tear-it-down) · [Debrief](#debrief)
+**Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-pull-the-code-locally) · [Supabase](#step-3--set-up-your-supabase-credentials) · [Make changes](#step-4--make-changes-with-cc) · [Pull request](#step-5--open-a-pull-request) · [See it live](#step-6--see-it-live) · [Tear down](#step-7--tear-it-down) · [Debrief](#debrief)
 
 ---
 
@@ -40,7 +40,7 @@ cd ~/Projects/playbook
 Now run the spinup script. Copy the entire command below and paste it into the terminal:
 
 ```bash
-./automation/spinup-typed.sh --type=prototype --name=test-one
+./automation/spinup-typed.sh --type prototype --name=test-one
 ```
 
 Press enter. The script will start running automatically — it doesn't ask any questions. It just goes.
@@ -113,7 +113,53 @@ That last command opens this project in a new VS Code window. The dot means "the
 
 ---
 
-## Step 3 — Make changes with CC
+## Step 3 — Set up your Supabase credentials
+
+Before you can run the project locally, you need to add your Supabase project credentials to a local environment file. The spinup script created a Supabase project for you but didn't populate the credentials into your project — you'll do that now.
+
+> [!NOTE]
+> This manual step will go away in a future update to the spinup script. For now, do it once per new project.
+
+**Get your Supabase credentials.**
+
+1. Go to [supabase.com/dashboard](https://supabase.com/dashboard) and sign in.
+2. Click on the project that matches your test project name (e.g., `test-one`).
+3. In the left sidebar, click the gear icon for **Project Settings**.
+4. Click **API** in the settings menu.
+5. You'll see your **Project URL** and several API keys. You need two values:
+   - **Project URL** (looks like `https://xxxxxxxxxxxx.supabase.co`)
+   - **`anon` `public` key** (a long string starting with `eyJ...`)
+
+Keep this browser tab open — you'll copy these values in the next step.
+
+**Create your local environment file.**
+
+In your VS Code terminal (View → Terminal):
+
+```bash
+cp .env.example .env.local
+```
+
+This copies the template environment file to a local version. The `.env.local` file is gitignored, so your credentials never get committed.
+
+**Add your Supabase values.**
+
+Open `.env.local` in VS Code (it should appear in the file explorer on the left).
+
+Find these two lines:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+Paste your **Project URL** after `NEXT_PUBLIC_SUPABASE_URL=` (replacing `your-supabase-project-url`) and your **anon public key** after `NEXT_PUBLIC_SUPABASE_ANON_KEY=` (replacing `your-supabase-anon-key`). Save the file (Cmd+S).
+
+Now you can run the dev server.
+
+---
+
+## Step 4 — Make changes with CC
 
 Now you'll use Claude Code (CC) to make three changes to the landing page.
 
@@ -125,8 +171,7 @@ Now you'll use Claude Code (CC) to make three changes to the landing page.
 Make three changes to the landing page:
 
 1. Change the main headline to "Hello from [your name]"
-2. Change the primary button background color to the Friends
-   yellow (--fftc-yellow, which is #FFD230)
+2. Change the "Get Started" button text to say "I changed this!"
 3. Add a short bio section below the headline that says something
    like "Friend at Friends From The City. Building from the
    Treehouse." — feel free to write it in your own voice.
@@ -153,7 +198,7 @@ npm run dev
 
 This starts the local development server. After a few seconds, you'll see a message that says something like "ready in 1.2s" with a URL: `http://localhost:3000`. Open that URL in a browser.
 
-You should see your changes — your name in the headline, the yellow button, the new bio section.
+You should see your changes — your name in the headline, the "I changed this!" button, the new bio section.
 
 > [!IMPORTANT]
 > What you're looking at right now is local development. Only you can see it. The deployed site (the `lab.cityfriends.tech` URL from Step 1) hasn't been updated yet. That happens when you push the changes to GitHub.
@@ -164,7 +209,10 @@ When you're happy with how it looks, stop the dev server: click in the terminal 
 
 ---
 
-## Step 4 — Open a pull request
+## Step 5 — Open a pull request
+
+> [!IMPORTANT]
+> Run all the git commands in this step in your terminal — either Mac Terminal or VS Code's integrated terminal (View → Terminal). Don't paste git commands into Claude Code's chat panel; CC will describe what the commands do but won't execute them, which means your changes won't actually get committed or pushed.
 
 Now you'll get the changes into the deployed site. The path is: branch → stage → commit → push → PR → CI → merge. Each of those is a small step. We'll do them one at a time.
 
@@ -234,7 +282,10 @@ Either works. The `--admin` flag bypasses the branch protection requirement for 
 
 ---
 
-## Step 5 — See it live
+## Step 6 — See it live
+
+> [!NOTE]
+> When your project first deploys, Vercel may briefly show "Production Domain is not serving traffic." This is expected — Vercel is waiting for the CI checks to complete before serving the URL. Wait a few minutes and refresh; the URL will work.
 
 Two things happen when your PR is created and then merged.
 
@@ -248,7 +299,7 @@ This is the moment. From running one script to seeing your code live on a real p
 
 ---
 
-## Step 6 — Tear it down
+## Step 7 — Tear it down
 
 A test project shouldn't keep running indefinitely. The teardown script removes everything you just created — GitHub repo, Vercel project, Supabase project, domain configuration. Clean slate.
 
