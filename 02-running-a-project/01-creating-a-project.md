@@ -275,16 +275,19 @@ For full details on what the script does:
 
 ## Phase 4 — Set up the project locally
 
-Clone the new project to your machine:
+The spinup script already cloned the project to `~/Projects/[project-name]` and configured the local environment file (`.env.local`) with the Supabase credentials your app needs to run. Open it in VS Code:
 
 ```bash
-cd ~/Projects
-git clone https://github.com/friends-innovation-lab/[project-name].git
-cd [project-name]
+cd ~/Projects/[project-name]
 code .
 ```
 
-This opens the project in a new VS Code window.
+This opens the project in a new VS Code window. Confirm everything works by starting the dev server:
+
+```bash
+npm install
+npm run dev
+```
 
 **Save the planning artifacts to the repo.** Take the project overview, PRD, and epic breakdown that Claude.ai produced in Phase 1, and save them to `/docs/` in the new project:
 
