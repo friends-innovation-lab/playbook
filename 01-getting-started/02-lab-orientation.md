@@ -1,6 +1,6 @@
 # Lab Orientation
 
-A short read before your first project. The Treehouse has a few moving parts that are worth understanding before you encounter them. This doc explains what they are, why they exist, and how they fit together.
+A short read before your first project. The Friends Innovation Lab has a few moving parts that are worth understanding before you encounter them. This doc explains what they are, why they exist, and how they fit together.
 
 You don't need to memorize any of this. You need to recognize the words when you see them.
 
@@ -12,7 +12,7 @@ You don't need to memorize any of this. You need to recognize the words when you
 
 ## The four repos
 
-The Treehouse is built across four GitHub repositories. Knowing what each one does helps everything else make sense.
+The Friends Innovation Lab is built across four GitHub repositories. Knowing what each one does helps everything else make sense.
 
 ```
 lab-standards
@@ -79,7 +79,7 @@ The choice isn't permanent. A prototype that turns out to be promising can be re
 
 ## Extensions
 
-An extension is a packaged piece of functionality that the spinup script can layer onto a base project. The Treehouse has three.
+An extension is a packaged piece of functionality that the spinup script can layer onto a base project. The Friends Innovation Lab has three.
 
 **Multi-tenancy** — System for serving multiple separate customers from a single application without their data mixing. Like how Slack keeps your company's workspace separate from other companies'.
 
@@ -309,7 +309,7 @@ Things to recognize when you encounter them:
 | Lucide icons | The icon library used in both Claude Design and the project-template — the same icons end up in your code |
 | Green checkmarks on a PR | CI checks passed; safe to merge |
 | Red X on a PR | A check failed; click for details |
-| The Treehouse | What we call the Innovation Lab internally |
+| The Treehouse | What we call the Friends Innovation Lab internally |
 
 ---
 
