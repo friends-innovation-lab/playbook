@@ -904,16 +904,16 @@ else
 
             # Handle empty labels defensively
             if [[ -n "$ISSUE_LABELS" ]]; then
-                LABEL_FLAG="--label $ISSUE_LABELS"
+                LABEL_ARGS=(--label "$ISSUE_LABELS")
             else
-                LABEL_FLAG=""
+                LABEL_ARGS=()
             fi
 
             ISSUE_ERROR_OUTPUT=$(gh issue create \
                 --repo "${GITHUB_ORG}/${PROJECT_NAME}" \
                 --title "$ISSUE_TITLE" \
                 --body "$ISSUE_BODY" \
-                $LABEL_FLAG 2>&1)
+                "${LABEL_ARGS[@]}" 2>&1)
 
             if [[ $? -eq 0 ]]; then
                 ISSUE_COUNT=$((ISSUE_COUNT + 1))
