@@ -76,6 +76,21 @@ extensions_for_type() {
     esac
 }
 
+# ── Type → starter issues template mapping ────────────────────────────────────
+# TODO: prototype currently reuses government template — dedicated issues-prototype.txt to be added in follow-up
+# TODO: saas-web and ai-product need their own templates
+
+issues_template_for_type() {
+    case "$1" in
+        prototype)     echo "issues-government.txt" ;;  # Reuses government template for now
+        internal-tool) echo "issues-internal.txt" ;;
+        federal)       echo "issues-government.txt" ;;
+        saas-web)      echo "" ;;  # No template yet
+        ai-product)    echo "" ;;  # No template yet
+        *)             echo "" ;;
+    esac
+}
+
 # ── Argument parsing ───────────────────────────────────────────────────────
 
 PROJECT_NAME=""
@@ -317,7 +332,13 @@ if $DRY_RUN; then
     fi
     dry "Set GitHub secrets for CI"
     if ! $SKIP_ISSUES; then
-        dry "Create starter issues and project board"
+        ISSUES_TEMPLATE="$(issues_template_for_type "$PROJECT_TYPE")"
+        if [[ -n "$ISSUES_TEMPLATE" ]]; then
+            dry "Create starter issues from $ISSUES_TEMPLATE"
+        else
+            dry "Skip starter issues (no template for $PROJECT_TYPE yet)"
+        fi
+        dry "Create project board"
     fi
     dry "Output success summary"
     echo ""
@@ -677,6 +698,31 @@ else
     else
         warn "SUPABASE_ACCESS_TOKEN not set — configure auth redirects manually"
     fi
+
+    # Write Supabase credentials to .env.local for local development
+    if [[ -n "$SUPABASE_ANON_KEY" ]]; then
+        ENV_LOCAL_PATH="${WORK_DIR}/.env.local"
+
+        # Create .env.local from .env.example if it exists, otherwise create empty
+        if [[ -f "${WORK_DIR}/.env.example" && ! -f "$ENV_LOCAL_PATH" ]]; then
+            cp "${WORK_DIR}/.env.example" "$ENV_LOCAL_PATH"
+            info "Created .env.local from .env.example"
+        elif [[ ! -f "$ENV_LOCAL_PATH" ]]; then
+            touch "$ENV_LOCAL_PATH"
+        fi
+
+        # Append Supabase credentials
+        cat >> "$ENV_LOCAL_PATH" <<EOF
+
+# Supabase (auto-populated by spinup-typed.sh)
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+EOF
+        ok "Supabase credentials added to .env.local"
+    else
+        warn "Could not write Supabase credentials to .env.local (keys not available)"
+        echo "  Add them manually from: https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+    fi
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -836,6 +882,61 @@ else
 
     ok "Labels configured"
 
+    # Create starter issues from template
+    # Note: template includes a "week" field that's currently unused
+    # Future enhancement: use week to schedule issues across time
+    ISSUES_TEMPLATE="$(issues_template_for_type "$PROJECT_TYPE")"
+    ISSUES_TEMPLATE_PATH="${SCRIPT_DIR}/templates/${ISSUES_TEMPLATE}"
+
+    if [[ -n "$ISSUES_TEMPLATE" && -f "$ISSUES_TEMPLATE_PATH" ]]; then
+        info "Creating starter issues from ${ISSUES_TEMPLATE}..."
+        ISSUE_COUNT=0
+        ISSUE_ERRORS=0
+
+        # Parse JSON template and create issues
+        # Each issue: { "title": "...", "body": "...", "labels": [...], "week": N }
+        ISSUE_ITEMS="$(jq -c '.[]' "$ISSUES_TEMPLATE_PATH" 2>/dev/null)"
+
+        while IFS= read -r issue; do
+            ISSUE_TITLE="$(echo "$issue" | jq -r '.title')"
+            ISSUE_BODY="$(echo "$issue" | jq -r '.body')"
+            ISSUE_LABELS="$(echo "$issue" | jq -r '.labels | join(",")')"
+
+            # Handle empty labels defensively
+            if [[ -n "$ISSUE_LABELS" ]]; then
+                LABEL_FLAG="--label $ISSUE_LABELS"
+            else
+                LABEL_FLAG=""
+            fi
+
+            ISSUE_ERROR_OUTPUT=$(gh issue create \
+                --repo "${GITHUB_ORG}/${PROJECT_NAME}" \
+                --title "$ISSUE_TITLE" \
+                --body "$ISSUE_BODY" \
+                $LABEL_FLAG 2>&1)
+
+            if [[ $? -eq 0 ]]; then
+                ISSUE_COUNT=$((ISSUE_COUNT + 1))
+            else
+                ISSUE_ERRORS=$((ISSUE_ERRORS + 1))
+                warn "Failed to create issue: $ISSUE_TITLE"
+                warn "  Error: $ISSUE_ERROR_OUTPUT"
+            fi
+        done <<< "$ISSUE_ITEMS"
+
+        if [[ $ISSUE_ERRORS -gt 0 ]]; then
+            warn "Created $ISSUE_COUNT issues ($ISSUE_ERRORS failed)"
+        else
+            ok "Created $ISSUE_COUNT starter issues"
+        fi
+    elif [[ -n "$ISSUES_TEMPLATE" && ! -f "$ISSUES_TEMPLATE_PATH" ]]; then
+        warn "Starter issues template not found: ${ISSUES_TEMPLATE}"
+    else
+        # No template for this type (saas-web, ai-product)
+        # TODO: Create templates for saas-web and ai-product types
+        info "No starter issues template for ${PROJECT_TYPE} yet — skipping issue creation"
+    fi
+
     # Create project board
     gh project create --owner "${GITHUB_ORG}" --title "${PROJECT_NAME}" --format board 2>/dev/null || true
     ok "Project board created"
@@ -879,7 +980,7 @@ echo -e "${BOLD}╚════════════════════�
 echo ""
 echo -e "${BOLD}Next steps:${NC}"
 echo "  1. cd $WORK_DIR"
-echo "  2. cp .env.example .env.local  # then fill in values"
+echo "  2. Your .env.local has Supabase credentials. You can run 'npm run dev' immediately."
 echo "  3. npm install"
 echo "  4. npm run dev"
 echo "  5. Read CLAUDE.md before asking CC to build anything"
