@@ -40,12 +40,36 @@ For full details on what the script does:
 
 ---
 
-## What gets removed
+## What teardown does
+
+The teardown script removes most project resources but is intentionally conservative with two things.
+
+**The GitHub repo is archived, not deleted.**
+
+Teardown archives the repo rather than deleting it. The repo remains visible in the `friends-innovation-lab` GitHub org with an "archived" tag. This is intentional:
+
+- Archived repos preserve project history (commits, PRs, issues, discussions) for future reference
+- They cannot receive new commits, PRs, or issues
+- They don't consume active resources or appear in active project lists
+- If the project ever needs to be resurrected, the archive can be unarchived
+
+If you specifically need the repo permanently deleted (rare — usually for compliance or client agreement reasons), do that manually through GitHub's repo settings page after teardown completes.
+
+**Local cleanup requires confirmation.**
+
+When teardown finds a local clone of the project on your machine, it asks: "Delete it? This will permanently remove all local files. (y/n)".
+
+- Answer "y" to delete the local folder
+- Answer "n" to keep the local folder
+
+Local cleanup is interactive (not automatic) so you don't accidentally lose local work you might still want.
+
+**Summary of what gets removed:**
 
 - **GitHub** — repo is archived (read-only, not deleted)
 - **Supabase** — data exported to your Downloads folder, project deleted
 - **Vercel** — project and subdomain removed
-- **Local folder** — optionally deleted
+- **Local folder** — deleted only if you confirm with "y"
 
 ---
 
