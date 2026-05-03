@@ -4,12 +4,12 @@ This is your test run. You're going to spin up a real project, change three thin
 
 By the end, you'll have done the full lab loop once. The next time a real project lands, the steps will already be in your hands.
 
-**Time:** about 45 minutes from start to finish.
+**Time:** about 35 minutes from start to finish.
 
 > [!NOTE]
 > For real projects, there's an additional planning step using Claude.ai as a project orchestrator — especially helpful for non-developers. That's covered in [`01-creating-a-project.md`](../02-running-a-project/01-creating-a-project.md). For this test project, we're keeping it simple and going direct so you can feel each piece of the loop work.
 
-**Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-pull-the-code-locally) · [Supabase](#step-3--set-up-your-supabase-credentials) · [Make changes](#step-4--make-changes-with-cc) · [Pull request](#step-5--open-a-pull-request) · [See it live](#step-6--see-it-live) · [Tear down](#step-7--tear-it-down) · [Debrief](#debrief)
+**Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-open-in-vs-code) · [Make changes](#step-3--make-changes-with-cc) · [Pull request](#step-4--open-a-pull-request) · [See it live](#step-5--see-it-live) · [Tear down](#step-6--tear-it-down) · [Debrief](#debrief)
 
 ---
 
@@ -98,7 +98,7 @@ Copy those four links somewhere you can find them — a sticky note, a scratch d
 
 ---
 
-## Step 2 — Look around and pull the code locally
+## Step 2 — Look around and open in VS Code
 
 Before changing anything, take three minutes to see what you have.
 
@@ -112,23 +112,11 @@ Before changing anything, take three minutes to see what you have.
 
 - **Supabase dashboard** — Your database project. The Tables view shows the schema (mostly empty for a prototype). The API view shows connection details already wired into your project's env vars. You'll rarely visit Supabase directly.
 
-**Now pull the code to your computer.** Back in your VS Code terminal, run these commands one at a time:
+**Now open the project in VS Code.** The spinup script already cloned the project to your computer at `~/Projects/test-one` and configured the local environment file (`.env.local`) with the Supabase credentials your app needs to run. Open it:
 
 ```bash
-cd ~/Projects
+cd ~/Projects/test-one
 ```
-
-```bash
-git clone https://github.com/friends-innovation-lab/test-one.git
-```
-
-That second command downloads the project from GitHub onto your computer. You should see download progress, then a message that it finished.
-
-```bash
-cd test-one
-```
-
-That moves your terminal into the project folder. From here, every command you run will affect this project specifically.
 
 ```bash
 code .
@@ -141,53 +129,7 @@ That last command opens this project in a new VS Code window. The dot means "the
 
 ---
 
-## Step 3 — Set up your Supabase credentials
-
-Before you can run the project locally, you need to add your Supabase project credentials to a local environment file. The spinup script created a Supabase project for you but didn't populate the credentials into your project — you'll do that now.
-
-> [!NOTE]
-> This manual step will go away in a future update to the spinup script. For now, do it once per new project.
-
-**Get your Supabase credentials.**
-
-1. Go to [supabase.com/dashboard](https://supabase.com/dashboard) and sign in.
-2. Click on the project that matches your test project name (e.g., `test-one`).
-3. In the left sidebar, click the gear icon for **Project Settings**.
-4. Click **API** in the settings menu.
-5. You'll see your **Project URL** and several API keys. You need two values:
-   - **Project URL** (looks like `https://xxxxxxxxxxxx.supabase.co`)
-   - **`anon` `public` key** (a long string starting with `eyJ...`)
-
-Keep this browser tab open — you'll copy these values in the next step.
-
-**Create your local environment file.**
-
-In your VS Code terminal (View → Terminal):
-
-```bash
-cp .env.example .env.local
-```
-
-This copies the template environment file to a local version. The `.env.local` file is gitignored, so your credentials never get committed.
-
-**Add your Supabase values.**
-
-Open `.env.local` in VS Code (it should appear in the file explorer on the left).
-
-Find these two lines:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-Paste your **Project URL** after `NEXT_PUBLIC_SUPABASE_URL=` (replacing `your-supabase-project-url`) and your **anon public key** after `NEXT_PUBLIC_SUPABASE_ANON_KEY=` (replacing `your-supabase-anon-key`). Save the file (Cmd+S).
-
-Now you can run the dev server.
-
----
-
-## Step 4 — Make changes with CC
+## Step 3 — Make changes with CC
 
 Now you'll use Claude Code (CC) to make three changes to the landing page.
 
@@ -237,7 +179,7 @@ When you're happy with how it looks, stop the dev server: click in the terminal 
 
 ---
 
-## Step 5 — Open a pull request
+## Step 4 — Open a pull request
 
 > [!IMPORTANT]
 > Run all the git commands in this step in your terminal — either Mac Terminal or VS Code's integrated terminal (View → Terminal). Don't paste git commands into Claude Code's chat panel; CC will describe what the commands do but won't execute them, which means your changes won't actually get committed or pushed.
@@ -310,7 +252,7 @@ Either works. The `--admin` flag bypasses the branch protection requirement for 
 
 ---
 
-## Step 6 — See it live
+## Step 5 — See it live
 
 > [!NOTE]
 > When your project first deploys, Vercel may briefly show "Production Domain is not serving traffic." This is expected — Vercel is waiting for CI checks to complete before serving the URL. Wait a few minutes and refresh; the URL will work.
@@ -339,7 +281,7 @@ This is the moment. From running one script to seeing your code live on a real p
 
 ---
 
-## Step 7 — Tear it down
+## Step 6 — Tear it down
 
 A test project shouldn't keep running indefinitely. The teardown script removes everything you just created — GitHub repo, Vercel project, Supabase project, domain configuration. Clean slate.
 
@@ -382,7 +324,7 @@ Look at what you did:
 
 1. Spun up a real project with one command
 2. Saw it live on the internet
-3. Pulled the code to your computer and opened it in VS Code
+3. Opened the project in VS Code
 4. Used Claude Code to make three changes at once
 5. Saw the changes locally before pushing
 6. Created a branch, staged changes, committed, pushed, and opened a pull request
