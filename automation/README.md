@@ -24,7 +24,7 @@ export VERCEL_ORG_ID=        # vercel.com → Settings → General → Team ID
 export GITHUB_ORG=friends-innovation-lab
 export SUPABASE_ORG_ID=      # supabase.com → org settings
 export SUPABASE_ACCESS_TOKEN= # supabase.com → account → access tokens
-export LABS_DOMAIN=labs.cityfriends.tech
+export LABS_DOMAIN=lab.cityfriends.tech
 ```
 
 Then reload your shell:
@@ -36,7 +36,7 @@ source ~/.zshrc
 
 From anywhere on your machine:
 ```bash
-bash ~/projects/playbook/operations/automation/spinup.sh
+bash ~/projects/playbook/automation/spinup.sh
 ```
 
 Follow the prompts. The script will ask you questions and do everything else.
@@ -44,7 +44,7 @@ Follow the prompts. The script will ask you questions and do everything else.
 ## Tearing down a project
 
 ```bash
-bash ~/projects/playbook/operations/automation/teardown.sh
+bash ~/projects/playbook/automation/teardown.sh
 ```
 
 ## What each script does

@@ -14,7 +14,7 @@ runs axe-core accessibility checks so violations are caught at the
 component level, not just during full page tests.
 
 When a project is deployed, Storybook deploys alongside it at:
-`storybook.[projectname].labs.cityfriends.tech`
+`storybook.[projectname].lab.cityfriends.tech`
 
 ---
 
@@ -39,7 +39,7 @@ produces higher fidelity output than Figma designs alone.
 When asking CC to build a new feature:
 ```
 Read CLAUDE.md. Reference the live Storybook at:
-https://storybook.[projectname].labs.cityfriends.tech
+https://storybook.[projectname].lab.cityfriends.tech
 
 Build [feature description] using the components documented
 in Storybook. Match the component variants and states shown there.
@@ -113,7 +113,7 @@ The CI pipeline runs this on every PR — if it fails, the PR is blocked.
 ## Deployed Storybook
 
 Every project gets a Storybook deployment at:
-`storybook.[projectname].labs.cityfriends.tech`
+`storybook.[projectname].lab.cityfriends.tech`
 
 This deploys automatically when you merge to main via the
 `storybook-deploy.yml` GitHub Actions workflow.

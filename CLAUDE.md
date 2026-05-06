@@ -13,12 +13,13 @@ contains everything needed to spin up, build, and ship government
 prototypes and internal tools.
 
 **Key files:**
-- `operations/automation/spinup-typed.sh` — type-aware project spinup (recommended)
-- `operations/automation/spinup.sh` — original interactive spinup (deprecated fallback)
-- `operations/automation/teardown.sh` — decommissions a project cleanly
+- `automation/spinup-typed.sh` — type-aware project spinup (recommended)
+- `automation/spinup.sh` — original interactive spinup (deprecated fallback)
+- `automation/teardown.sh` — decommissions a project cleanly
 - `docs/spinup-typed.md` — full guide for the type-aware spinup script
-- `03-building/prompts/` — starter prompts for each type of project
+- `reference/prompts/` — starter prompts for each type of project
 - `01-getting-started/` — onboarding for new team members
+- `02-running-a-project/` — creating, running, and ending projects
 
 ## Lab Standards
 
@@ -284,9 +285,12 @@ Before marking any feature complete:
 ## Playbook Navigation
 
 - **Getting started**: [01-getting-started/](01-getting-started/)
-- **Spinup/teardown**: [operations/automation/](operations/automation/)
-- **Building**: [03-building/](03-building/)
-- **Delivering**: [04-delivering/](04-delivering/)
-- **Operations**: [05-operations/](05-operations/)
-- **Technical standards**: [development/](development/)
-- **Products**: [products/](products/)
+- **Running a project**: [02-running-a-project/](02-running-a-project/)
+- **Automation scripts**: [automation/](automation/)
+- **Reference docs**: [reference/](reference/)
+  - Building: [reference/building/](reference/building/)
+  - Prompts: [reference/prompts/](reference/prompts/)
+  - Delivering: [reference/delivering/](reference/delivering/)
+  - Operations: [reference/operations/](reference/operations/)
+  - Development: [reference/development/](reference/development/)
+  - Products: [reference/products/](reference/products/)

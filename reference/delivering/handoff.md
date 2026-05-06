@@ -5,7 +5,7 @@ What to prepare when handing a project to a client or another team.
 ## What every handoff includes
 
 ### 1. Live URL
-The prototype stays live at `[name].labs.cityfriends.tech` until the
+The prototype stays live at `[name].lab.cityfriends.tech` until the
 client confirms they no longer need it. Confirm how long it should
 stay active before running teardown.
 
@@ -40,7 +40,7 @@ Before handoff, verify RLS is correctly configured.
 
 Run the teardown script:
 ```bash
-bash operations/automation/teardown.sh
+bash automation/teardown.sh
 ```
 
 This exports data, archives the repo, and removes all infrastructure.

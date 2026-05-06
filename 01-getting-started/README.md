@@ -1,26 +1,21 @@
 # Getting Started
 
-Everything you need from your first day to your last project.
+This folder is your onboarding path. Three docs, read in order, once.
 
-## Steps
+## The path
 
-1. [First-time setup](01-first-time-setup.md) — Install tools and configure
-   access. Do this once on your first day. Never again.
+1. [First-time setup](01-first-time-setup.md) — Install tools and configure access. Do this once on your first day.
 
-2. [What we build](02-what-we-build.md) — Understand the types of projects
-   we work on.
+2. [Lab orientation](02-lab-orientation.md) — Understand how the lab works: the stack, the workflow, the people, the patterns.
 
-3. [Tools and access](03-tools-and-access.md) — Every tool we use and how
-   to get access.
+3. [Your first project](03-your-first-project.md) — A guided walkthrough that takes you from spinup to a live URL. About 30 minutes.
 
-## When you're ready to work
+## When onboarding is done
 
-→ [Creating a project](04-creating-a-project.md) — How to spin up a new
-project and daily Git commands
+You're ready to work on real projects. Everything you need is in [`02-running-a-project/`](../02-running-a-project/).
 
-→ [Ending a project](05-ending-a-project.md) — How to cleanly decommission
-a project when it's done
+Start with [Creating a project](../02-running-a-project/01-creating-a-project.md).
 
 ## Something not working?
 
-→ [Troubleshooting](06-troubleshooting.md)
+→ [Troubleshooting](../02-running-a-project/03-troubleshooting.md)

@@ -32,7 +32,7 @@
 #   VERCEL_ORG_ID           Vercel team/org ID
 #   LAB_SUPABASE_ORG_ID     Supabase org ID (recommended: set to Friends Lab CI org)
 #   SUPABASE_ORG_ID         Supabase org ID (fallback if LAB_SUPABASE_ORG_ID not set)
-#   LABS_DOMAIN             Base domain (default: labs.cityfriends.tech)
+#   LABS_DOMAIN             Base domain (default: lab.cityfriends.tech)
 #
 # See also:
 #   docs/spinup-typed.md — full guide with examples and troubleshooting
@@ -73,6 +73,21 @@ extensions_for_type() {
         ai-product)    echo "multi-tenancy audit-log soft-deletes" ;;
         federal)       echo "audit-log soft-deletes" ;;
         *)             echo "ERROR: unknown type: $1" >&2; return 1 ;;
+    esac
+}
+
+# ── Type → starter issues template mapping ────────────────────────────────────
+# TODO: prototype currently reuses government template — dedicated issues-prototype.txt to be added in follow-up
+# TODO: saas-web and ai-product need their own templates
+
+issues_template_for_type() {
+    case "$1" in
+        prototype)     echo "issues-government.txt" ;;  # Reuses government template for now
+        internal-tool) echo "issues-internal.txt" ;;
+        federal)       echo "issues-government.txt" ;;
+        saas-web)      echo "" ;;  # No template yet
+        ai-product)    echo "" ;;  # No template yet
+        *)             echo "" ;;
     esac
 }
 
@@ -149,7 +164,7 @@ fi
 # ── Environment defaults ───────────────────────────────────────────────────
 
 GITHUB_ORG="${GITHUB_ORG:-friends-innovation-lab}"
-LABS_DOMAIN="${LABS_DOMAIN:-labs.cityfriends.tech}"
+LABS_DOMAIN="${LABS_DOMAIN:-lab.cityfriends.tech}"
 
 # Resolve Supabase org ID: --supabase-org flag > LAB_SUPABASE_ORG_ID > SUPABASE_ORG_ID
 if [[ -n "$SUPABASE_ORG_ARG" ]]; then
@@ -317,7 +332,13 @@ if $DRY_RUN; then
     fi
     dry "Set GitHub secrets for CI"
     if ! $SKIP_ISSUES; then
-        dry "Create starter issues and project board"
+        ISSUES_TEMPLATE="$(issues_template_for_type "$PROJECT_TYPE")"
+        if [[ -n "$ISSUES_TEMPLATE" ]]; then
+            dry "Create starter issues from $ISSUES_TEMPLATE"
+        else
+            dry "Skip starter issues (no template for $PROJECT_TYPE yet)"
+        fi
+        dry "Create project board"
     fi
     dry "Output success summary"
     echo ""
@@ -677,6 +698,31 @@ else
     else
         warn "SUPABASE_ACCESS_TOKEN not set — configure auth redirects manually"
     fi
+
+    # Write Supabase credentials to .env.local for local development
+    if [[ -n "$SUPABASE_ANON_KEY" ]]; then
+        ENV_LOCAL_PATH="${WORK_DIR}/.env.local"
+
+        # Create .env.local from .env.example if it exists, otherwise create empty
+        if [[ -f "${WORK_DIR}/.env.example" && ! -f "$ENV_LOCAL_PATH" ]]; then
+            cp "${WORK_DIR}/.env.example" "$ENV_LOCAL_PATH"
+            info "Created .env.local from .env.example"
+        elif [[ ! -f "$ENV_LOCAL_PATH" ]]; then
+            touch "$ENV_LOCAL_PATH"
+        fi
+
+        # Append Supabase credentials
+        cat >> "$ENV_LOCAL_PATH" <<EOF
+
+# Supabase (auto-populated by spinup-typed.sh)
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+EOF
+        ok "Supabase credentials added to .env.local"
+    else
+        warn "Could not write Supabase credentials to .env.local (keys not available)"
+        echo "  Add them manually from: https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+    fi
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -836,16 +882,131 @@ else
 
     ok "Labels configured"
 
+    # Create starter issues from template
+    # Note: template includes a "week" field that's currently unused
+    # Future enhancement: use week to schedule issues across time
+    ISSUES_TEMPLATE="$(issues_template_for_type "$PROJECT_TYPE")"
+    ISSUES_TEMPLATE_PATH="${SCRIPT_DIR}/templates/${ISSUES_TEMPLATE}"
+
+    if [[ -n "$ISSUES_TEMPLATE" && -f "$ISSUES_TEMPLATE_PATH" ]]; then
+        info "Creating starter issues from ${ISSUES_TEMPLATE}..."
+        ISSUE_COUNT=0
+        ISSUE_ERRORS=0
+
+        # Parse JSON template and create issues
+        # Each issue: { "title": "...", "body": "...", "labels": [...], "week": N }
+        ISSUE_ITEMS="$(jq -c '.[]' "$ISSUES_TEMPLATE_PATH" 2>/dev/null)"
+
+        while IFS= read -r issue; do
+            ISSUE_TITLE="$(echo "$issue" | jq -r '.title')"
+            ISSUE_BODY="$(echo "$issue" | jq -r '.body')"
+            ISSUE_LABELS="$(echo "$issue" | jq -r '.labels | join(",")')"
+
+            # Handle empty labels defensively
+            if [[ -n "$ISSUE_LABELS" ]]; then
+                LABEL_ARGS=(--label "$ISSUE_LABELS")
+            else
+                LABEL_ARGS=()
+            fi
+
+            ISSUE_ERROR_OUTPUT=$(gh issue create \
+                --repo "${GITHUB_ORG}/${PROJECT_NAME}" \
+                --title "$ISSUE_TITLE" \
+                --body "$ISSUE_BODY" \
+                "${LABEL_ARGS[@]}" 2>&1)
+
+            if [[ $? -eq 0 ]]; then
+                ISSUE_COUNT=$((ISSUE_COUNT + 1))
+            else
+                ISSUE_ERRORS=$((ISSUE_ERRORS + 1))
+                warn "Failed to create issue: $ISSUE_TITLE"
+                warn "  Error: $ISSUE_ERROR_OUTPUT"
+            fi
+        done <<< "$ISSUE_ITEMS"
+
+        if [[ $ISSUE_ERRORS -gt 0 ]]; then
+            warn "Created $ISSUE_COUNT issues ($ISSUE_ERRORS failed)"
+        else
+            ok "Created $ISSUE_COUNT starter issues"
+        fi
+    elif [[ -n "$ISSUES_TEMPLATE" && ! -f "$ISSUES_TEMPLATE_PATH" ]]; then
+        warn "Starter issues template not found: ${ISSUES_TEMPLATE}"
+    else
+        # No template for this type (saas-web, ai-product)
+        # TODO: Create templates for saas-web and ai-product types
+        info "No starter issues template for ${PROJECT_TYPE} yet — skipping issue creation"
+    fi
+
     # Create project board
     gh project create --owner "${GITHUB_ORG}" --title "${PROJECT_NAME}" --format board 2>/dev/null || true
     ok "Project board created"
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
-# STEP 10 — Success summary
+# STEP 10 — Clone to ~/Projects for local development
 # ════════════════════════════════════════════════════════════════════════════
 
-step "10" "Complete"
+step "10" "Clone to ~/Projects"
+
+PROJECTS_DIR="${HOME}/Projects"
+LOCAL_PROJECT_PATH="${PROJECTS_DIR}/${PROJECT_NAME}"
+
+# Create ~/Projects if it doesn't exist
+if [[ ! -d "$PROJECTS_DIR" ]]; then
+    mkdir -p "$PROJECTS_DIR"
+    info "Created ${PROJECTS_DIR} directory"
+fi
+
+# Check if target already exists
+if [[ -d "$LOCAL_PROJECT_PATH" ]]; then
+    warn "Folder already exists at ${LOCAL_PROJECT_PATH}"
+    warn "Skipping clone to avoid overwriting existing work"
+    warn "Your existing .env.local was not modified"
+    info "If you need fresh Supabase credentials for this project, get them from:"
+    echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+    info "To get a fresh clone, remove the folder and run:"
+    echo "  rm -rf ${LOCAL_PROJECT_PATH}"
+    echo "  git clone https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git ${LOCAL_PROJECT_PATH}"
+else
+    # Clone to ~/Projects
+    if git clone "https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git" "$LOCAL_PROJECT_PATH" 2>&1; then
+        ok "Cloned to ${LOCAL_PROJECT_PATH}"
+
+        # Populate .env.local with Supabase credentials
+        if [[ -n "$SUPABASE_URL_VALUE" && -n "$SUPABASE_ANON_KEY" ]]; then
+            LOCAL_ENV_PATH="${LOCAL_PROJECT_PATH}/.env.local"
+
+            # Create .env.local from .env.example as base
+            if [[ -f "${LOCAL_PROJECT_PATH}/.env.example" ]]; then
+                cp "${LOCAL_PROJECT_PATH}/.env.example" "$LOCAL_ENV_PATH"
+            else
+                touch "$LOCAL_ENV_PATH"
+            fi
+
+            # Append Supabase credentials
+            cat >> "$LOCAL_ENV_PATH" <<EOF
+
+# Supabase (auto-populated by spinup-typed.sh)
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+EOF
+            ok ".env.local populated with Supabase credentials"
+        else
+            warn "Supabase credentials not available — .env.local needs manual setup"
+            echo "  Get credentials from: https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+        fi
+    else
+        warn "Failed to clone to ${LOCAL_PROJECT_PATH}"
+        info "Clone manually with:"
+        echo "  git clone https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git ~/Projects/${PROJECT_NAME}"
+    fi
+fi
+
+# ════════════════════════════════════════════════════════════════════════════
+# STEP 11 — Success summary
+# ════════════════════════════════════════════════════════════════════════════
+
+step "11" "Complete"
 
 SUPABASE_DASHBOARD="(skipped)"
 if [[ -n "$SUPABASE_PROJECT_REF" ]]; then
@@ -874,15 +1035,14 @@ echo -e "${BOLD}║${NC}   Vercel:        $VERCEL_DASH"
 echo -e "${BOLD}║${NC}   Supabase:      $SUPABASE_DASHBOARD"
 echo -e "${BOLD}║${NC}"
 echo -e "${BOLD}║${NC} ${BOLD}LOCAL${NC}"
-echo -e "${BOLD}║${NC}   Working dir:   $WORK_DIR"
+echo -e "${BOLD}║${NC}   Project dir:   ~/Projects/${PROJECT_NAME}"
 echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${BOLD}Next steps:${NC}"
-echo "  1. cd $WORK_DIR"
-echo "  2. cp .env.example .env.local  # then fill in values"
-echo "  3. npm install"
-echo "  4. npm run dev"
-echo "  5. Read CLAUDE.md before asking CC to build anything"
+echo "  1. cd ~/Projects/${PROJECT_NAME}"
+echo "  2. npm install"
+echo "  3. npm run dev"
+echo "  4. Read CLAUDE.md before asking CC to build anything"
 echo ""
 if [[ -n "$EXTENSIONS" ]]; then
     echo -e "${BOLD}Extensions applied:${NC}"
@@ -891,9 +1051,9 @@ if [[ -n "$EXTENSIONS" ]]; then
     done
     echo ""
 fi
-echo -e "${BOLD}Manual setup still needed:${NC}"
-echo "  [ ] Create Sentry project and add DSN to .env.local"
-echo "  [ ] Add Resend API key if project sends emails"
+echo -e "${BOLD}Optional integrations:${NC}"
+echo "  [ ] Resend — add RESEND_API_KEY to .env.local if project sends emails"
+echo "  [ ] Sentry — add SENTRY_DSN to .env.local if you want error reporting (project runs cleanly without it)"
 if [[ -n "$EXTENSIONS" ]]; then
     echo "  [ ] Review extension migrations in supabase/migrations/"
     echo "  [ ] Run extension tests: npm test"

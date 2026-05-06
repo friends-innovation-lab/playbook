@@ -16,7 +16,7 @@ NC='\033[0m'
 
 # Resolve the directory where this script lives (for playbook repo path)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLAYBOOK_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PLAYBOOK_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 # ─────────────────────────────────────────────────────────
 # Helper functions
@@ -147,7 +147,7 @@ fi
 if [ -n "$LABS_DOMAIN" ]; then
   ok "LABS_DOMAIN is set ($LABS_DOMAIN)"
 else
-  fail "LABS_DOMAIN is not set. Add this to your shell profile: export LABS_DOMAIN=labs.cityfriends.tech"
+  fail "LABS_DOMAIN is not set. Add this to your shell profile: export LABS_DOMAIN=lab.cityfriends.tech"
   CHECKS_PASSED=false
 fi
 
@@ -216,7 +216,7 @@ echo ""
 echo "  1. GitHub — archive the repo"
 echo "  2. Supabase — export data and delete project"
 echo "  3. Vercel — remove deployment and domain"
-echo "  4. Local folder — delete local copy of the project"
+echo "  4. Local folder — delete local copy (will prompt for confirmation)"
 echo ""
 printf "Enter numbers separated by commas, or press Enter for all: > "
 read -r SELECTIONS
@@ -550,5 +550,13 @@ echo "  Local:     ${LOCAL_RESULT}"
 echo ""
 echo "RECORD"
 echo "  Teardown log saved to: ${TEARDOWN_LOG}"
+echo ""
+echo "ABOUT THE GITHUB ARCHIVE"
+echo "  Archived repos remain visible in github.com/${GITHUB_ORG} with"
+echo "  an 'archived' tag. They preserve project history but cannot"
+echo "  receive new commits, PRs, or issues. This is intentional —"
+echo "  archives keep the work accessible without consuming active"
+echo "  resources. If you ever need permanent deletion, do it manually"
+echo "  through GitHub repo settings."
 echo ""
 echo "All done. Nothing is running and no costs are accruing for this project."

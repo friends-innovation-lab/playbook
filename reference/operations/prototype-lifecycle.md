@@ -9,9 +9,9 @@ Every project follows this lifecycle. Know where your project is.
 **Duration:** Under 10 minutes
 
 **What happens:**
-- Run `bash operations/automation/spinup.sh`
+- Run `bash automation/spinup.sh`
 - GitHub repo, Supabase project, and Vercel deployment created automatically
-- Live URL assigned at `[name].labs.cityfriends.tech`
+- Live URL assigned at `[name].lab.cityfriends.tech`
 - CLAUDE.md generated with project context
 - GitHub issues created for the first sprint
 
@@ -58,7 +58,7 @@ After demo or submission, one of three outcomes:
 → Continue to Stage 2 with new requirements
 
 **C. Handoff to client**
-→ Follow the [handoff process](../04-delivering/handoff.md)
+→ Follow the [handoff process](../delivering/handoff.md)
 → Move to Stage 5 after handoff is confirmed complete
 
 ---
@@ -68,12 +68,12 @@ After demo or submission, one of three outcomes:
 **Duration:** Under 10 minutes
 
 **What happens:**
-- Run `bash operations/automation/teardown.sh`
+- Run `bash automation/teardown.sh`
 - Database exported and saved locally
 - GitHub repo archived (still readable, not deleted)
 - Vercel project removed
 - Subdomain released
-- Teardown record saved to `operations/teardown-log/`
+- Teardown record saved to `automation/teardown-log/`
 
 **Done when:** Teardown script completes and record is saved.
 
