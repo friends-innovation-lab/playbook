@@ -138,14 +138,14 @@ These should return your name and email. If they return nothing, the previous st
 Node.js runs JavaScript on your computer. Every project in the lab
 requires Node.js version 20 or higher.
 
-1. Go to **nodejs.org**
-2. Click the button labeled **LTS** (not Current)
-3. Open the downloaded file and follow the installer steps
-4. When it finishes, **close Terminal and reopen it**
+Run this in Terminal:
 
-> [!IMPORTANT]
-> You must close Terminal completely and reopen it after installing
-> Node.js. The `node` command will not work until you do.
+```bash
+brew install node
+```
+
+This installs the latest LTS version of Node.js. It also installs
+`npm`, the package manager you will use to install project dependencies.
 
 **Verify it worked:**
 ```bash
