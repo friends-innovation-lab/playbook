@@ -258,6 +258,18 @@ gh auth status
 ```
 You should see: `Logged in to github.com`
 
+**Add the `delete_repo` scope (lab leads and admins only):**
+
+```bash
+gh auth refresh -h github.com -s delete_repo
+```
+
+> **Note:** Regular contributors should skip this step. The `delete_repo`
+> scope is only needed to manually delete a repository if a spinup fails
+> partway through and leaves behind a partially created repo. The regular
+> teardown process (`teardown.sh`) uses `gh repo archive`, which does not
+> require this scope.
+
 ---
 
 ## Step 7 — Install Supabase CLI
