@@ -21,6 +21,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_OK=true
 
 # ─────────────────────────────────────────────────────────
+# Parse flags
+# ─────────────────────────────────────────────────────────
+DB_FLAG=false
+for arg in "$@"; do
+  case "$arg" in
+    --db) DB_FLAG=true ;;
+  esac
+done
+
+# ─────────────────────────────────────────────────────────
 # Helper functions
 # ─────────────────────────────────────────────────────────
 ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
@@ -58,11 +68,13 @@ else
   CHECKS_PASSED=false
 fi
 
-if command -v supabase &>/dev/null; then
-  ok "supabase (Supabase CLI)"
-else
-  fail "supabase — Supabase CLI is not installed. Install it: brew install supabase/tap/supabase"
-  CHECKS_PASSED=false
+if [ "$DB_FLAG" = true ]; then
+  if command -v supabase &>/dev/null; then
+    ok "supabase (Supabase CLI)"
+  else
+    fail "Supabase CLI not installed. Run: brew install supabase/tap/supabase"
+    CHECKS_PASSED=false
+  fi
 fi
 
 if command -v vercel &>/dev/null; then
@@ -130,11 +142,36 @@ else
   CHECKS_PASSED=false
 fi
 
-if supabase projects list &>/dev/null 2>&1; then
-  ok "Supabase CLI is logged in"
-else
-  fail "Supabase CLI is not logged in. Run: supabase login"
-  CHECKS_PASSED=false
+if [ "$DB_FLAG" = true ]; then
+  if supabase projects list &>/dev/null 2>&1; then
+    ok "Supabase CLI is logged in"
+  else
+    fail "Not logged in to Supabase. Run: supabase login"
+    CHECKS_PASSED=false
+  fi
+
+  if [ "$CHECKS_PASSED" = true ]; then
+    ORGS_OUTPUT=$(supabase orgs list 2>&1)
+    if [ $? -eq 0 ]; then
+      ok "Supabase org access confirmed"
+      if [ -n "$SUPABASE_ORG_ID" ]; then
+        if echo "$ORGS_OUTPUT" | grep -q "$SUPABASE_ORG_ID"; then
+          ok "SUPABASE_ORG_ID matches an accessible org"
+        else
+          fail "SUPABASE_ORG_ID ($SUPABASE_ORG_ID) does not match any of your Supabase orgs."
+          echo ""
+          echo "  Your available orgs:"
+          echo "$ORGS_OUTPUT" | sed 's/^/    /'
+          echo ""
+          echo "  Set SUPABASE_ORG_ID to one of the org IDs above."
+          CHECKS_PASSED=false
+        fi
+      fi
+    else
+      fail "Cannot access Supabase orgs. Verify your account has org access at supabase.com/dashboard"
+      CHECKS_PASSED=false
+    fi
+  fi
 fi
 
 # --- Environment variables ---
@@ -160,11 +197,13 @@ else
   CHECKS_PASSED=false
 fi
 
-if [ -n "$SUPABASE_ORG_ID" ]; then
-  ok "SUPABASE_ORG_ID is set"
-else
-  fail "SUPABASE_ORG_ID is not set. Find it at supabase.com → org settings, then add to your shell profile."
-  CHECKS_PASSED=false
+if [ "$DB_FLAG" = true ]; then
+  if [ -n "$SUPABASE_ORG_ID" ]; then
+    ok "SUPABASE_ORG_ID is set"
+  else
+    fail "SUPABASE_ORG_ID is not set. Find it at supabase.com → org settings, then add to your shell profile."
+    CHECKS_PASSED=false
+  fi
 fi
 
 if [ -n "$LABS_DOMAIN" ]; then
