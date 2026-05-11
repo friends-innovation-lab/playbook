@@ -577,3 +577,45 @@ code .
 You're ready to use the lab. Next, read the lab orientation to understand how the lab works:
 
 → [Lab orientation](02-lab-orientation.md)
+
+---
+
+## If a Spinup Fails Partway Through
+
+The script stops immediately when something goes wrong and lists
+everything it created before failing. You need to manually delete
+those resources before re-running — otherwise the script will fail
+again trying to create things that already exist.
+
+### Delete the GitHub repo
+
+```bash
+gh repo delete friends-innovation-lab/project-name --yes
+```
+
+Replace `project-name` with the slug you used (e.g. `test-one`).
+
+### Delete the local folder
+
+```bash
+rm -rf ~/projects/project-name
+```
+
+### Delete the Vercel project (if it was created)
+
+1. Go to vercel.com → Friends Innovation Lab
+2. Select the project
+3. Settings → Advanced → Delete Project
+
+### Delete the Supabase project (if it was created)
+
+1. Go to supabase.com → Friends Innovation Lab org
+2. Select the project
+3. Settings → General → Delete Project
+
+Once everything is cleaned up, re-run the spinup script from your
+projects folder.
+
+> **Tip:** The script output tells you exactly what was created
+> before it failed under "Resources created so far." Only delete
+> what's listed there.
