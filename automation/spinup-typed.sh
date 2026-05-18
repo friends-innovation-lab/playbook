@@ -585,7 +585,7 @@ else
     step "6" "Supabase"
 
     # Check if project already exists
-    EXISTING_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}' || echo "")"
+    EXISTING_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}')" || EXISTING_REF=""
 
     if [[ -n "$EXISTING_REF" ]]; then
         skip_msg "Supabase project $PROJECT_NAME (ref: $EXISTING_REF)"
@@ -596,7 +596,7 @@ else
         CREATE_OUTPUT="$(supabase projects create "${PROJECT_NAME}" \
             --org-id "$RESOLVED_SUPABASE_ORG" \
             --region us-east-1 \
-            --db-password "$SUPABASE_DB_PASSWORD" 2>&1)"
+            --db-password "$SUPABASE_DB_PASSWORD")"
 
         if [[ $? -ne 0 ]]; then
             fail "Supabase project creation failed"
