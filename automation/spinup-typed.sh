@@ -585,7 +585,9 @@ else
     step "6" "Supabase"
 
     # Check if project already exists
-    EXISTING_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}')" || EXISTING_REF=""
+    EXISTING_REF=""
+    SUPABASE_LIST="$(supabase projects list 2>/dev/null || true)"
+    EXISTING_REF="$(echo "$SUPABASE_LIST" | grep "$PROJECT_NAME" | awk '{print $1}' || true)"
 
     if [[ -n "$EXISTING_REF" ]]; then
         skip_msg "Supabase project $PROJECT_NAME (ref: $EXISTING_REF)"
