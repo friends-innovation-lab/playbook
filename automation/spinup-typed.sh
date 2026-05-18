@@ -606,11 +606,11 @@ else
             exit 1
         fi
 
-        # Extract project ref
-        SUPABASE_PROJECT_REF="$(echo "$CREATE_OUTPUT" | grep -oE '[a-z]{20}' | head -1)"
+        # Extract project ref from dashboard URL in create output
+        SUPABASE_PROJECT_REF="$(echo "$CREATE_OUTPUT" | grep -oE 'https://supabase\.com/dashboard/project/[a-z]+' | head -1 | sed 's|.*/||')"
         if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
             sleep 3
-            SUPABASE_PROJECT_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}')"
+            SUPABASE_PROJECT_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}' || true)"
         fi
 
         if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
