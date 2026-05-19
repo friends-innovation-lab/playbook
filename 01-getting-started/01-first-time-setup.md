@@ -424,19 +424,12 @@ The blank values (`=` with nothing after) get filled in below. Save the file (Cm
 
 ### VERCEL_TOKEN
 
-This lets the spinup script create Vercel projects on your behalf.
+This is a shared team token that lets the spinup script create Vercel projects. Do not generate your own.
 
-1. Go to **vercel.com** and log in
-2. In the search bar at the top of the page type **Tokens**
-3. Click **Tokens** when it appears in the results
-4. Click **Create Token**
-5. Name: `fftc-lab`
-6. Scope: **Friends Innovation Lab**
-7. Expiration: **1 year**
-8. Click **Create**
-9. **Copy the token immediately** — Vercel only shows it once
+> [!NOTE]
+> Contact Lapedra to get the VERCEL_TOKEN and SUPABASE_ACCESS_TOKEN values. These are shared team tokens — do not generate your own.
 
-**Paste your Vercel token into your shell profile.**
+**Paste the token into your shell profile.**
 
 Switch back to VS Code, where `~/.zshrc` should still be open from earlier. Find the line you added that says:
 
@@ -444,7 +437,7 @@ Switch back to VS Code, where `~/.zshrc` should still be open from earlier. Find
 export VERCEL_TOKEN=
 ```
 
-Paste your token value after the `=` sign so it looks like:
+Paste the token value after the `=` sign so it looks like:
 
 ```bash
 export VERCEL_TOKEN=your-actual-token-value-here
@@ -473,22 +466,12 @@ This tells the script which Vercel team to create projects under.
 
 ### SUPABASE_ACCESS_TOKEN
 
-This lets the spinup script create Supabase projects on your behalf.
+This is a shared team token that lets the spinup script create Supabase projects. Do not generate your own.
 
-1. Go to **supabase.com** and log in
-2. Click your **profile picture** in the top right corner
-3. Click **Account**
-4. In the left sidebar click **Access Tokens**
-5. Click **Generate new token**
-6. Name: `fftc-lab`
-7. Click **Generate**
-8. **Copy the token immediately** — Supabase only shows it once
+> [!NOTE]
+> Contact Lapedra to get the VERCEL_TOKEN and SUPABASE_ACCESS_TOKEN values. These are shared team tokens — do not generate your own.
 
 **Paste into your shell profile.** Switch to VS Code, find `export SUPABASE_ACCESS_TOKEN=`, and paste the token after the `=` sign. Save the file.
-
-> [!IMPORTANT]
-> Copy the token immediately. Supabase only shows it once — if you
-> close the page without copying, you will need to generate a new token.
 
 ---
 
