@@ -127,6 +127,13 @@ That last command opens this project in a new VS Code window. The dot means "the
 > [!TIP]
 > If `code .` gives you an error about command not found, you need to install VS Code's command-line shortcut. In any VS Code window: open the command palette (`Cmd+Shift+P`), type "shell command," and click "Install 'code' command in PATH." Then close VS Code and try again.
 
+> [!NOTE]
+> Supabase can take 2–3 minutes to finish provisioning after the spinup script completes. If `.env.local` is missing Supabase credentials:
+> 1. Wait a few minutes for provisioning to finish
+> 2. Go to `https://supabase.com/dashboard/project/<your-project-ref>/settings/api`
+> 3. Copy the **Project URL** and **anon public** key
+> 4. Add them to `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
 ---
 
 ## Step 3 — Make changes with CC
