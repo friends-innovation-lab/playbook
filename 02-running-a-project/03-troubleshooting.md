@@ -59,41 +59,52 @@ were ready.
 
 **How to fix it:**
 
-First, wait until your Supabase project shows a green dot and says
-**Active** in the dashboard (supabase.com/dashboard). This can take
-3–5 minutes after the spinup script finishes.
+First, wait until your Supabase project shows a green dot and says **Active** in the dashboard (supabase.com/dashboard). This can take 3–5 minutes after the spinup script finishes.
 
 Then run:
 
 ```bash
-cd ~/Projects/playbook
 ./automation/spinup-typed.sh --name your-project-name --resume
 ```
 
-Replace `your-project-name` with the name you used when spinning up
-(e.g. `test-one`).
+Replace `your-project-name` with the name you used when spinning up.
 
-The resume command will wait up to 6 minutes for Supabase to finish
-provisioning, then automatically fetch your API keys, update `.env.local`,
-set Vercel environment variables, and update GitHub secrets — everything
-the original spinup couldn't do because Supabase wasn't ready yet.
+The resume command will wait up to 6 minutes for Supabase to finish provisioning, then automatically fetch your API keys, update `.env.local`, set Vercel environment variables, and update GitHub secrets.
 
-If the resume command also times out, wait another few minutes and run
-it again. Supabase occasionally takes longer than usual on first provision.
+If the resume command also times out, wait another few minutes and run it again.
 
-If you still can't get keys after 15 minutes, follow the manual steps
-in the Supabase dashboard:
+If you still can't get keys after 15 minutes, go to **supabase.com/dashboard** → your project → **Settings** → **API** and copy the **Project URL** and **anon public** key manually into `.env.local`.
 
-1. Go to **supabase.com/dashboard** → click your project
-2. **Settings** → **API**
-3. Copy **Project URL** and **anon public** key
-4. Open `~/Projects/your-project-name/.env.local` and add:
+---
+
+## Supabase CLI returns Unauthorized
+
+*↩ Related to [Step 7 — Install Supabase CLI](../01-getting-started/01-first-time-setup.md#step-7--install-supabase-cli)*
+
+**Symptom:** You run `supabase projects list` and see:
+```
+Unexpected error retrieving projects: {"message":"Unauthorized"}
+```
+
+**Why it happens:** The `SUPABASE_ACCESS_TOKEN` in your `~/.zshrc` is expired or incorrect. When this env var is set, the Supabase CLI uses it instead of your interactive login — so running `supabase login` again won't fix it.
+
+**How to fix it:**
+
+1. Contact Lapedra for a fresh `SUPABASE_ACCESS_TOKEN` via Rippling RPASS
+2. Open `~/.zshrc`:
+   ```bash
+   code ~/.zshrc
    ```
-   NEXT_PUBLIC_SUPABASE_URL=your-project-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+3. Find `export SUPABASE_ACCESS_TOKEN=` and replace the value with the new token
+4. Save and reload:
+   ```bash
+   source ~/.zshrc
    ```
-
-Do not change anything else in the file.
+5. Verify:
+   ```bash
+   supabase projects list
+   ```
+   You should now see the list of projects.
 
 ---
 
@@ -195,7 +206,7 @@ does not appear under `github.com/friends-innovation-lab`.
    ```
 3. Clone it locally:
    ```bash
-   cd ~/projects
+   cd ~/Projects
    git clone https://github.com/friends-innovation-lab/[name].git
    cd [name]
    ```
