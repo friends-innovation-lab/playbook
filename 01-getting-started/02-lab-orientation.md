@@ -156,7 +156,13 @@ The lab supports two design workflows depending on the designer and the project.
 
 The lab's primary design path. Best for prototypes and rapid work.
 
-1. Designer opens Claude Design (the Friends design system is loaded at the org level — colors, typography, components, spacing all come pre-configured)
+The FFTC Design System is available as an org template in Claude Design. There are two ways to use it:
+
+**Starting a new project:** When you open a new chat in Claude Design, pick **FFTC Design System** from the template gallery on the new-project screen. You'll get a full copy of the system — colors, type rules, component examples, all of it. The agent reads the skill file automatically and designs in-system from the first turn. Do not start from a blank project — you'll lose every token and type rule and the agent will reinvent the look from scratch.
+
+**Already working in a project:** Paste this URL into the chat and say "use this as the design system": `https://claude.ai/design/p/019de857-5e9d-7b97-9071-7b120aec10a4` — the agent gets read-only access and will copy the CSS and preview files it needs into your project. Alternatively, use the **Import** menu in your project and link it as a reference.
+
+1. Designer opens Claude Design
 2. Designer iterates on screens
 3. Designer clicks "Hand off to Claude Code" — downloads a folder of design specs (HTML, CSS, tokens, a README explaining the components)
 4. The folder goes into the spun-up project
