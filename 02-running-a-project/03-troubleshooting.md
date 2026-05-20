@@ -59,35 +59,41 @@ were ready.
 
 **How to fix it:**
 
-1. Go to **supabase.com/dashboard**
-2. Find your project — wait until the status shows a green dot
-   and says **Active** (can take up to 2 minutes)
-3. Click your project name
-4. In the left sidebar click **Settings**
-5. Click **API**
-6. Copy these three values:
-   - **Project URL** — this is your `NEXT_PUBLIC_SUPABASE_URL`
-   - **anon / public** key — this is your `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - **service_role** key — this is your `SUPABASE_SERVICE_ROLE_KEY`
-7. Open your project folder in VS Code
-8. Open the file called `.env.local`
-9. Paste each value after the matching variable name:
+First, wait until your Supabase project shows a green dot and says
+**Active** in the dashboard (supabase.com/dashboard). This can take
+3–5 minutes after the spinup script finishes.
+
+Then run:
+
+```bash
+cd ~/Projects/playbook
+./automation/spinup-typed.sh --name your-project-name --resume
+```
+
+Replace `your-project-name` with the name you used when spinning up
+(e.g. `test-one`).
+
+The resume command will wait up to 6 minutes for Supabase to finish
+provisioning, then automatically fetch your API keys, update `.env.local`,
+set Vercel environment variables, and update GitHub secrets — everything
+the original spinup couldn't do because Supabase wasn't ready yet.
+
+If the resume command also times out, wait another few minutes and run
+it again. Supabase occasionally takes longer than usual on first provision.
+
+If you still can't get keys after 15 minutes, follow the manual steps
+in the Supabase dashboard:
+
+1. Go to **supabase.com/dashboard** → click your project
+2. **Settings** → **API**
+3. Copy **Project URL** and **anon public** key
+4. Open `~/Projects/your-project-name/.env.local` and add:
    ```
-   NEXT_PUBLIC_SUPABASE_URL=https://yourprojectref.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-   SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+   NEXT_PUBLIC_SUPABASE_URL=your-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    ```
-10. Save the file (Command + S)
-11. Run the database migration:
-    ```bash
-    supabase db push --project-ref YOUR_PROJECT_REF
-    ```
-    Replace `YOUR_PROJECT_REF` with the ref shown in your
-    Supabase dashboard URL. It looks like `abcdefghijklmnop`.
-12. Restart the dev server:
-    ```bash
-    npm run dev
-    ```
+
+Do not change anything else in the file.
 
 ---
 
