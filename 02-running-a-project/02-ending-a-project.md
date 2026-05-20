@@ -24,12 +24,12 @@ Make sure:
 
 Make sure you are in your projects folder:
 ```bash
-cd ~/projects
+cd ~/Projects
 ```
 
 Then run:
 ```bash
-bash ~/projects/playbook/automation/teardown.sh
+cd ~/Projects/playbook && ./automation/teardown.sh
 ```
 
 The script will ask you which project to remove and what to tear down.
