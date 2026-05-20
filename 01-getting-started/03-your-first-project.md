@@ -112,17 +112,19 @@ Before changing anything, take three minutes to see what you have.
 
 - **Supabase dashboard** — Your database project. The Tables view shows the schema (mostly empty for a prototype). The API view shows connection details already wired into your project's env vars. You'll rarely visit Supabase directly.
 
-**Now open the project in VS Code.** The spinup script already cloned the project to your computer at `~/Projects/test-one` and configured the local environment file (`.env.local`) with the Supabase credentials your app needs to run. Open it:
+**Now open the project in VS Code.** The spinup script already cloned the project to your computer. Navigate to it now:
 
 ```bash
 cd ~/Projects/test-one
 ```
 
+Then open it in VS Code:
+
 ```bash
 code .
 ```
 
-That last command opens this project in a new VS Code window. The dot means "the current folder." You'll now have two VS Code windows — the playbook one, and the test-one project one. Work in the test-one window for the rest of this doc.
+VS Code will open a new window showing the test-one project. You'll now have two VS Code windows — the playbook one and the test-one project one. Work in the test-one window for the rest of this doc.
 
 > [!TIP]
 > If `code .` gives you an error about command not found, you need to install VS Code's command-line shortcut. In any VS Code window: open the command palette (`Cmd+Shift+P`), type "shell command," and click "Install 'code' command in PATH." Then close VS Code and try again.
@@ -204,11 +206,15 @@ First, switch to develop:
 git checkout develop
 ```
 
+You should see: `Switched to branch 'develop'`
+
 Then create a feature branch off develop:
 
 ```bash
 git checkout -b feature/first-project-changes
 ```
+
+You should see: `Switched to a new branch 'feature/first-project-changes'`
 
 That command creates a new branch called `feature/first-project-changes` and switches to it. Anything you commit from now on goes onto this branch, not onto develop or main.
 
@@ -218,6 +224,8 @@ That command creates a new branch called `feature/first-project-changes` and swi
 git add .
 ```
 
+This command is silent — no output is normal. It just means everything was staged successfully.
+
 The dot means "everything in this folder." git now knows what you're committing.
 
 **Commit.** A commit is a snapshot of your changes with a message describing what you did. Commit your staged changes:
@@ -226,13 +234,17 @@ The dot means "everything in this folder." git now knows what you're committing.
 git commit -m "Personalize landing page for first project test"
 ```
 
-The `-m` flag attaches a message. You'll see a confirmation that the commit was created.
+You should see a short summary showing the branch name, a commit hash, and the number of files changed.
+
+The `-m` flag attaches a message.
 
 **Push.** Pushing sends your local commit up to GitHub.
 
 ```bash
 git push -u origin feature/first-project-changes
 ```
+
+You should see upload progress and then a line saying the branch was pushed. GitHub may also print a URL to open a pull request — ignore it, you'll create the PR with the next command.
 
 The `-u origin feature/first-project-changes` part tells git "push this branch to GitHub for the first time." Future pushes from this branch can just use `git push`.
 
@@ -349,7 +361,7 @@ Look at what you did:
 9. Saw the changes deploy automatically to the live site
 10. Tore everything down
 
-Whatever felt slow, confusing, or surprising — write it down. The team will meet up after your test project to talk about what worked and what didn't. The lab gets better from those conversations.
+Whatever felt slow, confusing, or surprising — write it down and send it to Lapedra. Your feedback makes the onboarding better for the next person. The lab gets better from those conversations.
 
 When a real project lands, this will all feel familiar. You won't be learning the tools at the same time as you're trying to build something. You'll already know the loop.
 
