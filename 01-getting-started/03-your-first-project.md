@@ -140,7 +140,7 @@ That last command opens this project in a new VS Code window. The dot means "the
 
 Now you'll use Claude Code (CC) to make three changes to the landing page.
 
-**Open CC inside the test-one VS Code window.** Look for the CC icon in the left toolbar — it looks like a sparkle or chat bubble. Click it. A chat panel opens on the right side of VS Code.
+**Open CC inside the test-one VS Code window.** Look for the CC icon in the left toolbar — it looks like a sparkle or chat bubble. Click it. A chat panel opens on the right side of VS Code. When the CC panel opens, click **New Session** before pasting anything. This makes sure CC starts fresh with your project context rather than carrying over anything from a previous session.
 
 **Paste this prompt into CC.** Replace `[your name]` with your actual first name before sending.
 
@@ -167,7 +167,10 @@ Review what CC proposes. If it looks reasonable, accept the changes. If somethin
 npm install
 ```
 
-This pulls down the project's dependencies. Takes about 30 seconds the first time. You'll see a lot of text scroll by — that's normal.
+This pulls down the project's dependencies. Takes about 30 seconds the first time.
+
+> [!NOTE]
+> A lot of text will scroll by. This is normal. npm often prints warnings about deprecated packages and BADENGINE notices about Node version mismatches — ignore them. There may also be a line saying something like "14 vulnerabilities found." These are known issues in development dependencies and do not affect your project's security in production. As long as the install finishes without an error that says `npm ERR!`, you're good to continue.
 
 ```bash
 npm run dev
@@ -250,6 +253,9 @@ These take about 2-3 minutes total. Wait for them to finish.
 > [!NOTE]
 > Green checkmarks mean the checks passed and your PR is safe to merge. A red X means a check failed — click it to see what broke. For a small change like this, all checks should pass on the first try.
 
+> [!WARNING]
+> If the Vercel CI check fails with an error about missing Supabase environment variables, it means your Supabase project wasn't fully provisioned when the spinup script ran. Fix it by running `./automation/spinup-typed.sh --name test-one --resume` from the playbook folder. Once it completes, go to your PR on GitHub and click **Re-run failed checks**.
+
 **Merge the PR.** When all checks are green, merge it. Two ways:
 
 - **The easy way:** scroll down on the PR page and click the green "Merge pull request" button. Then click "Confirm merge."
@@ -270,8 +276,11 @@ Two deployments happen during the PR cycle:
 
 - Vercel creates a preview URL for every pull request
 - Separate from production; accessible to anyone with the link
-- The preview URL appears automatically in PR comments and on the Vercel dashboard
+- The preview URL appears as a comment from the Vercel bot directly on your GitHub PR page — scroll down past the CI checks to find it
+- It will not appear if there are CI errors
 - Click it — your changes are visible there
+
+If your first PR had errors and you never saw a clean preview, make a small change (add a blank line to the bio, change one word), commit and push it to your feature branch, and open a new PR. This gives you a chance to see what a fully successful CI run looks like — all green checks and a Vercel preview URL in the comments.
 
 **After you merge the PR to develop: develop deployment**
 
