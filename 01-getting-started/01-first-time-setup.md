@@ -51,12 +51,22 @@ Run this in Terminal:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
+> [!NOTE]
+> macOS may show a security warning when you paste this command into Terminal.
+> It is safe to click **Paste Anyway** — this warning appears because the
+> command is long and contains a URL, not because it is harmful.
+
 It will ask for your Mac password. Type it and press Enter.
 Nothing appears as you type — that is normal.
 The installation takes 2-5 minutes.
 
 After the installation finishes, Homebrew will show a "Next steps" section.
-You must run all three commands it shows. They look like this:
+
+**Note:** If you are on a Mac with Apple Silicon (M1, M2, M3), you must run
+the three commands shown below after the installer finishes. If you are on
+an older Intel Mac, skip to **Verify it worked**.
+
+The commands look like this:
 
 ```bash
 echo >> /Users/[yourname]/.zprofile
@@ -79,9 +89,6 @@ source ~/.zprofile
 brew --version
 ```
 You should see a version number — any recent version of Homebrew (4.x or 5.x) works fine. If you see "command not found," Homebrew didn't install correctly.
-
-**Note:** This extra step is only required on Macs with Apple Silicon (M1, M2, M3 chips).
-If you are on an older Intel Mac you can skip straight to verifying the version.
 
 > [!TIP]
 > Having trouble? See [Homebrew installation issues](../02-running-a-project/03-troubleshooting.md#homebrew-not-found-after-installation)
@@ -107,6 +114,11 @@ You should see something like `git version 2.x.x`
 
 Now set your Git identity so your commits are linked to your GitHub account.
 
+> [!IMPORTANT]
+> Use the email address that is on your GitHub account.
+> Ask Lapedra if you are not sure which email to use.
+> This is required before your first commit. You only need to do it once.
+
 Run this in Terminal:
 
 ```bash
@@ -122,11 +134,6 @@ git config --global user.email
 ```
 
 These should return your name and email. If they return nothing, the previous step didn't save — try the config commands again.
-
-> [!IMPORTANT]
-> Use the email address that is on your GitHub account.
-> Ask Lapedra if you are not sure which email to use.
-> This is required before your first commit. You only need to do it once.
 
 > [!TIP]
 > Having trouble? See [Git identity not configured](../02-running-a-project/03-troubleshooting.md#git-commit-fails--user-identity-not-configured)
@@ -291,8 +298,10 @@ Run this in Terminal:
 supabase login
 ```
 
-This opens a browser window. Log in to your Supabase account and
-click Authorize.
+This opens a browser window. If you are not already logged in, log in to
+your Supabase account. The browser window will then show you a code to copy.
+Copy that code, switch back to Terminal, paste it in, and press Enter.
+You should see "You are now logged in. Happy coding!"
 
 **Verify it worked:**
 ```bash
@@ -312,6 +321,12 @@ automatically.
 ```bash
 npm install -g vercel
 ```
+
+> [!NOTE]
+> npm may print warnings during installation — including BADENGINE warnings
+> about unsupported Node versions and deprecation notices. These are normal
+> and do not mean the installation failed. As long as the install completes
+> and `vercel --version` works, you can ignore them.
 
 If you get a permissions error, use this instead:
 
@@ -462,10 +477,12 @@ Save the file (Cmd+S in VS Code).
 
 This tells the script which Vercel team to create projects under.
 
-1. Stay on vercel.com → Account Settings
-2. Click **General** in the left sidebar
-3. Scroll down to find the field labeled **Team ID**
-4. Copy that value
+1. Go to **vercel.com**
+2. In the top left, switch to the **Friends Innovation Lab** team using
+   the team selector dropdown
+3. Go to **Settings** → **General**
+4. Scroll down to find the field labeled **Team ID**
+5. Copy that value
 
 **Paste into your shell profile.** Switch to VS Code, find `export VERCEL_ORG_ID=`, and paste the Team ID after the `=` sign. Save the file.
 
@@ -481,8 +498,11 @@ This lets the spinup script create Supabase projects on your behalf.
 4. In the left sidebar click **Access Tokens**
 5. Click **Generate new token**
 6. Name: `fftc-lab`
-7. Click **Generate**
-8. **Copy the token immediately** — Supabase only shows it once
+7. Expiration: **1 year** (the maximum). Note: the calendar picker may be
+   cut off in some browsers — scroll or resize the window if you can't see it.
+   You will need to repeat this step annually when the token expires.
+8. Click **Generate**
+9. **Copy the token immediately** — Supabase only shows it once
 
 **Paste into your shell profile.** Switch to VS Code, find `export SUPABASE_ACCESS_TOKEN=`, and paste the token after the `=` sign. Save the file.
 
@@ -573,14 +593,15 @@ cd ~/projects
 git clone https://github.com/friends-innovation-lab/playbook.git
 ```
 
-Open it in VS Code:
-
-Run this in Terminal:
+Now open the playbook in VS Code so you can read it and run scripts from it:
 
 ```bash
 cd playbook
 code .
 ```
+
+> [!NOTE]
+> VS Code may show a modal asking "Do you want to allow untrusted files in this window?" Click **Open** (or **Yes, I trust the authors**). This is expected when opening a folder for the first time.
 
 ---
 
