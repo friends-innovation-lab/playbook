@@ -4,6 +4,13 @@ A short read before your first project. The Friends Innovation Lab has a few mov
 
 You don't need to memorize any of this. You need to recognize the words when you see them.
 
+> [!NOTE]
+> **If you remember nothing else from this doc:**
+>
+> - Local changes (on your machine) are not live until you push to GitHub and a deployment completes
+> - Adding a value to `.env.local` does not put it in Vercel — you have to add it in both places
+> - When something breaks, check the CI checks on your pull request first — the error message almost always tells you what's wrong
+
 **Reading time:** about 10 minutes.
 
 **Jump to:** [The four repos](#the-four-repos) · [Project types](#project-types) · [Extensions](#extensions) · [Lab standards](#lab-standards) · [How design connects to code](#how-design-connects-to-code) · [Local vs. live](#local-vs-live) · [What CI does](#what-ci-does-for-you) · [Tools you'll touch](#tools-youll-touch) · [Quick reference](#quick-reference)
@@ -287,6 +294,8 @@ A short tour of the tools that show up during a project. You'll learn them by us
 - Less common than Vercel for typical lab work
 - Used for things like background workers, scheduled tasks, persistent backend services
 
+You won't encounter Railway in a standard prototype or federal project. It only comes up for projects that need persistent backend services or scheduled jobs — which is rare in lab work. If a project needs it, your project lead will set it up.
+
 > [!NOTE]
 > You don't need to create accounts for these yourself. The lab provisions your access during onboarding.
 
@@ -310,6 +319,9 @@ Things to recognize when you encounter them:
 | Green checkmarks on a PR | CI checks passed; safe to merge |
 | Red X on a PR | A check failed; click for details |
 | The Treehouse | What we call the Friends Innovation Lab internally |
+| `~/Projects/` | The folder on your Mac where all lab projects live locally |
+| `--resume` flag on the spinup script | Supabase didn't finish provisioning during spinup — run this to finish the setup once it's ready: `./automation/spinup-typed.sh --name your-project-name --resume` |
+| Supabase keys empty in `.env.local` | Supabase was still provisioning when spinup ran — see the [troubleshooting doc](../02-running-a-project/03-troubleshooting.md#supabase-keys-are-empty-after-spinup) |
 
 ---
 
