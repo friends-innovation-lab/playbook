@@ -818,7 +818,9 @@ else
     step "6" "Supabase"
 
     # Check if project already exists
-    EXISTING_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}' || echo "")"
+    EXISTING_REF=""
+    SUPABASE_LIST="$(supabase projects list 2>/dev/null || true)"
+    EXISTING_REF="$(echo "$SUPABASE_LIST" | grep "$PROJECT_NAME" | awk '{print $1}' || true)"
 
     if [[ -n "$EXISTING_REF" ]]; then
         skip_msg "Supabase project $PROJECT_NAME (ref: $EXISTING_REF)"
@@ -829,7 +831,7 @@ else
         CREATE_OUTPUT="$(supabase projects create "${PROJECT_NAME}" \
             --org-id "$RESOLVED_SUPABASE_ORG" \
             --region us-east-1 \
-            --db-password "$SUPABASE_DB_PASSWORD" 2>&1)"
+            --db-password "$SUPABASE_DB_PASSWORD")"
 
         if [[ $? -ne 0 ]]; then
             fail "Supabase project creation failed"
@@ -837,11 +839,11 @@ else
             exit 1
         fi
 
-        # Extract project ref
-        SUPABASE_PROJECT_REF="$(echo "$CREATE_OUTPUT" | grep -oE '[a-z]{20}' | head -1)"
+        # Extract project ref from dashboard URL in create output
+        SUPABASE_PROJECT_REF="$(echo "$CREATE_OUTPUT" | grep -oE 'https://supabase\.com/dashboard/project/[a-z]+' | head -1 | sed 's|.*/||')"
         if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
             sleep 3
-            SUPABASE_PROJECT_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}')"
+            SUPABASE_PROJECT_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}' || true)"
         fi
 
         if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
