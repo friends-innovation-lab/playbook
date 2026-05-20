@@ -39,7 +39,7 @@ Keep Terminal open. You will use it for every step below.
 
 ---
 
-## Step 2 — Install Homebrew
+## Step 2 — Install Homebrew (2–5 minutes)
 
 Homebrew is a package manager for Mac. It lets you install developer
 tools with a single command. Install it first — everything else
@@ -146,7 +146,7 @@ These should return your name and email. If they return nothing, the previous st
 
 ---
 
-## Step 4 — Install Node.js
+## Step 4 — Install Node.js (1–2 minutes)
 
 Node.js runs JavaScript on your computer. Every project in the lab
 requires Node.js version 20 or higher.
@@ -168,7 +168,7 @@ You should see `v20.0.0` or higher (any version starting with `v20`, `v22`, `v24
 
 ---
 
-## Step 5 — Install VS Code and Claude Code
+## Step 5 — Install VS Code and Claude Code (5–10 minutes)
 
 VS Code is the editor you'll use for working on lab projects. Claude Code is the AI coding assistant that runs inside VS Code. Install both now.
 
@@ -265,6 +265,8 @@ Follow the prompts exactly:
 - Paste the code in the browser window that opens
 - Click Authorize
 
+A browser window will open automatically. You'll see a GitHub page asking you to authorize the GitHub CLI. Click **Authorize github**. Switch back to Terminal — you should see a confirmation that says "Authentication complete." If the browser window doesn't open automatically, copy the URL Terminal shows and paste it into your browser manually.
+
 **Verify it worked:**
 ```bash
 gh auth status
@@ -314,6 +316,8 @@ You should see "You are now logged in. Happy coding!"
 supabase projects list
 ```
 You should see a list of projects (or an empty list — both are fine).
+
+You may see a warning that says "Cannot find project ref. Have you run supabase link?" — ignore it. That warning appears because you're not inside a linked project folder. It does not mean anything is wrong. What matters is that the table of projects appears below it without an "Unauthorized" error. If you see `Unauthorized`, your login didn't complete — run `supabase login` again.
 
 ---
 
@@ -384,7 +388,7 @@ You should see something like `jq-1.7.1`. The exact version doesn't matter — a
 
 ---
 
-## Step 10 — Install PostgreSQL tools
+## Step 10 — Install PostgreSQL tools (1–2 minutes)
 
 The teardown script uses `pg_dump` to export database backups
 before removing a project.
@@ -403,7 +407,7 @@ You should see something like `pg_dump (PostgreSQL) 16.x`. The exact version doe
 
 ---
 
-## Step 11 — Set up your environment variables
+## Step 11 — Set up your environment variables (10–15 minutes)
 
 Environment variables are settings stored on your machine that
 scripts use automatically. You set them once and they work
@@ -531,7 +535,7 @@ source ~/.zshrc
 echo $VERCEL_TOKEN
 echo $SUPABASE_ACCESS_TOKEN
 ```
-Each should print its value — not blank.
+Each command should print the token value — a long string of random characters. If either prints nothing (a blank line), the variable wasn't saved correctly. Open `~/.zshrc` in VS Code again, check that the value is on the same line as the `export` statement with no spaces around the `=` sign, save, and run `source ~/.zshrc` again.
 
 > [!TIP]
 > Having trouble? See [Environment variable shows blank](../02-running-a-project/03-troubleshooting.md#environment-variable-shows-blank)
@@ -589,8 +593,7 @@ cd playbook
 code .
 ```
 
-> [!NOTE]
-> VS Code may show a modal asking "Do you want to allow untrusted files in this window?" Click **Open** (or **Yes, I trust the authors**). This is expected when opening a folder for the first time.
+VS Code will open a new window showing the playbook folder in the left sidebar. You should see folders like `01-getting-started`, `02-running-a-project`, and `automation`. If VS Code shows a modal asking "Do you trust the authors of the files in this folder?" — click **Yes, I trust the authors**. If you see an empty window with no files, the clone didn't complete correctly — go back to the `git clone` step and try again.
 
 ---
 
