@@ -66,6 +66,12 @@ After the installation finishes, Homebrew will show a "Next steps" section.
 the three commands shown below after the installer finishes. If you are on
 an older Intel Mac, skip to **Verify it worked**.
 
+> [!IMPORTANT]
+> Copy these commands from YOUR terminal, not from this page. After the
+> installer finishes, it will print a "Next steps" section with the exact
+> commands you need to run — including your real username. Scroll up in
+> your terminal to find them and copy each one from there.
+
 The commands look like this:
 
 ```bash
@@ -171,7 +177,7 @@ VS Code is the editor you'll use for working on lab projects. Claude Code is the
 1. Go to **[code.visualstudio.com](https://code.visualstudio.com)**
 2. Click the big white button that says **Download for macOS**
 3. Open your Downloads folder and double-click the file that downloaded
-4. Drag the VS Code icon into your Applications folder when prompted
+4. Drag the VS Code icon into your Applications folder when prompted. If no window appears asking you to drag, that's fine — just double-click VS Code from your Downloads folder to open it. Once it opens, it may offer to move itself to Applications automatically. Click **Move to Applications** if it does.
 5. Open VS Code from your Applications folder or Spotlight search
 
 **Verify it worked:** VS Code opens and you see a welcome screen.
@@ -374,7 +380,7 @@ brew install jq
 ```bash
 jq --version
 ```
-You should see `jq-1.x`
+You should see something like `jq-1.7.1`. The exact version doesn't matter — any version works.
 
 ---
 
@@ -393,7 +399,7 @@ brew install postgresql
 ```bash
 pg_dump --version
 ```
-You should see a version number.
+You should see something like `pg_dump (PostgreSQL) 16.x`. The exact version doesn't matter. Note: Homebrew may print messages about background services and cleanup after this install — you can safely ignore them.
 
 ---
 
@@ -485,12 +491,13 @@ This tells the script which Vercel team to create projects under.
 
 ### SUPABASE_ACCESS_TOKEN
 
-This is a shared team token that lets the spinup script create Supabase projects. Do not generate your own.
+This is a shared team token — do not generate your own.
 
-> [!NOTE]
-> Contact Lapedra to get the VERCEL_TOKEN and SUPABASE_ACCESS_TOKEN values. These are shared team tokens — do not generate your own.
+Contact Lapedra to get the `SUPABASE_ACCESS_TOKEN` value. She will send it to you securely via Rippling RPASS.
 
-**Paste into your shell profile.** Switch to VS Code, find `export SUPABASE_ACCESS_TOKEN=`, and paste the token after the `=` sign. Save the file.
+Once you have it, switch to VS Code, find `export SUPABASE_ACCESS_TOKEN=`, and paste the value after the `=` sign. Save the file.
+
+**Why it's shared:** The spinup script creates Supabase projects on behalf of the Friends Innovation Lab org. This requires Owner-level access to the org. Rather than making everyone an Owner, we use a single shared service account token that has the right permissions. See [Security Policy](04-security-policy.md) for details on how this token is managed.
 
 ---
 
@@ -538,10 +545,10 @@ Keep all lab projects in one place.
 Run this in Terminal to create the folder:
 
 ```bash
-mkdir ~/projects
+mkdir ~/Projects
 ```
 
-This creates a folder called `projects` in your home directory.
+This creates a folder called `Projects` in your home directory.
 You only need to do this once.
 
 ---
@@ -555,23 +562,23 @@ Cloning means downloading a copy of the repo so you can use it
 and run scripts from it locally.
 
 > [!WARNING]
-> **Before cloning, make sure you are in your projects
+> **Before cloning, make sure you are in your Projects
 > folder, not inside another project or the playbook folder.**
 > Run this first to confirm where you are:
 > ```bash
 > pwd
 > ```
-> You should see `/Users/[yourname]/projects`
+> You should see `/Users/[yourname]/Projects`
 > If you see anything else, run:
 > ```bash
-> cd ~/projects
+> cd ~/Projects
 > ```
 > Then continue with the steps below.
 
 Run this in Terminal:
 
 ```bash
-cd ~/projects
+cd ~/Projects
 git clone https://github.com/friends-innovation-lab/playbook.git
 ```
 
@@ -613,7 +620,7 @@ Replace `project-name` with the slug you used (e.g. `test-one`).
 ### Delete the local folder
 
 ```bash
-rm -rf ~/projects/project-name
+rm -rf ~/Projects/project-name
 ```
 
 ### Delete the Vercel project (if it was created)

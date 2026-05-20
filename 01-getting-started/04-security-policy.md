@@ -11,7 +11,7 @@ responsible for handling them carefully.
 
 ## Where tokens are stored
 
-- All shared tokens are stored in **1Password** under the
+- All shared tokens are stored in **Rippling RPASS** under the
   **Friends Innovation Lab** vault
 - Contact Lapedra to get access to the vault during onboarding
 - **Never** store tokens in Slack, email, Google Docs, or anywhere else
@@ -42,7 +42,7 @@ responsible for handling them carefully.
 
 1. Lapedra will revoke and regenerate all shared tokens within
    24 hours of an employee's last day
-2. New tokens will be distributed to remaining team members via 1Password
+2. New tokens will be distributed to remaining team members via Rippling RPASS
 3. Update your `~/.zshrc` with the new values and run:
    ```bash
    source ~/.zshrc
@@ -69,7 +69,7 @@ shared in Slack, etc.):
 2. Go to **Account** → **Access Tokens**
 3. Revoke the old token
 4. Generate a new token (set expiry to 1 year)
-5. Update the token in **1Password**
+5. Update the token in **Rippling RPASS**
 6. Notify the team
 
 ### Vercel
@@ -78,5 +78,5 @@ shared in Slack, etc.):
 2. Go to **Settings** → **Tokens**
 3. Revoke the old token
 4. Generate a new token (set expiry to 1 year, scope to Friends Innovation Lab)
-5. Update the token in **1Password**
+5. Update the token in **Rippling RPASS**
 6. Notify the team
