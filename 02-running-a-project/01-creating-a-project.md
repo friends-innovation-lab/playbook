@@ -134,49 +134,39 @@ These four artifacts are your contract with the project. They're what designers 
 
 ## Phase 2 — Design
 
-Once planning is done, design starts. There are two design workflows depending on the designer and the project. Both end with CC implementing.
+Once planning is done, design starts. There are two paths depending on the project type and how much design precision you need.
 
-### Workflow 1 — Claude Design straight to CC
+### Path 1 — Claude Design → CC (prototypes, challenge responses, time-boxed work)
 
-This is the lab's primary design path. Best for prototypes and rapid work.
+This is the default path for most lab work. Use it when speed matters more than design precision.
 
-The FFTC Design System is available as an org template in Claude Design. There are two ways to use it:
+1. Open Claude Design and pick the right template from the template gallery based on your project type:
+   - **Internal projects** (Friends' own tools, internal products) → pick **FFTC Design System**
+   - **Federal / government projects** → pick **USWDS Design System**
 
-**Starting a new project:** When you open a new chat in Claude Design, pick **FFTC Design System** from the template gallery on the new-project screen. You'll get a full copy of the system — colors, type rules, component examples, all of it. The agent reads the skill file automatically and designs in-system from the first turn. Do not start from a blank project — you'll lose every token and type rule and the agent will reinvent the look from scratch.
+   Do not start from blank — you'll lose all tokens, type rules, and component examples.
 
-**Already working in a project:** Paste this URL into the chat and say "use this as the design system": `https://claude.ai/design/p/019de857-5e9d-7b97-9071-7b120aec10a4` — the agent gets read-only access and will copy the CSS and preview files it needs into your project. Alternatively, use the **Import** menu in your project and link it as a reference.
+2. Iterate on screens with the design system loaded. The agent designs in-system from the first turn.
 
-The designer:
+3. When the design is ready, click **Share** then select **Hand off to Claude**. Download the handoff folder (HTML, CSS, tokens, README).
 
-1. Opens Claude Design
-2. Iterates on screens with Claude Design
-3. Clicks "Hand off to Claude Code" when the design is ready
-4. Downloads the handoff folder (contains HTML, CSS, tokens, README)
+4. Drop the handoff folder into the project repo at `/design-handoff/`. CC reads it during the build phase.
 
-The handoff folder gets dropped into the spun-up project repo at `/design-handoff/`. CC reads it during the build phase and implements using the project-template's React + Tailwind + shadcn/ui stack. Icons match because both Claude Design and the project-template use Lucide.
+If you're already mid-project and need to import the FFTC system, paste this URL into the chat and say "use this as the design system": `https://claude.ai/design/p/019de857-5e9d-7b97-9071-7b120aec10a4`
 
-### Workflow 2 — Claude Design through Figma to CC
+### Path 2 — Claude Design → Figma → CC (complex product work)
 
-For professional designers who want full design-tool refinement. Best for complex projects where designs need precise control.
+Use this for longer engagements where designs need precise control, detailed annotations, or custom interactions — Qori, TrueBid, or any project where a designer needs full design-tool refinement.
 
-The designer:
+1. Start in Claude Design with the appropriate template to get the concept down fast.
+2. Use Anima's Figma agent to bridge the design into Figma.
+3. Continue refining on the Figma canvas — fine detail, spacing, interactions, developer annotations.
+4. Share the Figma file URL for the build phase. CC reads it via the Figma MCP integration.
 
-1. Starts in Claude Design (same Friends design system loaded)
-2. Uses Anima's Figma agent to bridge the design into Figma
-3. Continues refining on the Figma canvas — fine detail, custom interactions, detailed specs
-4. Shares the Figma file URL for the build phase
-
-CC reads the Figma file via the Figma MCP integration. You'll need the [Figma plugin for Claude Code](#1-install-the-figma-plugin-for-claude-code) installed — see the builder section below.
-
-### For federal projects
-
-Designs follow USWDS conventions (the U.S. Web Design System).
-
-Right now: federal designers use existing Figma files for USWDS conventions, plus Storybook for USWDS components. Reference these directly.
-
-Coming soon: a USWDS design system in Claude Design.
-
-Until the USWDS Claude Design system is live, federal designs come from Figma + Storybook directly.
+The Figma design system files:
+- Tokens: https://www.figma.com/design/MgWiTmboj3YSTUK8xRKzRt/Tokens
+- Components: https://www.figma.com/design/zZFKdl9JDitNfnZkTGJYKR/Components
+- Templates: https://www.figma.com/design/vqKtu40TwBNNUYnPH87PvB/Templates
 
 ---
 
