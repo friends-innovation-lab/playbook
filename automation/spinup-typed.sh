@@ -25,6 +25,8 @@
 #   --supabase-org <id>     Supabase organization ID (overrides env var)
 #   --skip-issues           Don't create starter issues
 #   --dry-run               Print what would be done without doing it
+#   --resume                Resume credential setup for an existing project
+#                           (use when Supabase provisioning timed out)
 #
 # Environment variables required:
 #   GITHUB_ORG              GitHub organization (default: friends-innovation-lab)
@@ -102,6 +104,7 @@ SKIP_VERCEL=false
 SKIP_SUPABASE=false
 SKIP_ISSUES=false
 DRY_RUN=false
+RESUME_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -114,6 +117,7 @@ while [[ $# -gt 0 ]]; do
         --skip-supabase) SKIP_SUPABASE=true; shift ;;
         --skip-issues)  SKIP_ISSUES=true; shift ;;
         --dry-run)      DRY_RUN=true; shift ;;
+        --resume)       RESUME_MODE=true; shift ;;
         -h|--help)
             sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
             exit 0
@@ -140,8 +144,22 @@ if ! echo "$PROJECT_NAME" | grep -qE '^[a-z0-9][a-z0-9-]*[a-z0-9]$' || \
     exit 1
 fi
 
-# Validate type
-EXTENSIONS="$(extensions_for_type "$PROJECT_TYPE")" || exit 1
+# Validate type (skip for resume mode — type doesn't matter)
+if ! $RESUME_MODE; then
+    EXTENSIONS="$(extensions_for_type "$PROJECT_TYPE")" || exit 1
+else
+    EXTENSIONS=""
+fi
+
+# Resume mode validation
+if $RESUME_MODE; then
+    LOCAL_PROJECT_PATH="${HOME}/Projects/${PROJECT_NAME}"
+    if [[ ! -d "$LOCAL_PROJECT_PATH" ]]; then
+        echo "Error: Project folder not found at ${LOCAL_PROJECT_PATH}" >&2
+        echo "Resume mode requires an existing local project folder." >&2
+        exit 1
+    fi
+fi
 
 # Default description
 if [[ -z "$DESCRIPTION" ]]; then
@@ -192,6 +210,9 @@ echo -e "${BOLD}║${NC} Repo:        ${GITHUB_ORG}/${PROJECT_NAME}"
 echo -e "${BOLD}║${NC} URL:         https://${PROJECT_NAME}.${LABS_DOMAIN}"
 if $DRY_RUN; then
 echo -e "${BOLD}║${NC} Mode:        ${YELLOW}DRY RUN${NC}"
+fi
+if $RESUME_MODE; then
+echo -e "${BOLD}║${NC} Mode:        ${YELLOW}RESUME${NC} (credential setup only)"
 fi
 echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
 
@@ -343,6 +364,218 @@ if $DRY_RUN; then
     dry "Output success summary"
     echo ""
     echo -e "${GREEN}Dry run complete. No resources were created.${NC}"
+    exit 0
+fi
+
+# ════════════════════════════════════════════════════════════════════════════
+# RESUME MODE — Credential setup only for existing project
+# ════════════════════════════════════════════════════════════════════════════
+
+if $RESUME_MODE; then
+    echo ""
+    echo -e "${BOLD}── Resume mode: fetching Supabase credentials ──${NC}"
+    echo ""
+
+    LOCAL_PROJECT_PATH="${HOME}/Projects/${PROJECT_NAME}"
+
+    # Look up existing Supabase project ref
+    info "Looking up Supabase project..."
+    SUPABASE_PROJECT_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $1}' || echo "")"
+
+    if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
+        fail "Supabase project '$PROJECT_NAME' not found."
+        echo "  Run 'supabase projects list' to see available projects."
+        exit 1
+    fi
+
+    ok "Found Supabase project: $SUPABASE_PROJECT_REF"
+    SUPABASE_URL_VALUE="https://${SUPABASE_PROJECT_REF}.supabase.co"
+
+    # Poll for ACTIVE_HEALTHY with longer timeout (36 polls × 10 seconds = 6 minutes)
+    info "Waiting for Supabase to be ready (up to 6 minutes)..."
+    SUPABASE_READY=false
+    for i in {1..36}; do
+        STATUS="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk '{print $NF}')"
+        if [[ "$STATUS" == "ACTIVE_HEALTHY" ]]; then
+            SUPABASE_READY=true
+            break
+        fi
+        echo -ne "\r  Polling... attempt $i/36 (status: ${STATUS:-unknown})"
+        sleep 10
+    done
+    echo ""
+
+    if ! $SUPABASE_READY; then
+        fail "Supabase still not ready after 6 minutes."
+        echo "  Check the Supabase dashboard: https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}"
+        echo "  If the project is stuck, contact Supabase support or try creating a new project."
+        exit 1
+    fi
+
+    ok "Supabase is ready"
+
+    # Fetch API keys with retries
+    info "Fetching API keys..."
+    SUPABASE_ANON_KEY=""
+    SUPABASE_SERVICE_ROLE_KEY=""
+
+    for attempt in {1..10}; do
+        SUPABASE_ANON_KEY="$(supabase projects api-keys \
+            --project-ref "$SUPABASE_PROJECT_REF" \
+            --output json 2>/dev/null \
+            | jq -r '.[] | select(.name=="anon") | .api_key' 2>/dev/null || echo "")"
+
+        SUPABASE_SERVICE_ROLE_KEY="$(supabase projects api-keys \
+            --project-ref "$SUPABASE_PROJECT_REF" \
+            --output json 2>/dev/null \
+            | jq -r '.[] | select(.name=="service_role") | .api_key' 2>/dev/null || echo "")"
+
+        if [[ -n "$SUPABASE_ANON_KEY" && -n "$SUPABASE_SERVICE_ROLE_KEY" ]]; then
+            ok "API keys retrieved (attempt $attempt)"
+            break
+        fi
+        sleep 5
+    done
+
+    if [[ -z "$SUPABASE_ANON_KEY" || -z "$SUPABASE_SERVICE_ROLE_KEY" ]]; then
+        fail "Could not retrieve Supabase API keys."
+        echo "  Get them manually from: https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+        exit 1
+    fi
+
+    # Update .env.local
+    info "Updating ${LOCAL_PROJECT_PATH}/.env.local..."
+    LOCAL_ENV_PATH="${LOCAL_PROJECT_PATH}/.env.local"
+
+    # Create .env.local from .env.example if it doesn't exist
+    if [[ ! -f "$LOCAL_ENV_PATH" ]]; then
+        if [[ -f "${LOCAL_PROJECT_PATH}/.env.example" ]]; then
+            cp "${LOCAL_PROJECT_PATH}/.env.example" "$LOCAL_ENV_PATH"
+            info "Created .env.local from .env.example"
+        else
+            touch "$LOCAL_ENV_PATH"
+        fi
+    fi
+
+    # Remove any existing Supabase vars (to avoid duplicates)
+    if [[ -f "$LOCAL_ENV_PATH" ]]; then
+        grep -v "^NEXT_PUBLIC_SUPABASE_URL=" "$LOCAL_ENV_PATH" | \
+        grep -v "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" | \
+        grep -v "^# Supabase (auto-populated" > "${LOCAL_ENV_PATH}.tmp" || true
+        mv "${LOCAL_ENV_PATH}.tmp" "$LOCAL_ENV_PATH"
+    fi
+
+    # Append fresh Supabase credentials
+    cat >> "$LOCAL_ENV_PATH" <<EOF
+
+# Supabase (auto-populated by spinup-typed.sh --resume)
+NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+EOF
+    ok ".env.local updated with Supabase credentials"
+
+    # Update Vercel env vars if not skipped
+    if ! $SKIP_VERCEL && [[ -n "${VERCEL_TOKEN:-}" ]]; then
+        info "Checking Vercel environment variables..."
+
+        # Helper to check if env var exists and has a value
+        check_vercel_env() {
+            local key="$1"
+            local response
+            response="$(curl -s "https://api.vercel.com/v9/projects/${PROJECT_NAME}/env" \
+                -H "Authorization: Bearer $VERCEL_TOKEN" 2>/dev/null)"
+            echo "$response" | jq -r ".envs[] | select(.key==\"$key\") | .value" 2>/dev/null || echo ""
+        }
+
+        # Helper to set env var
+        set_vercel_env() {
+            local key="$1" value="$2"
+            curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
+                -H "Authorization: Bearer $VERCEL_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"key\":\"${key}\",\"value\":\"${value}\",\"type\":\"encrypted\",\"target\":[\"production\",\"preview\",\"development\"]}" >/dev/null 2>&1
+        }
+
+        VERCEL_UPDATES=0
+
+        # Check and set NEXT_PUBLIC_SUPABASE_URL
+        EXISTING_URL="$(check_vercel_env "NEXT_PUBLIC_SUPABASE_URL")"
+        if [[ -z "$EXISTING_URL" || "$EXISTING_URL" == "null" ]]; then
+            set_vercel_env "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE"
+            VERCEL_UPDATES=$((VERCEL_UPDATES + 1))
+        fi
+
+        # Check and set NEXT_PUBLIC_SUPABASE_ANON_KEY
+        EXISTING_ANON="$(check_vercel_env "NEXT_PUBLIC_SUPABASE_ANON_KEY")"
+        if [[ -z "$EXISTING_ANON" || "$EXISTING_ANON" == "null" ]]; then
+            set_vercel_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY"
+            VERCEL_UPDATES=$((VERCEL_UPDATES + 1))
+        fi
+
+        # Check and set SUPABASE_SERVICE_ROLE_KEY
+        EXISTING_SERVICE="$(check_vercel_env "SUPABASE_SERVICE_ROLE_KEY")"
+        if [[ -z "$EXISTING_SERVICE" || "$EXISTING_SERVICE" == "null" ]]; then
+            set_vercel_env "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY"
+            VERCEL_UPDATES=$((VERCEL_UPDATES + 1))
+        fi
+
+        if [[ $VERCEL_UPDATES -gt 0 ]]; then
+            ok "Updated $VERCEL_UPDATES Vercel env var(s)"
+        else
+            ok "Vercel env vars already set"
+        fi
+    fi
+
+    # Update GitHub secrets if missing
+    info "Checking GitHub secrets..."
+    GITHUB_UPDATES=0
+
+    # Check and set NEXT_PUBLIC_SUPABASE_URL
+    if ! gh secret list --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null | grep -q "NEXT_PUBLIC_SUPABASE_URL"; then
+        echo "$SUPABASE_URL_VALUE" | gh secret set NEXT_PUBLIC_SUPABASE_URL \
+            --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
+            GITHUB_UPDATES=$((GITHUB_UPDATES + 1))
+    fi
+
+    # Check and set NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if ! gh secret list --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null | grep -q "NEXT_PUBLIC_SUPABASE_ANON_KEY"; then
+        echo "$SUPABASE_ANON_KEY" | gh secret set NEXT_PUBLIC_SUPABASE_ANON_KEY \
+            --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
+            GITHUB_UPDATES=$((GITHUB_UPDATES + 1))
+    fi
+
+    if [[ $GITHUB_UPDATES -gt 0 ]]; then
+        ok "Updated $GITHUB_UPDATES GitHub secret(s)"
+    else
+        ok "GitHub secrets already set"
+    fi
+
+    # Success summary
+    SUPABASE_DASHBOARD="https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}"
+
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}║   Resume complete — credentials configured                  ║${NC}"
+    echo -e "${BOLD}╠══════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${BOLD}║${NC} ${BOLD}PROJECT${NC}"
+    echo -e "${BOLD}║${NC}   Name:          $PROJECT_NAME"
+    echo -e "${BOLD}║${NC}"
+    echo -e "${BOLD}║${NC} ${BOLD}LINKS${NC}"
+    echo -e "${BOLD}║${NC}   GitHub:        https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
+    echo -e "${BOLD}║${NC}   Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}"
+    echo -e "${BOLD}║${NC}   Supabase:      $SUPABASE_DASHBOARD"
+    echo -e "${BOLD}║${NC}"
+    echo -e "${BOLD}║${NC} ${BOLD}LOCAL${NC}"
+    echo -e "${BOLD}║${NC}   Project dir:   ~/Projects/${PROJECT_NAME}"
+    echo -e "${BOLD}║${NC}   .env.local:    Updated with Supabase credentials"
+    echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${BOLD}Next steps:${NC}"
+    echo "  1. cd ~/Projects/${PROJECT_NAME}"
+    echo "  2. npm install"
+    echo "  3. npm run dev"
+    echo ""
+    echo -e "${GREEN}Done!${NC} Credentials configured for $PROJECT_NAME."
     exit 0
 fi
 
@@ -637,7 +870,8 @@ else
     if $SUPABASE_READY; then
         ok "Supabase is ready"
     else
-        warn "Supabase not yet ready — API keys and migrations may fail"
+        warn "Supabase not yet ready. Once provisioning completes, run:"
+        echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
     fi
 
     # Get API keys
@@ -661,8 +895,8 @@ else
     done
 
     if [[ -z "$SUPABASE_ANON_KEY" ]]; then
-        warn "Could not retrieve Supabase API keys. Get them manually from:"
-        echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+        warn "Supabase credentials not ready yet. Once provisioning completes, run:"
+        echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
     fi
 
     # Push migrations (includes extension migrations if applied)
@@ -720,8 +954,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
 EOF
         ok "Supabase credentials added to .env.local"
     else
-        warn "Could not write Supabase credentials to .env.local (keys not available)"
-        echo "  Add them manually from: https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+        warn "Supabase credentials not ready yet. Once provisioning completes, run:"
+        echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
     fi
 fi
 
@@ -992,8 +1226,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
 EOF
             ok ".env.local populated with Supabase credentials"
         else
-            warn "Supabase credentials not available — .env.local needs manual setup"
-            echo "  Get credentials from: https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
+            warn "Supabase credentials not available yet. Once provisioning completes, run:"
+            echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
         fi
     else
         warn "Failed to clone to ${LOCAL_PROJECT_PATH}"
