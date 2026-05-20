@@ -421,6 +421,8 @@ code ~/.zshrc
 
 With `~/.zshrc` open in VS Code, scroll to the bottom of the file. The file may already have content from other tools you've installed — don't delete or replace anything that's there. You're adding new lines at the bottom.
 
+Before filling in these values, read the [Security Policy](04-security-policy.md) so you understand how to handle them safely.
+
 Add these lines:
 
 ```bash
