@@ -39,18 +39,19 @@ Meet with the team (or yourself) and pull out:
 - Non-negotiable requirements from the brief
 - Any ambiguities to resolve
 
-### Step 3 — Design in Figma
+### Step 3 — Design in Claude Design
 
-Open CC and use the design system files to design screens:
+Open Claude Design and start from the **FFTC Design System** template — pick it from the template gallery when opening a new project. Do not start from a blank project.
+
+Use the starter prompt to orient the design session:
+→ [reference/prompts/challenge-response.md](../reference/prompts/challenge-response.md)
+
+Iterate until you are confident in the layout, flow, and copy. This is the cheapest time to change direction.
+
+If you need to reference the Figma component library directly (for federal/USWDS work), the files are:
 - Tokens: https://www.figma.com/design/MgWiTmboj3YSTUK8xRKzRt/Tokens
 - Components: https://www.figma.com/design/zZFKdl9JDitNfnZkTGJYKR/Components
 - Templates: https://www.figma.com/design/vqKtu40TwBNNUYnPH87PvB/Templates
-
-Use the challenge-response starter prompt to orient CC:
-→ [reference/prompts/challenge-response.md](../reference/prompts/challenge-response.md)
-
-Iterate until you are confident in the layout, flow, and copy.
-This is the cheapest time to change direction.
 
 ### Step 4 — Review and decide
 
@@ -64,10 +65,13 @@ Lock the design. After this point, changes should be small.
 
 ### Step 5 — Spinup
 
-Run the spinup script from `~/projects`:
+Run the spinup script:
 ```bash
-bash ~/projects/playbook/automation/spinup.sh
+cd ~/Projects/playbook
+./automation/spinup-typed.sh --type federal --name=your-project-name
 ```
+
+Replace `your-project-name` with a descriptive lowercase name for the project (e.g. `va-benefits-prototype`). Use `--type prototype` for non-federal challenges.
 
 After spinup, install the accessibility test browser:
 ```bash
