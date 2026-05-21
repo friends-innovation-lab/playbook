@@ -9,7 +9,7 @@ By the end, you'll have done the full lab loop once. The next time a real projec
 > [!NOTE]
 > For real projects, there's an additional planning step using Claude.ai as a project orchestrator — especially helpful for non-developers. That's covered in [`01-creating-a-project.md`](../02-running-a-project/01-creating-a-project.md). For this test project, we're keeping it simple and going direct so you can feel each piece of the loop work.
 
-**Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-open-in-vs-code) · [Make changes](#step-3--make-changes-with-cc) · [Pull request](#step-4--open-a-pull-request) · [See it live](#step-5--see-it-live) · [Tear down](#step-6--tear-it-down) · [Debrief](#debrief)
+**Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-open-in-vs-code) · [Check credentials](#step-3--check-supabase-credentials) · [Make changes](#step-4--make-changes-with-cc) · [Pull request](#step-5--open-a-pull-request) · [See it live](#step-6--see-it-live) · [Tear down](#step-7--tear-it-down) · [Debrief](#debrief)
 
 ---
 
@@ -96,6 +96,9 @@ Don't close the terminal until it finishes. When it does, it'll print a success 
 
 Copy those four links somewhere you can find them — a sticky note, a scratch document, anywhere. You'll use them in the next step.
 
+> [!NOTE]
+> If you see a warning about Supabase credentials being empty, run `./automation/spinup-typed.sh --name test-one --resume` from the playbook folder. The resume flag fetches the Supabase keys once provisioning finishes and updates all the right places.
+
 ---
 
 ## Step 2 — Look around and open in VS Code
@@ -126,19 +129,36 @@ code .
 
 VS Code will open a new window showing the test-one project. You'll now have two VS Code windows — the playbook one and the test-one project one. Work in the test-one window for the rest of this doc.
 
+If VS Code shows a modal asking "Do you trust the authors of the files in this folder?" — click **Yes, I trust the authors**.
+
 > [!TIP]
 > If `code .` gives you an error about command not found, you need to install VS Code's command-line shortcut. In any VS Code window: open the command palette (`Cmd+Shift+P`), type "shell command," and click "Install 'code' command in PATH." Then close VS Code and try again.
 
-> [!NOTE]
-> Supabase can take 2–3 minutes to finish provisioning after the spinup script completes. If `.env.local` is missing Supabase credentials:
-> 1. Wait a few minutes for provisioning to finish
-> 2. Go to `https://supabase.com/dashboard/project/<your-project-ref>/settings/api`
-> 3. Copy the **Project URL** and **anon public** key
-> 4. Add them to `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+---
+
+## Step 3 — Check Supabase credentials
+
+Before building, verify your Supabase credentials are in place. Open `.env.local` in VS Code (it's in the project root) and look for these two lines:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+```
+
+**If both values are filled in** — you're good. Continue to Step 4.
+
+**If either value is blank** — Supabase was still provisioning when the spinup script ran. Fix it by running the resume command from the playbook folder:
+
+```bash
+cd ~/Projects/playbook
+./automation/spinup-typed.sh --name test-one --resume
+```
+
+The resume command waits for Supabase to finish provisioning, fetches the API keys, updates `.env.local`, sets the Vercel environment variables, and updates the GitHub secrets. When it completes, open `.env.local` again — the values should now be filled in.
 
 ---
 
-## Step 3 — Make changes with CC
+## Step 4 — Make changes with CC
 
 Now you'll use Claude Code (CC) to make three changes to the landing page.
 
@@ -191,7 +211,7 @@ When you're happy with how it looks, stop the dev server: click in the terminal 
 
 ---
 
-## Step 4 — Open a pull request
+## Step 5 — Open a pull request
 
 > [!IMPORTANT]
 > Run all the git commands in this step in your terminal — either Mac Terminal or VS Code's integrated terminal (View → Terminal). Don't paste git commands into Claude Code's chat panel; CC will describe what the commands do but won't execute them, which means your changes won't actually get committed or pushed.
@@ -277,7 +297,7 @@ Either works. The `--admin` flag bypasses the branch protection requirement for 
 
 ---
 
-## Step 5 — See it live
+## Step 6 — See it live
 
 > [!NOTE]
 > When your project first deploys, Vercel may briefly show "Production Domain is not serving traffic." This is expected — Vercel is waiting for CI checks to complete before serving the URL. Wait a few minutes and refresh; the URL will work.
@@ -309,7 +329,7 @@ This is the moment. From running one script to seeing your code live on a real p
 
 ---
 
-## Step 6 — Tear it down
+## Step 7 — Tear it down
 
 A test project shouldn't keep running indefinitely. The teardown script removes everything you just created — GitHub repo, Vercel project, Supabase project, domain configuration. Clean slate.
 
@@ -322,10 +342,10 @@ cd ~/Projects/playbook
 Then run teardown:
 
 ```bash
-./automation/teardown.sh --name test-one
+./automation/teardown.sh
 ```
 
-The script will list everything it's about to delete and ask you to confirm. Read the list, type `y`, and press enter.
+The script will ask which project to tear down — type `test-one` and press enter. It will then list everything it's about to delete and ask you to confirm. Read the list, type `y`, and press enter.
 
 > [!WARNING]
 > Teardown is permanent. The GitHub repo and Supabase database get deleted, not archived. For real projects, only run teardown when you're sure the work is done and any data you wanted to keep has been exported. For this test project, you can teardown without worry — there's nothing to save.
