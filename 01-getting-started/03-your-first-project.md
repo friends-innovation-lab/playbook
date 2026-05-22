@@ -109,6 +109,8 @@ Before changing anything, take three minutes to see what you have.
 
 - **Live site** (the `lab.cityfriends.tech` URL) — The default landing page from the project-template. Generic but functional. This is what's running in production right now — yours, on the internet.
 
+  If the live URL shows a 404, that's OK — the Vercel deployment may have failed because Supabase wasn't ready yet. Continue to Step 3 to fix the credentials first, then come back to check the live URL after Step 3 is complete.
+
 - **GitHub repo** — The codebase, README, and file structure. Notice `/docs/standards/` — those are the lab standards copied into your project automatically. You don't need to read them now.
 
 - **Vercel dashboard** — Your project listed with a green checkmark for the latest deploy. Shows every deployment, deploy logs, and environment variables. You won't usually visit Vercel — it just runs in the background.
@@ -157,6 +159,15 @@ cd ~/Projects/playbook
 ```
 
 Wait for it to finish, then check `.env.local` again. The values should now be populated.
+
+Also verify that Vercel has the credentials:
+
+1. Go to vercel.com → Friends Innovation Lab → click the test-one project
+2. Click **Settings** → **Environment Variables**
+3. Confirm `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` have values
+4. If they're empty, add them manually using the same values from your `.env.local` file, then click **Save**
+5. Go to the **Deployments** tab → click the three dots next to the most recent deployment → click **Redeploy**
+6. Wait 2-3 minutes for the deployment to go green — then the live URL will work
 
 **If the local folder doesn't exist yet** — the spinup failed before the clone step. Run this first:
 
