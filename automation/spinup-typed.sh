@@ -357,6 +357,7 @@ EOF
     echo -e "${BOLD}║${NC} ${BOLD}LINKS${NC}"
     echo -e "${BOLD}║${NC}   GitHub:        https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
     echo -e "${BOLD}║${NC}   Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}"
+    echo -e "${BOLD}║${NC}   Vercel:        https://vercel.com/${GITHUB_ORG}/${PROJECT_NAME}"
     echo -e "${BOLD}║${NC}   Supabase:      $SUPABASE_DASHBOARD"
     echo -e "${BOLD}║${NC}"
     echo -e "${BOLD}║${NC} ${BOLD}LOCAL${NC}"
