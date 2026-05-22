@@ -303,35 +303,125 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
 EOF
     ok ".env.local updated with Supabase credentials"
 
-    # ── Update Vercel env vars if missing ──────────────────────────────────
+    # ── Ensure Vercel project exists and update env vars ─────────────────
     if [[ -n "${VERCEL_TOKEN:-}" ]]; then
-        info "Checking Vercel environment variables..."
-        VERCEL_ENV_UPDATED=0
+        VERCEL_CREATED=false
 
-        _set_vercel_env_if_missing() {
-            local key="$1" value="$2"
-            local existing
-            existing="$(curl -s "https://api.vercel.com/v9/projects/${PROJECT_NAME}/env" \
+        # Check if Vercel project exists, create if missing
+        VERCEL_CHECK="$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://api.vercel.com/v9/projects/${PROJECT_NAME}" \
+            -H "Authorization: Bearer $VERCEL_TOKEN")"
+
+        if [[ "$VERCEL_CHECK" == "200" ]]; then
+            ok "Vercel project exists"
+        else
+            info "Vercel project not found — creating..."
+            VERCEL_CREATE="$(curl -s -X POST "https://api.vercel.com/v10/projects" \
                 -H "Authorization: Bearer $VERCEL_TOKEN" \
-                | jq -r ".envs[] | select(.key==\"${key}\") | .value" 2>/dev/null || echo "")"
+                -H "Content-Type: application/json" \
+                -d "{
+                    \"name\": \"${PROJECT_NAME}\",
+                    \"framework\": \"nextjs\",
+                    \"gitRepository\": {
+                        \"type\": \"github\",
+                        \"repo\": \"${GITHUB_ORG}/${PROJECT_NAME}\"
+                    }
+                }")"
 
-            if [[ -z "$existing" ]]; then
-                curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
+            VERCEL_PROJECT_ID="$(echo "$VERCEL_CREATE" | jq -r '.id // empty')"
+            if [[ -n "$VERCEL_PROJECT_ID" ]]; then
+                ok "Vercel project created (ID: $VERCEL_PROJECT_ID)"
+                VERCEL_CREATED=true
+            else
+                warn "Could not create Vercel project — env vars may fail"
+                echo "$VERCEL_CREATE" | jq '.error' 2>/dev/null || echo "$VERCEL_CREATE"
+            fi
+        fi
+
+        if $VERCEL_CREATED; then
+            # Full env var setup — same as Step 7
+            info "Setting all Vercel environment variables..."
+            VERCEL_ENV_ERRORS=0
+
+            _set_vercel_env() {
+                local key="$1" value="$2" targets="$3"
+                local response
+                response="$(curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
                     -H "Authorization: Bearer $VERCEL_TOKEN" \
                     -H "Content-Type: application/json" \
-                    -d "{\"key\":\"${key}\",\"value\":\"${value}\",\"type\":\"encrypted\",\"target\":[\"production\",\"preview\",\"development\"]}" >/dev/null
-                VERCEL_ENV_UPDATED=$((VERCEL_ENV_UPDATED + 1))
+                    -d "{\"key\":\"${key}\",\"value\":\"${value}\",\"type\":\"encrypted\",\"target\":${targets}}")"
+
+                local error_code
+                error_code="$(echo "$response" | jq -r '.error.code // empty' 2>/dev/null)"
+                if [[ -n "$error_code" && "$error_code" != "ENV_ALREADY_EXISTS" ]]; then
+                    VERCEL_ENV_ERRORS=$((VERCEL_ENV_ERRORS + 1))
+                fi
+            }
+
+            ALL='["production","preview","development"]'
+            PROD='["production"]'
+            PREVIEW='["preview"]'
+            DEV='["development"]'
+
+            # Supabase vars
+            _set_vercel_env "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE" "$ALL"
+            _set_vercel_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY" "$ALL"
+            _set_vercel_env "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY" "$ALL"
+
+            # App vars
+            _set_vercel_env "NEXT_PUBLIC_APP_NAME" "$PROJECT_NAME" "$ALL"
+            _set_vercel_env "NEXT_PUBLIC_AGENCY_THEME" "${AGENCY_THEME:-fftc}" "$ALL"
+            _set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}.${LABS_DOMAIN}" "$PROD"
+            _set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}-*.vercel.app" "$PREVIEW"
+            _set_vercel_env "NEXT_PUBLIC_APP_URL" "http://localhost:3000" "$DEV"
+            _set_vercel_env "NEXT_PUBLIC_ENABLE_ANALYTICS" "true" "$ALL"
+            _set_vercel_env "NEXT_PUBLIC_MAINTENANCE_MODE" "false" "$ALL"
+            _set_vercel_env "SENTRY_ORG" "friends-innovation-lab" "$ALL"
+            _set_vercel_env "SENTRY_PROJECT" "$PROJECT_NAME" "$ALL"
+            _set_vercel_env "RESEND_FROM_EMAIL" "noreply@${LABS_DOMAIN}" "$ALL"
+
+            if [[ $VERCEL_ENV_ERRORS -gt 0 ]]; then
+                warn "$VERCEL_ENV_ERRORS env var(s) failed to set — check Vercel dashboard"
+            else
+                ok "All environment variables set"
             fi
-        }
 
-        _set_vercel_env_if_missing "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE"
-        _set_vercel_env_if_missing "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY"
-        _set_vercel_env_if_missing "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY"
-
-        if [[ $VERCEL_ENV_UPDATED -gt 0 ]]; then
-            ok "Updated $VERCEL_ENV_UPDATED Vercel env var(s)"
+            # Custom domain
+            curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains" \
+                -H "Authorization: Bearer $VERCEL_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"name\":\"${PROJECT_NAME}.${LABS_DOMAIN}\"}" >/dev/null 2>&1
+            ok "Custom domain configured: ${PROJECT_NAME}.${LABS_DOMAIN}"
         else
-            ok "Vercel env vars already set"
+            # Project already existed — only fill missing Supabase vars
+            info "Checking Vercel environment variables..."
+            VERCEL_ENV_UPDATED=0
+
+            _set_vercel_env_if_missing() {
+                local key="$1" value="$2"
+                local existing
+                existing="$(curl -s "https://api.vercel.com/v9/projects/${PROJECT_NAME}/env" \
+                    -H "Authorization: Bearer $VERCEL_TOKEN" \
+                    | jq -r ".envs[] | select(.key==\"${key}\") | .value" 2>/dev/null || echo "")"
+
+                if [[ -z "$existing" ]]; then
+                    curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
+                        -H "Authorization: Bearer $VERCEL_TOKEN" \
+                        -H "Content-Type: application/json" \
+                        -d "{\"key\":\"${key}\",\"value\":\"${value}\",\"type\":\"encrypted\",\"target\":[\"production\",\"preview\",\"development\"]}" >/dev/null
+                    VERCEL_ENV_UPDATED=$((VERCEL_ENV_UPDATED + 1))
+                fi
+            }
+
+            _set_vercel_env_if_missing "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE"
+            _set_vercel_env_if_missing "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY"
+            _set_vercel_env_if_missing "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY"
+
+            if [[ $VERCEL_ENV_UPDATED -gt 0 ]]; then
+                ok "Updated $VERCEL_ENV_UPDATED Vercel env var(s)"
+            else
+                ok "Vercel env vars already set"
+            fi
         fi
     else
         warn "VERCEL_TOKEN not set — skipping Vercel env var update"
