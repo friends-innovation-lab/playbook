@@ -97,7 +97,7 @@ Don't close the terminal until it finishes. When it does, it'll print a success 
 Copy those four links somewhere you can find them — a sticky note, a scratch document, anywhere. You'll use them in the next step.
 
 > [!NOTE]
-> If you see a warning about Supabase credentials being empty, run `./automation/spinup-typed.sh --name test-one --resume` from the playbook folder. The resume flag fetches the Supabase keys once provisioning finishes and updates all the right places.
+> If the spinup script finishes but warns that Supabase credentials aren't available, that's OK — Supabase was still provisioning. Step 3 will walk you through how to finish the setup using the `--resume` command.
 
 ---
 
@@ -138,23 +138,43 @@ If VS Code shows a modal asking "Do you trust the authors of the files in this f
 
 ## Step 3 — Check Supabase credentials
 
-Before building, verify your Supabase credentials are in place. Open `.env.local` in VS Code (it's in the project root) and look for these two lines:
+Before running the project locally, check whether the spinup script already populated your Supabase credentials. Open `.env.local` in the file explorer on the left side of VS Code.
+
+Look for these two lines:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-**If both values are filled in** — you're good. Continue to Step 4.
+**If both lines have values after the `=` sign** — you're done. Skip the rest of this step and go to Step 4.
 
-**If either value is blank** — Supabase was still provisioning when the spinup script ran. Fix it by running the resume command from the playbook folder:
+**If the lines are blank** — Supabase was still provisioning when spinup ran. First try the resume command:
 
 ```bash
 cd ~/Projects/playbook
 ./automation/spinup-typed.sh --name test-one --resume
 ```
 
-The resume command waits for Supabase to finish provisioning, fetches the API keys, updates `.env.local`, sets the Vercel environment variables, and updates the GitHub secrets. When it completes, open `.env.local` again — the values should now be filled in.
+Wait for it to finish, then check `.env.local` again. The values should now be populated.
+
+**If the local folder doesn't exist yet** — the spinup failed before the clone step. Run this first:
+
+```bash
+git clone https://github.com/friends-innovation-lab/test-one.git ~/Projects/test-one
+```
+
+Then run the resume command above.
+
+**If resume also leaves the values blank** — Supabase is taking longer than usual. Wait 5 minutes and run resume again. If still blank after 15 minutes, get the values manually:
+
+1. Go to supabase.com/dashboard → click the test-one project
+2. Settings → API
+3. Copy **Project URL** and **anon public** key
+4. Paste them into `.env.local` after the `=` signs
+
+> [!NOTE]
+> If Supabase shows both a "publishable" key and an "anon" key, use the **anon public** key.
 
 ---
 
@@ -162,7 +182,9 @@ The resume command waits for Supabase to finish provisioning, fetches the API ke
 
 Now you'll use Claude Code (CC) to make three changes to the landing page.
 
-**Open CC inside the test-one VS Code window.** Look for the CC icon in the left toolbar — it looks like a sparkle or chat bubble. Click it. A chat panel opens on the right side of VS Code. When the CC panel opens, click **New Session** before pasting anything. This makes sure CC starts fresh with your project context rather than carrying over anything from a previous session.
+**Open CC inside the test-one VS Code window.** Look for the CC icon in the left toolbar — it looks like a sparkle or chat bubble. Click it. A chat panel opens on the right side of VS Code.
+
+When the CC panel opens, click **New Session** before pasting anything. This makes sure CC starts fresh with your project context rather than carrying over anything from a previous session.
 
 **Paste this prompt into CC.** Replace `[your name]` with your actual first name before sending.
 
@@ -244,7 +266,7 @@ That command creates a new branch called `feature/first-project-changes` and swi
 git add .
 ```
 
-This command is silent — no output is normal. It just means everything was staged successfully.
+This command is silent — no output is normal. It means everything was staged successfully.
 
 The dot means "everything in this folder." git now knows what you're committing.
 
@@ -264,7 +286,7 @@ The `-m` flag attaches a message.
 git push -u origin feature/first-project-changes
 ```
 
-You should see upload progress and then a line saying the branch was pushed. GitHub may also print a URL to open a pull request — ignore it, you'll create the PR with the next command.
+You should see upload progress and a confirmation the branch was pushed. GitHub may also print a URL to open a pull request — ignore it, you'll create the PR with the next command.
 
 The `-u origin feature/first-project-changes` part tells git "push this branch to GitHub for the first time." Future pushes from this branch can just use `git push`.
 
@@ -286,7 +308,7 @@ These take about 2-3 minutes total. Wait for them to finish.
 > Green checkmarks mean the checks passed and your PR is safe to merge. A red X means a check failed — click it to see what broke. For a small change like this, all checks should pass on the first try.
 
 > [!WARNING]
-> If the Vercel CI check fails with an error about missing Supabase environment variables, it means your Supabase project wasn't fully provisioned when the spinup script ran. Fix it by running `./automation/spinup-typed.sh --name test-one --resume` from the playbook folder. Once it completes, go to your PR on GitHub and click **Re-run failed checks**.
+> If the Vercel CI check fails with an error about missing Supabase environment variables, it means Supabase wasn't ready when spinup ran. Fix it by running `./automation/spinup-typed.sh --name test-one --resume` from the playbook folder. Once it completes, go to your PR on GitHub and click **Re-run failed checks**.
 
 **Merge the PR.** When all checks are green, merge it. Two ways:
 
@@ -345,7 +367,7 @@ Then run teardown:
 ./automation/teardown.sh
 ```
 
-The script will ask which project to tear down — type `test-one` and press enter. It will then list everything it's about to delete and ask you to confirm. Read the list, type `y`, and press enter.
+The script will ask you for the project name. Type `test-one` and press Enter. It will then show you everything it's about to delete and ask you to confirm. Read the list, type `y`, and press enter.
 
 > [!WARNING]
 > Teardown is permanent. The GitHub repo and Supabase database get deleted, not archived. For real projects, only run teardown when you're sure the work is done and any data you wanted to keep has been exported. For this test project, you can teardown without worry — there's nothing to save.
@@ -373,13 +395,14 @@ Look at what you did:
 1. Spun up a real project with one command
 2. Saw it live on the internet
 3. Opened the project in VS Code
-4. Used Claude Code to make three changes at once
-5. Saw the changes locally before pushing
-6. Created a branch, staged changes, committed, pushed, and opened a pull request
-7. Watched eight CI checks run on your code
-8. Merged the PR
-9. Saw the changes deploy automatically to the live site
-10. Tore everything down
+4. Verified Supabase credentials were ready
+5. Used Claude Code to make three changes at once
+6. Saw the changes locally before pushing
+7. Created a branch, staged changes, committed, pushed, and opened a pull request
+8. Watched eight CI checks run on your code
+9. Merged the PR
+10. Saw the changes deploy automatically to the live site
+11. Tore everything down
 
 Whatever felt slow, confusing, or surprising — write it down and send it to Lapedra. Your feedback makes the onboarding better for the next person. The lab gets better from those conversations.
 
