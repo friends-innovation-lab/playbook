@@ -527,6 +527,11 @@ if [[ -n "$(git status --porcelain)" ]]; then
     ok "Initial setup committed"
 fi
 
+# Ensure the local branch is named main (git may default to master)
+if ! git show-ref --verify --quiet refs/heads/main; then
+    git branch -m main
+fi
+
 git push origin main
 ok "Pushed to main"
 
