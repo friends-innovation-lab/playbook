@@ -53,28 +53,30 @@ The script will report what's missing if anything. Fix any issues before continu
 
 ## Before your first real spinup
 
-You need one shared credential added to your shell profile if you haven't already. This is managed by Lapedra and shared across all lab projects — you set it once and every project uses it automatically.
+You need one shared credential added to your shell profile if you haven't already. This is set once and every project uses it automatically.
 
-Ask Lapedra for `LAB_SUPABASE_ORG_ID` if you don't already have it. (You should have received it during onboarding — check your credentials email.)
-
-If you need to add it, open your shell profile in VS Code:
+Open your shell profile in VS Code:
 
 ```bash
 code ~/.zshrc
 ```
 
-Add this line at the bottom:
+Check whether `LAB_SUPABASE_ORG_ID` is already set. If not, add this line at the bottom:
 
 ```bash
-# Friends Innovation Lab — shared credentials
-export LAB_SUPABASE_ORG_ID="[value from Lapedra]"
+export LAB_SUPABASE_ORG_ID=esiwooovlhcuifbbkodk
 ```
+
+This is the org ID for **Friends Innovation Lab** in Supabase — the same value for everyone on the team.
 
 Save the file, then reload your shell profile:
 
 ```bash
 source ~/.zshrc
 ```
+
+> [!TIP]
+> You can verify this is correct by running `supabase orgs list` and confirming the ID matches the org named **Friends Innovation Lab**.
 
 > [!IMPORTANT]
 > Do this before running the spinup script for the first time. The script will fail pre-flight checks without it.
@@ -216,6 +218,8 @@ The three files:
 
 You've planned and designed. Now you provision real infrastructure.
 
+Spinup runs in two phases. The first phase creates the repo, deploys to Vercel, and gives you a live URL in about 2 minutes. Supabase provisioning starts in the background but takes longer. The second phase (`--resume`) wires up Supabase once it's ready. This two-phase approach means you're never blocked waiting for Supabase — you get a working deployment immediately.
+
 Make sure you are in your projects folder first:
 
 ```bash
@@ -235,25 +239,45 @@ Pick the right project type. Each type applies different scaffolding:
 
 Pick a name that's descriptive and lowercase with hyphens. For example: `va-benefits-prototype`, `truebid-rfp-import`, `proposal-fy26-q1`.
 
-Run the spinup script with your type and name:
+### Step 1 — Initial spinup (~2 minutes)
 
 ```bash
 ./automation/spinup-typed.sh --type=[type] --name=[project-name]
 ```
 
-The script doesn't ask you anything during execution. It just runs. You'll see a banner showing what it's about to do, then pre-flight checks, then provisioning steps. Takes 5-10 minutes.
+The script doesn't ask you anything during execution. It just runs. You'll see a banner showing what it's about to do, then pre-flight checks, then provisioning steps.
 
-When it finishes, you'll have:
+When this finishes, you'll have:
 
 - A GitHub repo at `github.com/friends-innovation-lab/[project-name]`
 - A live URL at `https://[project-name].lab.cityfriends.tech`
-- A Supabase database (if not skipped)
-- A Vercel deployment
+- A Vercel deployment (working, but Supabase pages will error — that's expected)
 - A `develop` branch set as the default working branch
 - Branch protection on `main`
 - Starter issues and a project board on GitHub
 
 The script will print a summary with all the URLs. Save them somewhere.
+
+### Step 2 — Wire up Supabase (~5 minutes later)
+
+Wait about 5 minutes for Supabase to finish provisioning, then run:
+
+```bash
+./automation/spinup-typed.sh --name=[project-name] --resume
+```
+
+This is a normal part of every spinup, not a recovery step. It waits for Supabase to become active, then:
+
+- Fetches your Supabase API keys
+- Sets them in `.env.local` for local development
+- Sets them as Vercel environment variables
+- Configures Supabase auth redirect URLs
+- Triggers a production redeploy with the real credentials
+
+After `--resume` completes, the live URL and all Supabase-connected pages work end-to-end.
+
+> [!NOTE]
+> `--resume` is idempotent — safe to run multiple times. If Supabase isn't ready yet, just wait a few more minutes and run it again.
 
 > [!NOTE]
 > Run this once after spinup to install the accessibility test browser:
