@@ -1255,6 +1255,7 @@ echo -e "${BOLD}║${NC} ${BOLD}LINKS${NC}"
 echo -e "${BOLD}║${NC}   GitHub:        https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
 if [[ -n "$VERCEL_PROJECT_ID" ]]; then
 echo -e "${BOLD}║${NC}   ${GREEN}Live URL:      https://${PROJECT_NAME}.${LAB_DOMAIN}${NC}"
+echo -e "${BOLD}║${NC}                  ${YELLOW}(allow ~1 min for first build to complete)${NC}"
 else
 echo -e "${BOLD}║${NC}   Live URL:      https://${PROJECT_NAME}.${LAB_DOMAIN}"
 fi
