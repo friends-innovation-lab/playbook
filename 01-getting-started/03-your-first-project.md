@@ -9,7 +9,7 @@ By the end, you'll have done the full lab loop once. The next time a real projec
 > [!NOTE]
 > For real projects, there's an additional planning step using Claude.ai as a project orchestrator — especially helpful for non-developers. That's covered in [`01-creating-a-project.md`](../02-running-a-project/01-creating-a-project.md). For this test project, we're keeping it simple and going direct so you can feel each piece of the loop work.
 
-**Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-open-in-vs-code) · [Check credentials](#step-3--check-supabase-credentials) · [Make changes](#step-4--make-changes-with-cc) · [Pull request](#step-5--open-a-pull-request) · [See it live](#step-6--see-it-live) · [Tear down](#step-7--tear-it-down) · [Debrief](#debrief)
+**Jump to:** [Spin up](#step-1--spin-up-the-project) · [Look around](#step-2--look-around-and-open-in-vs-code) · [Wire up Supabase](#step-3--wire-up-supabase) · [Make changes](#step-4--make-changes-with-cc) · [Pull request](#step-5--open-a-pull-request) · [See it live](#step-6--see-it-live) · [Tear down](#step-7--tear-it-down) · [Debrief](#debrief)
 
 ---
 
@@ -75,19 +75,19 @@ Press enter. The script runs automatically — it doesn't ask any questions.
 
 2. **Pre-flight checks** — Verifies all tools and credentials are in place: GitHub authentication, Vercel CLI, Supabase CLI, Supabase org ID. You'll see green checkmarks scroll by.
 
-3. **Provisioning** — Does the real work. Takes 5-10 minutes the first time. The script walks through:
+3. **Provisioning** — Does the real work. Takes about 2 minutes. The script walks through:
 
    1. **GitHub** — Creates a repo at `github.com/friends-innovation-lab/test-one` from the project-template
    2. **Apply extensions** — For a prototype, none. (Other project types add multi-tenancy, audit logging, etc.)
    3. **Vercel** — Creates a Vercel project linked to the GitHub repo, configures env vars, sets up the custom domain
-   4. **Supabase** — Creates a database project in the Friends Lab CI org, retrieves connection details, runs initial migrations
+   4. **Supabase** — Kicks off a new database project provisioning in the background. The actual database credentials and migrations get wired up in a separate `--resume` step (Step 3)
    5. **CI secrets** — Adds credentials GitHub Actions needs for automated checks
    6. **Starter issues** — Creates a few starter issues and a project board on GitHub
 
 > [!IMPORTANT]
 > If any pre-flight check fails, the script stops with a clear error message. Read it — it usually tells you exactly what to fix (a missing env var, an unauthenticated CLI, etc.). If you're stuck, ask Lapedra. Don't push past pre-flight failures.
 
-Don't close the terminal until it finishes. When it does, it'll print a success summary with the URLs you'll need:
+Don't close the terminal until it finishes. When it does, it'll print a success summary with the URLs you'll need. The live URL is configured but won't load for about 1 minute while Vercel completes the first build — that's normal.
 
 - The GitHub repo URL
 - The Vercel project URL
@@ -96,8 +96,7 @@ Don't close the terminal until it finishes. When it does, it'll print a success 
 
 Copy those four links somewhere you can find them — a sticky note, a scratch document, anywhere. You'll use them in the next step.
 
-> [!NOTE]
-> If the spinup script finishes but warns that Supabase credentials aren't available, that's OK — Supabase was still provisioning. Step 3 will walk you through how to finish the setup using the `--resume` command.
+The summary will also tell you to run `--resume` in about 5 minutes. That's Step 3 — use Step 2 to explore while Supabase finishes provisioning.
 
 ---
 
@@ -109,7 +108,7 @@ Before changing anything, take three minutes to see what you have.
 
 - **Live site** (the `lab.cityfriends.tech` URL) — The default landing page from the project-template. Generic but functional. This is what's running in production right now — yours, on the internet.
 
-  If the live URL shows a 404, that's OK — the Vercel deployment may have failed because Supabase wasn't ready yet. Continue to Step 3 to fix the credentials first, then come back to check the live URL after Step 3 is complete.
+  If the live URL shows a 404 or Vercel error, wait about 1 minute for the first build to finish and refresh. If Supabase-connected pages still error, make sure you've run `--resume` (Step 3).
 
 - **GitHub repo** — The codebase, README, and file structure. Notice `/docs/standards/` — those are the lab standards copied into your project automatically. You don't need to read them now.
 
@@ -138,54 +137,32 @@ If VS Code shows a modal asking "Do you trust the authors of the files in this f
 
 ---
 
-## Step 3 — Check Supabase credentials
+## Step 3 — Wire up Supabase
 
-Before running the project locally, check whether the spinup script already populated your Supabase credentials. Open `.env.local` in the file explorer on the left side of VS Code.
-
-Look for these two lines:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-```
-
-**If both lines have values after the `=` sign** — you're done. Skip the rest of this step and go to Step 4.
-
-**If the lines are blank** — Supabase was still provisioning when spinup ran. First try the resume command:
+By now you've spent a few minutes exploring in Step 2 and Supabase has had time to finish provisioning. Head back to the playbook folder and run the resume command:
 
 ```bash
 cd ~/Projects/playbook
-./automation/spinup-typed.sh --name test-one --resume
+./automation/spinup-typed.sh --name=test-one --resume
 ```
 
-Wait for it to finish, then check `.env.local` again. The values should now be populated.
+This is a normal part of every spinup, not a recovery step. It:
 
-Also verify that Vercel has the credentials:
+- Waits for Supabase to become active (if it isn't already)
+- Fetches your Supabase API keys and populates `.env.local`
+- Sets the keys as Vercel environment variables
+- Triggers a production redeploy with the real credentials
 
-1. Go to vercel.com → Friends Innovation Lab → click the test-one project
-2. Click **Settings** → **Environment Variables**
-3. Confirm `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` have values
-4. If they're empty, add them manually using the same values from your `.env.local` file, then click **Save**
-5. Go to the **Deployments** tab → click the three dots next to the most recent deployment → click **Redeploy**
-6. Wait 2-3 minutes for the deployment to go green — then the live URL will work
-
-**If the local folder doesn't exist yet** — the spinup failed before the clone step. Run this first:
-
-```bash
-git clone https://github.com/friends-innovation-lab/test-one.git ~/Projects/test-one
-```
-
-Then run the resume command above.
-
-**If resume also leaves the values blank** — Supabase is taking longer than usual. Wait 5 minutes and run resume again. If still blank after 15 minutes, get the values manually:
-
-1. Go to supabase.com/dashboard → click the test-one project
-2. Settings → API
-3. Copy **Project URL** and **anon public** key
-4. Paste them into `.env.local` after the `=` signs
+After `--resume` completes, the live URL and all Supabase-connected pages work end-to-end.
 
 > [!NOTE]
-> If Supabase shows both a "publishable" key and an "anon" key, use the **anon public** key.
+> `--resume` is idempotent — safe to run multiple times. If Supabase isn't ready yet, wait a few more minutes and run it again.
+
+Switch back to the test-one project folder before continuing:
+
+```bash
+cd ~/Projects/test-one
+```
 
 ---
 
@@ -319,7 +296,7 @@ These take about 2-3 minutes total. Wait for them to finish.
 > Green checkmarks mean the checks passed and your PR is safe to merge. A red X means a check failed — click it to see what broke. For a small change like this, all checks should pass on the first try.
 
 > [!WARNING]
-> If the Vercel CI check fails with an error about missing Supabase environment variables, it means Supabase wasn't ready when spinup ran. Fix it by running `./automation/spinup-typed.sh --name test-one --resume` from the playbook folder. Once it completes, go to your PR on GitHub and click **Re-run failed checks**.
+> If the Vercel CI check fails with an error about missing Supabase environment variables, run `./automation/spinup-typed.sh --name test-one --resume` from the playbook folder. Once it completes, go to your PR on GitHub and click **Re-run failed checks**.
 
 **Merge the PR.** When all checks are green, merge it. Two ways:
 
@@ -404,16 +381,15 @@ That's it. The project is gone, and you've completed the full loop.
 Look at what you did:
 
 1. Spun up a real project with one command
-2. Saw it live on the internet
-3. Opened the project in VS Code
-4. Verified Supabase credentials were ready
-5. Used Claude Code to make three changes at once
-6. Saw the changes locally before pushing
-7. Created a branch, staged changes, committed, pushed, and opened a pull request
-8. Watched eight CI checks run on your code
-9. Merged the PR
-10. Saw the changes deploy automatically to the live site
-11. Tore everything down
+2. Explored the live site, GitHub repo, Vercel, and Supabase dashboards
+3. Wired up Supabase with `--resume`
+4. Used Claude Code to make three changes at once
+5. Saw the changes locally before pushing
+6. Created a branch, staged changes, committed, pushed, and opened a pull request
+7. Watched eight CI checks run on your code
+8. Merged the PR
+9. Saw the changes deploy automatically to the live site
+10. Tore everything down
 
 Whatever felt slow, confusing, or surprising — write it down and send it to Lapedra. Your feedback makes the onboarding better for the next person. The lab gets better from those conversations.
 
