@@ -431,6 +431,23 @@ to check the team plan.
 
 ---
 
+## Live URL doesn't load right after spinup completes
+
+*↩ Related to [Phase 3 — Spin up the project](01-creating-a-project.md#phase-3--spin-up-the-project)*
+
+**Symptom:** The spinup script just finished and printed the live URL,
+but visiting it returns a Vercel 404 or "deployment not found" error.
+
+**Why it happens:** The script configures the custom domain and triggers
+a production build, but the build takes about 1 minute to complete. The
+URL is correct — the build just hasn't finished yet.
+
+**How to fix it:** Wait about 1 minute and refresh the page. You can
+check build status at vercel.com → your project → Deployments. Once the
+deployment shows a green checkmark, the URL will work.
+
+---
+
 ## Live URL works but Supabase pages error
 
 *↩ Related to [Phase 3 — Spin up the project](01-creating-a-project.md#phase-3--spin-up-the-project)*

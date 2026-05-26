@@ -258,6 +258,9 @@ When this finishes, you'll have:
 
 The script will print a summary with all the URLs. Save them somewhere.
 
+> [!NOTE]
+> The live URL is configured but not reachable the instant the script exits — Vercel needs about 1 minute to complete the first production build. If you click the URL immediately and get an error, wait a minute and refresh.
+
 ### Step 2 — Wire up Supabase (~5 minutes later)
 
 Wait about 5 minutes for Supabase to finish provisioning, then run:
