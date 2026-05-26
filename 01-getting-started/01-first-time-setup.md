@@ -442,7 +442,6 @@ export VERCEL_ORG_ID=
 export GITHUB_ORG=friends-innovation-lab
 export LAB_SUPABASE_ORG_ID=
 export SUPABASE_ACCESS_TOKEN=
-export LABS_DOMAIN=lab.cityfriends.tech
 ```
 
 The blank values (`=` with nothing after) get filled in below. Save the file (Cmd+S in VS Code) but leave it open — you'll come back to add the actual values.
@@ -507,18 +506,22 @@ Once you have it, switch to VS Code, find `export SUPABASE_ACCESS_TOKEN=`, and p
 
 ### LAB_SUPABASE_ORG_ID
 
-This tells the script which Supabase organization to create projects under.
+This tells the script which Supabase organization to create projects under. The lab uses a single shared org, so the value is the same for everyone:
 
-1. Go to **supabase.com** and log in
-2. In the left sidebar click your **organization name**
-3. Click **Settings**
-4. Click **General**
-5. Find the field labeled **Organization ID** or **Slug** —
-   these are the same value, just labeled differently depending
-   on your Supabase version
-6. Copy that value
+```
+esiwooovlhcuifbbkodk
+```
 
-**Paste into your shell profile.** Switch to VS Code, find `export LAB_SUPABASE_ORG_ID=`, and paste the org ID after the `=` sign. Save the file.
+**Paste into your shell profile.** Switch to VS Code, find `export LAB_SUPABASE_ORG_ID=`, and paste the value after the `=` sign so it looks like:
+
+```bash
+export LAB_SUPABASE_ORG_ID=esiwooovlhcuifbbkodk
+```
+
+Save the file.
+
+> [!TIP]
+> You can verify this is correct by running `supabase orgs list` — look for the org named **Friends Innovation Lab** and confirm the ID matches.
 
 ---
 

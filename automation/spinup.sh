@@ -206,10 +206,10 @@ if [ "$DB_FLAG" = true ]; then
   fi
 fi
 
-if [ -n "$LABS_DOMAIN" ]; then
-  ok "LABS_DOMAIN is set ($LABS_DOMAIN)"
+if [ -n "$LAB_DOMAIN" ]; then
+  ok "LAB_DOMAIN is set ($LAB_DOMAIN)"
 else
-  fail "LABS_DOMAIN is not set. Add this to your shell profile: export LABS_DOMAIN=lab.cityfriends.tech"
+  fail "LAB_DOMAIN is not set. Add this to your shell profile: export LAB_DOMAIN=lab.cityfriends.tech"
   CHECKS_PASSED=false
 fi
 
@@ -407,7 +407,7 @@ fi
 echo "  For:            $PROJECT_FOR"
 echo "  Database:       $DB_DISPLAY"
 echo "  GitHub repo:    github.com/${GITHUB_ORG}/${PROJECT_NAME}"
-echo "  Live URL:       https://${PROJECT_NAME}.${LABS_DOMAIN}"
+echo "  Live URL:       https://${PROJECT_NAME}.${LAB_DOMAIN}"
 echo "  Supabase:       $SUPABASE_DISPLAY"
 echo ""
 printf "Ready to go? (y/n) > "
@@ -698,9 +698,9 @@ if [ "$NEEDS_DB" = true ]; then
       -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
       -H "Content-Type: application/json" \
       -d "{
-        \"site_url\": \"https://${PROJECT_NAME}.${LABS_DOMAIN}\",
+        \"site_url\": \"https://${PROJECT_NAME}.${LAB_DOMAIN}\",
         \"additional_redirect_urls\": [
-          \"https://${PROJECT_NAME}.${LABS_DOMAIN}/auth/callback\",
+          \"https://${PROJECT_NAME}.${LAB_DOMAIN}/auth/callback\",
           \"https://*.vercel.app/auth/callback\",
           \"http://localhost:3000/auth/callback\"
         ],
@@ -739,7 +739,7 @@ if [ -f "$CLAUDE_TEMPLATE" ]; then
     -e "s|{{PROJECT_TYPE}}|${PROJECT_TYPE}|g" \
     -e "s|{{PROJECT_FOR}}|${PROJECT_FOR}|g" \
     -e "s|{{GITHUB_URL}}|https://github.com/${GITHUB_ORG}/${PROJECT_NAME}|g" \
-    -e "s|{{VERCEL_URL}}|https://${PROJECT_NAME}.${LABS_DOMAIN}|g" \
+    -e "s|{{VERCEL_URL}}|https://${PROJECT_NAME}.${LAB_DOMAIN}|g" \
     -e "s|{{SUPABASE_URL}}|${SUPABASE_URL_DISPLAY}|g" \
     -e "s|{{DATE_CREATED}}|${TODAY}|g" \
     -e "s|{{STACK}}|${STACK}|g" \
@@ -839,7 +839,7 @@ SENTRY_PROJECT=${PROJECT_NAME}
 
 # Resend (fill in if project uses email)
 RESEND_API_KEY=
-RESEND_FROM_EMAIL=noreply@${LABS_DOMAIN}
+RESEND_FROM_EMAIL=noreply@${LAB_DOMAIN}
 
 # Upstash (fill in after creating Upstash database)
 UPSTASH_REDIS_REST_URL=
@@ -982,7 +982,7 @@ set_vercel_env "NEXT_PUBLIC_AGENCY_THEME" "$AGENCY_THEME" "$PREVIEW_ONLY"
 set_vercel_env "NEXT_PUBLIC_AGENCY_THEME" "$AGENCY_THEME" "$DEV_ONLY"
 
 # App URL (per environment)
-set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}.${LABS_DOMAIN}" "$PROD_ONLY"
+set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}.${LAB_DOMAIN}" "$PROD_ONLY"
 set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}-*.vercel.app" "$PREVIEW_ONLY"
 set_vercel_env "NEXT_PUBLIC_APP_URL" "http://localhost:3000" "$DEV_ONLY"
 
@@ -995,7 +995,7 @@ set_vercel_env "SENTRY_ORG" "friends-innovation-lab" "$ALL_ENVS"
 set_vercel_env "SENTRY_PROJECT" "$PROJECT_NAME" "$ALL_ENVS"
 
 # Resend (all environments)
-set_vercel_env "RESEND_FROM_EMAIL" "noreply@${LABS_DOMAIN}" "$ALL_ENVS"
+set_vercel_env "RESEND_FROM_EMAIL" "noreply@${LAB_DOMAIN}" "$ALL_ENVS"
 
 if [ "$VERCEL_ENV_ERRORS" -gt 0 ]; then
   warn "${VERCEL_ENV_ERRORS} environment variable(s) failed to set in Vercel."
@@ -1022,9 +1022,9 @@ fi
 DOMAIN_RESULT=$(curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains" \
   -H "Authorization: Bearer $VERCEL_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"name\": \"${PROJECT_NAME}.${LABS_DOMAIN}\"}")
+  -d "{\"name\": \"${PROJECT_NAME}.${LAB_DOMAIN}\"}")
 
-ok "Subdomain configured: ${PROJECT_NAME}.${LABS_DOMAIN}"
+ok "Subdomain configured: ${PROJECT_NAME}.${LAB_DOMAIN}"
 
 # 8d. Trigger first deployment
 if vercel deploy --prod --yes 2>/dev/null; then
@@ -1078,7 +1078,7 @@ fi
 echo "  Created:       $(date +%Y-%m-%d)"
 echo ""
 echo "LINKS"
-echo "  Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}"
+echo "  Live URL:      https://${PROJECT_NAME}.${LAB_DOMAIN}"
 echo "  GitHub:        https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
 echo "  Vercel:        https://vercel.com/${GITHUB_ORG}/${PROJECT_NAME}"
 echo "  Supabase:      ${SUPABASE_DASHBOARD}"

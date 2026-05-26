@@ -38,7 +38,7 @@
 #   VERCEL_ORG_ID           Vercel team/org ID
 #   LAB_SUPABASE_ORG_ID     Supabase org ID (recommended: set to Friends Lab CI org)
 #   SUPABASE_ORG_ID         Supabase org ID (fallback if LAB_SUPABASE_ORG_ID not set)
-#   LABS_DOMAIN             Base domain (default: lab.cityfriends.tech)
+#   LAB_DOMAIN             Base domain (default: lab.cityfriends.tech)
 #
 # See also:
 #   docs/spinup-typed.md — full guide with examples and troubleshooting
@@ -184,7 +184,7 @@ fi
 # ── Environment defaults ───────────────────────────────────────────────────
 
 GITHUB_ORG="${GITHUB_ORG:-friends-innovation-lab}"
-LABS_DOMAIN="${LABS_DOMAIN:-lab.cityfriends.tech}"
+LAB_DOMAIN="${LAB_DOMAIN:-lab.cityfriends.tech}"
 
 # Resolve Supabase org ID: --supabase-org flag > LAB_SUPABASE_ORG_ID > SUPABASE_ORG_ID
 if [[ -n "$SUPABASE_ORG_ARG" ]]; then
@@ -462,7 +462,7 @@ EOF
     echo -e "${BOLD}╠══════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BOLD}║${NC} ${BOLD}LINKS${NC}"
     echo -e "${BOLD}║${NC}   GitHub:        https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
-    echo -e "${BOLD}║${NC}   Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}"
+    echo -e "${BOLD}║${NC}   Live URL:      https://${PROJECT_NAME}.${LAB_DOMAIN}"
     echo -e "${BOLD}║${NC}   Vercel:        https://vercel.com/${GITHUB_ORG}/${PROJECT_NAME}"
     echo -e "${BOLD}║${NC}   Supabase:      $SUPABASE_DASHBOARD"
     echo -e "${BOLD}║${NC}"
@@ -493,7 +493,7 @@ echo -e "${BOLD}║${NC} Extensions:  ${EXTENSIONS:-none}"
 echo -e "${BOLD}║${NC} Theme:       $AGENCY_THEME"
 echo -e "${BOLD}║${NC} Supabase org: ${RESOLVED_SUPABASE_ORG:-not set}"
 echo -e "${BOLD}║${NC} Repo:        ${GITHUB_ORG}/${PROJECT_NAME}"
-echo -e "${BOLD}║${NC} URL:         https://${PROJECT_NAME}.${LABS_DOMAIN}"
+echo -e "${BOLD}║${NC} URL:         https://${PROJECT_NAME}.${LAB_DOMAIN}"
 if $DRY_RUN; then
 echo -e "${BOLD}║${NC} Mode:        ${YELLOW}DRY RUN${NC}"
 fi
@@ -622,7 +622,7 @@ if $DRY_RUN; then
     if ! $SKIP_VERCEL; then
         dry "Create Vercel project linked to GitHub repo"
         dry "Set Vercel env vars (placeholder Supabase values for initial deploy)"
-        dry "Configure custom domain: ${PROJECT_NAME}.${LABS_DOMAIN}"
+        dry "Configure custom domain: ${PROJECT_NAME}.${LAB_DOMAIN}"
         dry "Initial deploy goes live (Supabase not yet wired)"
     else
         dry "Skip Vercel provisioning (--skip-vercel)"
@@ -766,7 +766,7 @@ step "4" "Customize project files"
 # Update CLAUDE.md with project-specific context
 if [[ -f "$WORK_DIR/CLAUDE.md" ]]; then
     GITHUB_URL="https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
-    DEPLOY_URL="https://${PROJECT_NAME}.${LABS_DOMAIN}"
+    DEPLOY_URL="https://${PROJECT_NAME}.${LAB_DOMAIN}"
 
     # Replace all known placeholders
     # macOS sed uses -i '' while GNU sed uses -i (try both)
@@ -958,14 +958,14 @@ else
     # App vars
     set_vercel_env "NEXT_PUBLIC_APP_NAME" "$PROJECT_NAME" "$ALL"
     set_vercel_env "NEXT_PUBLIC_AGENCY_THEME" "$AGENCY_THEME" "$ALL"
-    set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}.${LABS_DOMAIN}" "$PROD"
+    set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}.${LAB_DOMAIN}" "$PROD"
     set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}-*.vercel.app" "$PREVIEW"
     set_vercel_env "NEXT_PUBLIC_APP_URL" "http://localhost:3000" "$DEV"
     set_vercel_env "NEXT_PUBLIC_ENABLE_ANALYTICS" "true" "$ALL"
     set_vercel_env "NEXT_PUBLIC_MAINTENANCE_MODE" "false" "$ALL"
     set_vercel_env "SENTRY_ORG" "friends-innovation-lab" "$ALL"
     set_vercel_env "SENTRY_PROJECT" "$PROJECT_NAME" "$ALL"
-    set_vercel_env "RESEND_FROM_EMAIL" "noreply@${LABS_DOMAIN}" "$ALL"
+    set_vercel_env "RESEND_FROM_EMAIL" "noreply@${LAB_DOMAIN}" "$ALL"
 
     if [[ $VERCEL_ENV_ERRORS -gt 0 ]]; then
         warn "$VERCEL_ENV_ERRORS env var(s) failed to set — check Vercel dashboard"
@@ -977,10 +977,10 @@ else
     curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains" \
         -H "Authorization: Bearer $VERCEL_TOKEN" \
         -H "Content-Type: application/json" \
-        -d "{\"name\":\"${PROJECT_NAME}.${LABS_DOMAIN}\"}" >/dev/null 2>&1
+        -d "{\"name\":\"${PROJECT_NAME}.${LAB_DOMAIN}\"}" >/dev/null 2>&1
 
-    ok "Custom domain configured: ${PROJECT_NAME}.${LABS_DOMAIN}"
-    CREATED_RESOURCES+=("Vercel domain: ${PROJECT_NAME}.${LABS_DOMAIN}")
+    ok "Custom domain configured: ${PROJECT_NAME}.${LAB_DOMAIN}"
+    CREATED_RESOURCES+=("Vercel domain: ${PROJECT_NAME}.${LAB_DOMAIN}")
 
     # The GitHub integration auto-deploys when the project is linked.
     # That initial deploy uses placeholder Supabase values — the site will
@@ -1254,9 +1254,9 @@ echo -e "${BOLD}║${NC}"
 echo -e "${BOLD}║${NC} ${BOLD}LINKS${NC}"
 echo -e "${BOLD}║${NC}   GitHub:        https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
 if [[ -n "$VERCEL_PROJECT_ID" ]]; then
-echo -e "${BOLD}║${NC}   ${GREEN}Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}${NC}"
+echo -e "${BOLD}║${NC}   ${GREEN}Live URL:      https://${PROJECT_NAME}.${LAB_DOMAIN}${NC}"
 else
-echo -e "${BOLD}║${NC}   Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}"
+echo -e "${BOLD}║${NC}   Live URL:      https://${PROJECT_NAME}.${LAB_DOMAIN}"
 fi
 echo -e "${BOLD}║${NC}   Vercel:        $VERCEL_DASH"
 echo -e "${BOLD}║${NC}   Supabase:      $SUPABASE_DASHBOARD"

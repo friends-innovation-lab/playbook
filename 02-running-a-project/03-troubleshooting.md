@@ -431,6 +431,55 @@ to check the team plan.
 
 ---
 
+## Live URL works but Supabase pages error
+
+*↩ Related to [Phase 3 — Spin up the project](01-creating-a-project.md#phase-3--spin-up-the-project)*
+
+**Symptom:** Your `[name].lab.cityfriends.tech` URL loads the app
+but any page that connects to Supabase (login, dashboard, data pages)
+shows an error or blank screen.
+
+**Why it happens:** This is expected between Step 1 and Step 2 of the
+spinup process. The initial spinup deploys the app to Vercel before
+Supabase is ready, so Supabase credentials are not yet configured.
+
+**How to fix it:** Run the resume step:
+
+```bash
+./automation/spinup-typed.sh --name=[project-name] --resume
+```
+
+This wires up Supabase and redeploys. Once it completes, all pages
+should work. See [Phase 3 — Spin up the project](01-creating-a-project.md#phase-3--spin-up-the-project) for the full two-phase flow.
+
+---
+
+## Forgot to run --resume
+
+*↩ Related to [Phase 3 — Spin up the project](01-creating-a-project.md#phase-3--spin-up-the-project)*
+
+**Symptom:** You ran the spinup script and moved on to local
+development, but the live site still has Supabase errors hours
+or days later.
+
+**Why it happens:** The initial spinup creates the Vercel deployment
+with placeholder Supabase values. The `--resume` step fetches real
+credentials and redeploys — without it, the live site stays broken
+for any Supabase-connected features.
+
+**How to fix it:** Just run it now — `--resume` is idempotent and
+works at any point after the initial spinup:
+
+```bash
+./automation/spinup-typed.sh --name=[project-name] --resume
+```
+
+It will detect that Supabase is already provisioned, fetch the keys,
+set them in Vercel and `.env.local`, and trigger a redeploy. No need
+to redo any earlier steps.
+
+---
+
 ## Something else is wrong
 
 *↩ Related to [Creating a project — Before you start](01-creating-a-project.md#before-you-start)*

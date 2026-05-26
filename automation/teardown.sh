@@ -144,10 +144,10 @@ else
   CHECKS_PASSED=false
 fi
 
-if [ -n "$LABS_DOMAIN" ]; then
-  ok "LABS_DOMAIN is set ($LABS_DOMAIN)"
+if [ -n "$LAB_DOMAIN" ]; then
+  ok "LAB_DOMAIN is set ($LAB_DOMAIN)"
 else
-  fail "LABS_DOMAIN is not set. Add this to your shell profile: export LABS_DOMAIN=lab.cityfriends.tech"
+  fail "LAB_DOMAIN is not set. Add this to your shell profile: export LAB_DOMAIN=lab.cityfriends.tech"
   CHECKS_PASSED=false
 fi
 
@@ -396,10 +396,10 @@ if [ "$DO_VERCEL" = true ]; then
   else
     # 6b. Remove the custom domain first
     curl -s -X DELETE \
-      "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains/${PROJECT_NAME}.${LABS_DOMAIN}" \
+      "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains/${PROJECT_NAME}.${LAB_DOMAIN}" \
       -H "Authorization: Bearer $VERCEL_TOKEN" >/dev/null
 
-    ok "Subdomain removed: ${PROJECT_NAME}.${LABS_DOMAIN}"
+    ok "Subdomain removed: ${PROJECT_NAME}.${LAB_DOMAIN}"
 
     # 6c. Delete the Vercel project
     curl -s -X DELETE \
