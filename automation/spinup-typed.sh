@@ -5,6 +5,10 @@
 # lab-extensions based on the project type, provisions GitHub + Vercel +
 # Supabase, and wires up a custom subdomain.
 #
+# Flow: Vercel deploys immediately with placeholder Supabase values so the
+# employee always gets a live URL. Supabase provisioning is kicked off but
+# not polled — run --resume after ~5 minutes to finish wiring credentials.
+#
 # Usage:
 #   spinup-typed.sh --name <project-name> --type <type> [options]
 #
@@ -25,7 +29,8 @@
 #   --supabase-org <id>     Supabase organization ID (overrides env var)
 #   --skip-issues           Don't create starter issues
 #   --dry-run               Print what would be done without doing it
-#   --resume                Resume a failed spinup (fetch Supabase creds, update env vars)
+#   --resume                Resume: poll Supabase, fetch creds, update Vercel + .env.local, redeploy
+#   --create-supabase       With --resume: create the Supabase project if it doesn't exist yet
 #
 # Environment variables required:
 #   GITHUB_ORG              GitHub organization (default: friends-innovation-lab)
@@ -46,6 +51,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_REPO="project-template"
 VERSION="1.0.0"
+
+# Structurally valid placeholders that satisfy build-time checks.
+# Matches the values used in project-template CI workflows (see ADR 0001).
+PLACEHOLDER_SUPABASE_URL="https://placeholder-not-a-real-project.supabase.co"
+PLACEHOLDER_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWYiOiJwbGFjZWhvbGRlciIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjMzMjU2NzY4MDAwfQ.placeholder-signature-not-validated"
+PLACEHOLDER_SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyZWYiOiJwbGFjZWhvbGRlciIsInJvbGUiOiJzZXJ2aWNlX3JvbGUiLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MzMyNTY3NjgwMDB9.placeholder-signature-not-validated"
 
 # ── Colors & output helpers ─────────────────────────────────────────────────
 
@@ -104,6 +115,7 @@ SKIP_SUPABASE=false
 SKIP_ISSUES=false
 DRY_RUN=false
 RESUME=false
+CREATE_SUPABASE=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -117,6 +129,7 @@ while [[ $# -gt 0 ]]; do
         --skip-issues)  SKIP_ISSUES=true; shift ;;
         --dry-run)      DRY_RUN=true; shift ;;
         --resume)       RESUME=true; shift ;;
+        --create-supabase) CREATE_SUPABASE=true; shift ;;
         -h|--help)
             sed -n '2,/^$/p' "$0" | sed 's/^# \?//'
             exit 0
@@ -211,14 +224,75 @@ if $RESUME; then
     fi
 
     # ── Look up Supabase project ref ───────────────────────────────────────
-    info "Looking up Supabase project..."
-    SUPABASE_LIST="$(supabase projects list 2>/dev/null)"
-    SUPABASE_PROJECT_REF="$(echo "$SUPABASE_LIST" | grep "$PROJECT_NAME" | awk -F'|' '{print $3}' | tr -d ' ' || true)"
+    # Try .spinup-state first (saved during initial spinup), fall back to API
+    SPINUP_STATE_PATH="${LOCAL_PROJECT_PATH}/.spinup-state"
+    SUPABASE_PROJECT_REF=""
+
+    if [[ -f "$SPINUP_STATE_PATH" ]]; then
+        SUPABASE_PROJECT_REF="$(grep '^SUPABASE_PROJECT_REF=' "$SPINUP_STATE_PATH" | cut -d= -f2 || true)"
+        if [[ -n "$SUPABASE_PROJECT_REF" ]]; then
+            ok "Found Supabase ref in .spinup-state (ref: $SUPABASE_PROJECT_REF)"
+        fi
+    fi
+
+    if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
+        info "Looking up Supabase project via API..."
+        SUPABASE_LIST="$(supabase projects list 2>/dev/null || true)"
+        SUPABASE_PROJECT_REF="$(echo "$SUPABASE_LIST" | grep "$PROJECT_NAME" | awk -F'|' '{print $3}' | tr -d ' ' || true)"
+    fi
+
+    # ── --create-supabase: recovery path when initial spinup failed to create ──
+    if [[ -z "$SUPABASE_PROJECT_REF" ]] && $CREATE_SUPABASE; then
+        info "No existing Supabase project found — creating now (--create-supabase)..."
+
+        if [[ -z "$RESOLVED_SUPABASE_ORG" ]]; then
+            fail "Cannot create Supabase project: no org ID set."
+            echo "  Set LAB_SUPABASE_ORG_ID or pass --supabase-org <id>"
+            exit 1
+        fi
+
+        SUPABASE_DB_PASSWORD="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)"
+
+        CREATE_OUTPUT="$(supabase projects create "${PROJECT_NAME}" \
+            --org-id "$RESOLVED_SUPABASE_ORG" \
+            --region us-east-1 \
+            --db-password "$SUPABASE_DB_PASSWORD" 2>&1)"
+
+        if [[ $? -ne 0 ]]; then
+            fail "Supabase project creation failed:"
+            echo "$CREATE_OUTPUT" | sed 's/^/    /'
+            exit 1
+        fi
+
+        SUPABASE_PROJECT_REF="$(echo "$CREATE_OUTPUT" | grep -oE 'https://supabase\.com/dashboard/project/[a-z]+' | head -1 | sed 's|.*/||')"
+        if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
+            sleep 3
+            SUPABASE_PROJECT_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk -F'|' '{print $3}' | tr -d ' ' || true)"
+        fi
+
+        if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
+            fail "Supabase project created but could not determine project ref"
+            echo "  Run: supabase projects list"
+            exit 1
+        fi
+
+        ok "Supabase project created (ref: $SUPABASE_PROJECT_REF)"
+
+        # Update .spinup-state
+        cat > "$SPINUP_STATE_PATH" <<EOF
+# Auto-generated by spinup-typed.sh --resume --create-supabase
+SUPABASE_PROJECT_REF=${SUPABASE_PROJECT_REF}
+PROJECT_NAME=${PROJECT_NAME}
+CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+EOF
+        ok ".spinup-state updated"
+    fi
 
     if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
         fail "No Supabase project found matching '$PROJECT_NAME'"
-        echo "  Run: supabase projects list"
-        echo "  to check if the project was created."
+        echo "  If the initial spinup failed to create the Supabase project, run:"
+        echo "    ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume --create-supabase"
+        echo "  Or create it manually and run --resume again."
         exit 1
     fi
     ok "Found Supabase project (ref: $SUPABASE_PROJECT_REF)"
@@ -287,12 +361,17 @@ if $RESUME; then
         touch "$LOCAL_ENV_PATH"
     fi
 
-    # Remove any existing blank Supabase lines and append fresh values
+    # Replace placeholder or empty Supabase values with real credentials
     if [[ -f "$LOCAL_ENV_PATH" ]]; then
-        sed -i '' '/^NEXT_PUBLIC_SUPABASE_URL=$/d' "$LOCAL_ENV_PATH" 2>/dev/null || \
-        sed -i '/^NEXT_PUBLIC_SUPABASE_URL=$/d' "$LOCAL_ENV_PATH" 2>/dev/null || true
-        sed -i '' '/^NEXT_PUBLIC_SUPABASE_ANON_KEY=$/d' "$LOCAL_ENV_PATH" 2>/dev/null || \
-        sed -i '/^NEXT_PUBLIC_SUPABASE_ANON_KEY=$/d' "$LOCAL_ENV_PATH" 2>/dev/null || true
+        sed -i '' '/^NEXT_PUBLIC_SUPABASE_URL=/d' "$LOCAL_ENV_PATH" 2>/dev/null || \
+        sed -i '/^NEXT_PUBLIC_SUPABASE_URL=/d' "$LOCAL_ENV_PATH" 2>/dev/null || true
+        sed -i '' '/^NEXT_PUBLIC_SUPABASE_ANON_KEY=/d' "$LOCAL_ENV_PATH" 2>/dev/null || \
+        sed -i '/^NEXT_PUBLIC_SUPABASE_ANON_KEY=/d' "$LOCAL_ENV_PATH" 2>/dev/null || true
+        sed -i '' '/^SUPABASE_SERVICE_ROLE_KEY=/d' "$LOCAL_ENV_PATH" 2>/dev/null || \
+        sed -i '/^SUPABASE_SERVICE_ROLE_KEY=/d' "$LOCAL_ENV_PATH" 2>/dev/null || true
+        # Remove the placeholder comment if present
+        sed -i '' '/^# Supabase (auto-populated by spinup-typed.sh/d' "$LOCAL_ENV_PATH" 2>/dev/null || \
+        sed -i '/^# Supabase (auto-populated by spinup-typed.sh/d' "$LOCAL_ENV_PATH" 2>/dev/null || true
     fi
 
     cat >> "$LOCAL_ENV_PATH" <<EOF
@@ -300,134 +379,71 @@ if $RESUME; then
 # Supabase (auto-populated by spinup-typed.sh --resume)
 NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
 NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 EOF
     ok ".env.local updated with Supabase credentials"
 
-    # ── Ensure Vercel project exists and update env vars ─────────────────
+    # ── Update Vercel env vars (overwrite placeholders) ────────────────────
     if [[ -n "${VERCEL_TOKEN:-}" ]]; then
-        VERCEL_CREATED=false
+        info "Updating Vercel environment variables..."
+        VERCEL_ENV_UPDATED=0
 
-        # Check if Vercel project exists, create if missing
-        VERCEL_CHECK="$(curl -s -o /dev/null -w "%{http_code}" \
-            "https://api.vercel.com/v9/projects/${PROJECT_NAME}" \
-            -H "Authorization: Bearer $VERCEL_TOKEN")"
+        # Overwrite existing env vars (delete + recreate to replace placeholders)
+        _update_vercel_env() {
+            local key="$1" value="$2"
 
-        if [[ "$VERCEL_CHECK" == "200" ]]; then
-            ok "Vercel project exists"
-        else
-            info "Vercel project not found — creating..."
-            VERCEL_CREATE="$(curl -s -X POST "https://api.vercel.com/v10/projects" \
+            # Find and delete existing env var by key across all targets
+            local env_ids
+            env_ids="$(curl -s "https://api.vercel.com/v9/projects/${PROJECT_NAME}/env" \
+                -H "Authorization: Bearer $VERCEL_TOKEN" \
+                | jq -r ".envs[] | select(.key==\"${key}\") | .id" 2>/dev/null || true)"
+
+            for env_id in $env_ids; do
+                curl -s -X DELETE "https://api.vercel.com/v9/projects/${PROJECT_NAME}/env/${env_id}" \
+                    -H "Authorization: Bearer $VERCEL_TOKEN" >/dev/null 2>&1
+            done
+
+            # Recreate with real value
+            curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
                 -H "Authorization: Bearer $VERCEL_TOKEN" \
                 -H "Content-Type: application/json" \
-                -d "{
-                    \"name\": \"${PROJECT_NAME}\",
-                    \"framework\": \"nextjs\",
-                    \"gitRepository\": {
-                        \"type\": \"github\",
-                        \"repo\": \"${GITHUB_ORG}/${PROJECT_NAME}\"
-                    }
-                }")"
+                -d "{\"key\":\"${key}\",\"value\":\"${value}\",\"type\":\"encrypted\",\"target\":[\"production\",\"preview\",\"development\"]}" >/dev/null
+            VERCEL_ENV_UPDATED=$((VERCEL_ENV_UPDATED + 1))
+        }
 
-            VERCEL_PROJECT_ID="$(echo "$VERCEL_CREATE" | jq -r '.id // empty')"
-            if [[ -n "$VERCEL_PROJECT_ID" ]]; then
-                ok "Vercel project created (ID: $VERCEL_PROJECT_ID)"
-                VERCEL_CREATED=true
-            else
-                warn "Could not create Vercel project — env vars may fail"
-                echo "$VERCEL_CREATE" | jq '.error' 2>/dev/null || echo "$VERCEL_CREATE"
-            fi
-        fi
+        _update_vercel_env "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE"
+        _update_vercel_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY"
+        _update_vercel_env "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY"
 
-        if $VERCEL_CREATED; then
-            # Full env var setup — same as Step 7
-            info "Setting all Vercel environment variables..."
-            VERCEL_ENV_ERRORS=0
+        ok "Updated $VERCEL_ENV_UPDATED Vercel env var(s)"
 
-            _set_vercel_env() {
-                local key="$1" value="$2" targets="$3"
-                local response
-                response="$(curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
-                    -H "Authorization: Bearer $VERCEL_TOKEN" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"key\":\"${key}\",\"value\":\"${value}\",\"type\":\"encrypted\",\"target\":${targets}}")"
+        # Trigger a fresh production deploy so the new env vars take effect
+        info "Triggering production redeploy..."
+        DEPLOY_RESPONSE="$(curl -s -X POST "https://api.vercel.com/v13/deployments" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"name\": \"${PROJECT_NAME}\",
+                \"target\": \"production\",
+                \"gitSource\": {
+                    \"type\": \"github\",
+                    \"org\": \"${GITHUB_ORG}\",
+                    \"repo\": \"${PROJECT_NAME}\",
+                    \"ref\": \"main\"
+                }
+            }")"
 
-                local error_code
-                error_code="$(echo "$response" | jq -r '.error.code // empty' 2>/dev/null)"
-                if [[ -n "$error_code" && "$error_code" != "ENV_ALREADY_EXISTS" ]]; then
-                    VERCEL_ENV_ERRORS=$((VERCEL_ENV_ERRORS + 1))
-                fi
-            }
-
-            ALL='["production","preview","development"]'
-            PROD='["production"]'
-            PREVIEW='["preview"]'
-            DEV='["development"]'
-
-            # Supabase vars
-            _set_vercel_env "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE" "$ALL"
-            _set_vercel_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY" "$ALL"
-            _set_vercel_env "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY" "$ALL"
-
-            # App vars
-            _set_vercel_env "NEXT_PUBLIC_APP_NAME" "$PROJECT_NAME" "$ALL"
-            _set_vercel_env "NEXT_PUBLIC_AGENCY_THEME" "${AGENCY_THEME:-fftc}" "$ALL"
-            _set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}.${LABS_DOMAIN}" "$PROD"
-            _set_vercel_env "NEXT_PUBLIC_APP_URL" "https://${PROJECT_NAME}-*.vercel.app" "$PREVIEW"
-            _set_vercel_env "NEXT_PUBLIC_APP_URL" "http://localhost:3000" "$DEV"
-            _set_vercel_env "NEXT_PUBLIC_ENABLE_ANALYTICS" "true" "$ALL"
-            _set_vercel_env "NEXT_PUBLIC_MAINTENANCE_MODE" "false" "$ALL"
-            _set_vercel_env "SENTRY_ORG" "friends-innovation-lab" "$ALL"
-            _set_vercel_env "SENTRY_PROJECT" "$PROJECT_NAME" "$ALL"
-            _set_vercel_env "RESEND_FROM_EMAIL" "noreply@${LABS_DOMAIN}" "$ALL"
-
-            if [[ $VERCEL_ENV_ERRORS -gt 0 ]]; then
-                warn "$VERCEL_ENV_ERRORS env var(s) failed to set — check Vercel dashboard"
-            else
-                ok "All environment variables set"
-            fi
-
-            # Custom domain
-            curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains" \
-                -H "Authorization: Bearer $VERCEL_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "{\"name\":\"${PROJECT_NAME}.${LABS_DOMAIN}\"}" >/dev/null 2>&1
-            ok "Custom domain configured: ${PROJECT_NAME}.${LABS_DOMAIN}"
+        DEPLOY_URL="$(echo "$DEPLOY_RESPONSE" | jq -r '.url // empty' 2>/dev/null)"
+        if [[ -n "$DEPLOY_URL" ]]; then
+            ok "Production deploy triggered (${DEPLOY_URL})"
         else
-            # Project already existed — only fill missing Supabase vars
-            info "Checking Vercel environment variables..."
-            VERCEL_ENV_UPDATED=0
-
-            _set_vercel_env_if_missing() {
-                local key="$1" value="$2"
-                local existing
-                existing="$(curl -s "https://api.vercel.com/v9/projects/${PROJECT_NAME}/env" \
-                    -H "Authorization: Bearer $VERCEL_TOKEN" \
-                    | jq -r ".envs[] | select(.key==\"${key}\") | .value" 2>/dev/null || echo "")"
-
-                if [[ -z "$existing" ]]; then
-                    curl -s -X POST "https://api.vercel.com/v10/projects/${PROJECT_NAME}/env" \
-                        -H "Authorization: Bearer $VERCEL_TOKEN" \
-                        -H "Content-Type: application/json" \
-                        -d "{\"key\":\"${key}\",\"value\":\"${value}\",\"type\":\"encrypted\",\"target\":[\"production\",\"preview\",\"development\"]}" >/dev/null
-                    VERCEL_ENV_UPDATED=$((VERCEL_ENV_UPDATED + 1))
-                fi
-            }
-
-            _set_vercel_env_if_missing "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE"
-            _set_vercel_env_if_missing "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY"
-            _set_vercel_env_if_missing "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY"
-
-            if [[ $VERCEL_ENV_UPDATED -gt 0 ]]; then
-                ok "Updated $VERCEL_ENV_UPDATED Vercel env var(s)"
-            else
-                ok "Vercel env vars already set"
-            fi
+            warn "Could not trigger redeploy — push a commit or redeploy from Vercel dashboard"
         fi
     else
-        warn "VERCEL_TOKEN not set — skipping Vercel env var update"
+        warn "VERCEL_TOKEN not set — skipping Vercel env var update and redeploy"
     fi
 
-    # ── Update GitHub secrets if missing ───────────────────────────────────
+    # ── Update GitHub secrets ──────────────────────────────────────────────
     info "Updating GitHub secrets..."
     echo "$SUPABASE_URL_VALUE" | gh secret set NEXT_PUBLIC_SUPABASE_URL \
         --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
@@ -453,6 +469,7 @@ EOF
     echo -e "${BOLD}║${NC} ${BOLD}LOCAL${NC}"
     echo -e "${BOLD}║${NC}   Project dir:   ~/Projects/${PROJECT_NAME}"
     echo -e "${BOLD}║${NC}   .env.local:    updated with Supabase credentials"
+    echo -e "${BOLD}║${NC}   Vercel:        redeploy triggered with real credentials"
     echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "${BOLD}Next steps:${NC}"
@@ -604,20 +621,19 @@ if $DRY_RUN; then
     dry "Commit and push: chore: initial project setup (type: $PROJECT_TYPE)"
     if ! $SKIP_VERCEL; then
         dry "Create Vercel project linked to GitHub repo"
-        dry "Set Vercel environment variables"
+        dry "Set Vercel env vars (placeholder Supabase values for initial deploy)"
         dry "Configure custom domain: ${PROJECT_NAME}.${LABS_DOMAIN}"
+        dry "Initial deploy goes live (Supabase not yet wired)"
     else
         dry "Skip Vercel provisioning (--skip-vercel)"
     fi
     if ! $SKIP_SUPABASE; then
-        dry "Create Supabase project: $PROJECT_NAME"
-        dry "Wait for Supabase provisioning"
-        dry "Retrieve API keys"
-        dry "Push database migrations"
+        dry "Create Supabase project: $PROJECT_NAME (fire-and-forget, no polling)"
+        dry "Save project ref to .spinup-state for --resume"
     else
         dry "Skip Supabase provisioning (--skip-supabase)"
     fi
-    dry "Set GitHub secrets for CI"
+    dry "Set GitHub secrets for CI (VERCEL_TOKEN only — Supabase secrets set by --resume)"
     if ! $SKIP_ISSUES; then
         ISSUES_TEMPLATE="$(issues_template_for_type "$PROJECT_TYPE")"
         if [[ -n "$ISSUES_TEMPLATE" ]]; then
@@ -627,7 +643,7 @@ if $DRY_RUN; then
         fi
         dry "Create project board"
     fi
-    dry "Output success summary"
+    dry "Output success summary with --resume instructions"
     echo ""
     echo -e "${GREEN}Dry run complete. No resources were created.${NC}"
     exit 0
@@ -862,190 +878,17 @@ PROTEOF
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
-# STEP 6 — Supabase setup
-# ════════════════════════════════════════════════════════════════════════════
-
-SUPABASE_URL_VALUE=""
-SUPABASE_ANON_KEY=""
-SUPABASE_SERVICE_ROLE_KEY=""
-SUPABASE_PROJECT_REF=""
-
-if $SKIP_SUPABASE; then
-    step "6" "Supabase (skipped)"
-    info "Skipping Supabase provisioning (--skip-supabase)"
-else
-    step "6" "Supabase"
-
-    # Trap errors in this block so employees see what actually failed
-    _step6_err() {
-        local exit_code=$?
-        fail "Supabase setup failed (exit code $exit_code)"
-        fail "Failed command: $BASH_COMMAND"
-    }
-    trap '_step6_err' ERR
-
-    # Check if project already exists
-    EXISTING_REF=""
-    SUPABASE_LIST="$(supabase projects list 2>/dev/null || true)"
-    EXISTING_REF="$(echo "$SUPABASE_LIST" | grep "$PROJECT_NAME" | awk -F'|' '{print $3}' | tr -d ' ' || true)"
-
-    if [[ -n "$EXISTING_REF" ]]; then
-        skip_msg "Supabase project $PROJECT_NAME (ref: $EXISTING_REF)"
-        SUPABASE_PROJECT_REF="$EXISTING_REF"
-    else
-        SUPABASE_DB_PASSWORD="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)"
-
-        CREATE_OUTPUT="$(supabase projects create "${PROJECT_NAME}" \
-            --org-id "$RESOLVED_SUPABASE_ORG" \
-            --region us-east-1 \
-            --db-password "$SUPABASE_DB_PASSWORD")"
-
-        if [[ $? -ne 0 ]]; then
-            fail "Supabase project creation failed"
-            echo "$CREATE_OUTPUT"
-            exit 1
-        fi
-
-        # Extract project ref from dashboard URL in create output
-        SUPABASE_PROJECT_REF="$(echo "$CREATE_OUTPUT" | grep -oE 'https://supabase\.com/dashboard/project/[a-z]+' | head -1 | sed 's|.*/||')"
-        if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
-            sleep 3
-            SUPABASE_PROJECT_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk -F'|' '{print $3}' | tr -d ' ' || true)"
-        fi
-
-        if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
-            fail "Could not determine Supabase project ref"
-            exit 1
-        fi
-
-        ok "Supabase project created (ref: $SUPABASE_PROJECT_REF)"
-        CREATED_RESOURCES+=("Supabase project: $SUPABASE_PROJECT_REF ($PROJECT_NAME)")
-    fi
-
-    SUPABASE_URL_VALUE="https://${SUPABASE_PROJECT_REF}.supabase.co"
-
-    # Wait for provisioning
-    info "Waiting for Supabase to provision..."
-    SUPABASE_READY=false
-    for _ in {1..12}; do
-        STATUS="$(curl -s -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN:-}" \
-            "https://api.supabase.com/v1/projects" \
-            | jq -r ".[] | select(.name==\"${PROJECT_NAME}\") | .status" 2>/dev/null || echo "")"
-        if [[ "$STATUS" == "ACTIVE_HEALTHY" ]]; then
-            SUPABASE_READY=true
-            break
-        fi
-        sleep 5
-    done
-
-    if $SUPABASE_READY; then
-        ok "Supabase is ready"
-    else
-        warn "Supabase not yet ready. Once provisioning completes, run:"
-        echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
-    fi
-
-    # Get API keys
-    info "Fetching API keys..."
-    for attempt in {1..10}; do
-        SUPABASE_ANON_KEY="$(supabase projects api-keys \
-            --project-ref "$SUPABASE_PROJECT_REF" \
-            --output json \
-            | jq -r '.[] | select(.name=="anon") | .api_key' || echo "")"
-
-        SUPABASE_SERVICE_ROLE_KEY="$(supabase projects api-keys \
-            --project-ref "$SUPABASE_PROJECT_REF" \
-            --output json \
-            | jq -r '.[] | select(.name=="service_role") | .api_key' || echo "")"
-
-        if [[ -n "$SUPABASE_ANON_KEY" && -n "$SUPABASE_SERVICE_ROLE_KEY" ]]; then
-            ok "API keys retrieved (attempt $attempt)"
-            break
-        fi
-        sleep 5
-    done
-
-    if [[ -z "$SUPABASE_ANON_KEY" ]]; then
-        warn "Could not retrieve Supabase API keys."
-        warn "Supabase credentials not ready yet. Once provisioning completes, run:"
-        echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
-    fi
-
-    # Push migrations (includes extension migrations if applied)
-    if $SUPABASE_READY && [[ -d "$WORK_DIR/supabase/migrations" ]]; then
-        cd "$WORK_DIR"
-        if supabase link --project-ref "$SUPABASE_PROJECT_REF" && \
-           supabase db push --project-ref "$SUPABASE_PROJECT_REF"; then
-            ok "Database migrations applied (including extensions)"
-        else
-            warn "Could not apply migrations. Run manually:"
-            echo "  supabase link --project-ref $SUPABASE_PROJECT_REF"
-            echo "  supabase db push"
-        fi
-    fi
-
-    # Configure auth redirect URLs
-    if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
-        curl -s -X PATCH \
-            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/config/auth" \
-            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{
-                \"site_url\": \"https://${PROJECT_NAME}.${LABS_DOMAIN}\",
-                \"additional_redirect_urls\": [
-                    \"https://${PROJECT_NAME}.${LABS_DOMAIN}/auth/callback\",
-                    \"https://*.vercel.app/auth/callback\",
-                    \"http://localhost:3000/auth/callback\"
-                ],
-                \"disable_signup\": false,
-                \"mailer_autoconfirm\": true
-            }"
-        ok "Auth redirect URLs configured"
-    else
-        warn "SUPABASE_ACCESS_TOKEN not set — configure auth redirects manually"
-    fi
-
-    # Write Supabase credentials to .env.local for local development
-    if [[ -n "$SUPABASE_ANON_KEY" ]]; then
-        ENV_LOCAL_PATH="${WORK_DIR}/.env.local"
-
-        # Create .env.local from .env.example if it exists, otherwise create empty
-        if [[ -f "${WORK_DIR}/.env.example" && ! -f "$ENV_LOCAL_PATH" ]]; then
-            cp "${WORK_DIR}/.env.example" "$ENV_LOCAL_PATH"
-            info "Created .env.local from .env.example"
-        elif [[ ! -f "$ENV_LOCAL_PATH" ]]; then
-            touch "$ENV_LOCAL_PATH"
-        fi
-
-        # Append Supabase credentials
-        cat >> "$ENV_LOCAL_PATH" <<EOF
-
-# Supabase (auto-populated by spinup-typed.sh)
-NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
-NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-EOF
-        ok "Supabase credentials added to .env.local"
-    else
-        warn "Could not write Supabase credentials to .env.local (keys not available)"
-        warn "Supabase credentials not ready yet. Once provisioning completes, run:"
-        echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
-    fi
-
-    # Restore default trap (remove Step 6 ERR handler)
-    trap - ERR
-fi
-
-# ════════════════════════════════════════════════════════════════════════════
-# STEP 7 — Vercel setup
+# STEP 6 — Vercel setup (runs BEFORE Supabase so the employee always gets
+#           a live URL even if Supabase provisioning is slow)
 # ════════════════════════════════════════════════════════════════════════════
 
 VERCEL_PROJECT_ID=""
 
 if $SKIP_VERCEL; then
-    step "7" "Vercel (skipped)"
+    step "6" "Vercel (skipped)"
     info "Skipping Vercel provisioning (--skip-vercel)"
 else
-    step "7" "Vercel"
+    step "6" "Vercel"
 
     # Check if project exists
     VERCEL_CHECK="$(curl -s -o /dev/null -w "%{http_code}" \
@@ -1082,8 +925,9 @@ else
         CREATED_RESOURCES+=("Vercel project: $PROJECT_NAME (ID: $VERCEL_PROJECT_ID)")
     fi
 
-    # Set environment variables
-    info "Setting environment variables..."
+    # Set environment variables — use placeholder Supabase values so the
+    # initial deploy succeeds. --resume overwrites these with real creds.
+    info "Setting environment variables (placeholder Supabase values)..."
     VERCEL_ENV_ERRORS=0
 
     set_vercel_env() {
@@ -1106,12 +950,10 @@ else
     PREVIEW='["preview"]'
     DEV='["development"]'
 
-    # Supabase vars
-    if [[ -n "$SUPABASE_URL_VALUE" ]]; then
-        set_vercel_env "NEXT_PUBLIC_SUPABASE_URL" "$SUPABASE_URL_VALUE" "$ALL"
-        set_vercel_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$SUPABASE_ANON_KEY" "$ALL"
-        set_vercel_env "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY" "$ALL"
-    fi
+    # Supabase vars — placeholder values that satisfy build-time checks
+    set_vercel_env "NEXT_PUBLIC_SUPABASE_URL" "$PLACEHOLDER_SUPABASE_URL" "$ALL"
+    set_vercel_env "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$PLACEHOLDER_SUPABASE_ANON_KEY" "$ALL"
+    set_vercel_env "SUPABASE_SERVICE_ROLE_KEY" "$PLACEHOLDER_SUPABASE_SERVICE_ROLE_KEY" "$ALL"
 
     # App vars
     set_vercel_env "NEXT_PUBLIC_APP_NAME" "$PROJECT_NAME" "$ALL"
@@ -1128,7 +970,7 @@ else
     if [[ $VERCEL_ENV_ERRORS -gt 0 ]]; then
         warn "$VERCEL_ENV_ERRORS env var(s) failed to set — check Vercel dashboard"
     else
-        ok "Environment variables set"
+        ok "Environment variables set (Supabase placeholders — real values via --resume)"
     fi
 
     # Custom domain
@@ -1139,31 +981,96 @@ else
 
     ok "Custom domain configured: ${PROJECT_NAME}.${LABS_DOMAIN}"
     CREATED_RESOURCES+=("Vercel domain: ${PROJECT_NAME}.${LABS_DOMAIN}")
+
+    # The GitHub integration auto-deploys when the project is linked.
+    # That initial deploy uses placeholder Supabase values — the site will
+    # load but Supabase-dependent features won't work until --resume runs.
+    info "Initial deploy triggered via GitHub integration (placeholder Supabase values)"
+fi
+
+# ════════════════════════════════════════════════════════════════════════════
+# STEP 7 — Supabase setup (fire-and-forget — no polling, no key fetch)
+#           The employee runs --resume after ~5 minutes to finish wiring.
+# ════════════════════════════════════════════════════════════════════════════
+
+SUPABASE_PROJECT_REF=""
+
+if $SKIP_SUPABASE; then
+    step "7" "Supabase (skipped)"
+    info "Skipping Supabase provisioning (--skip-supabase)"
+else
+    step "7" "Supabase (fire-and-forget)"
+
+    # Entire Supabase block is non-fatal — any failure here must not
+    # prevent Steps 8–11 from running. The employee can recover via
+    # --resume --create-supabase if creation fails.
+    set +e
+
+    # Check if project already exists
+    EXISTING_REF=""
+    SUPABASE_LIST="$(supabase projects list 2>/dev/null)"
+    EXISTING_REF="$(echo "$SUPABASE_LIST" | grep "$PROJECT_NAME" | awk -F'|' '{print $3}' | tr -d ' ')"
+
+    if [[ -n "$EXISTING_REF" ]]; then
+        skip_msg "Supabase project $PROJECT_NAME (ref: $EXISTING_REF)"
+        SUPABASE_PROJECT_REF="$EXISTING_REF"
+    else
+        SUPABASE_DB_PASSWORD="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)"
+
+        CREATE_OUTPUT="$(supabase projects create "${PROJECT_NAME}" \
+            --org-id "$RESOLVED_SUPABASE_ORG" \
+            --region us-east-1 \
+            --db-password "$SUPABASE_DB_PASSWORD" 2>&1)"
+        CREATE_EXIT=$?
+
+        if [[ $CREATE_EXIT -ne 0 ]]; then
+            warn "Supabase project creation failed (exit code $CREATE_EXIT):"
+            echo "$CREATE_OUTPUT" | sed 's/^/    /'
+            warn "Continuing without Supabase — fix the issue and run:"
+            echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume --create-supabase"
+        else
+            # Extract project ref from dashboard URL in create output
+            SUPABASE_PROJECT_REF="$(echo "$CREATE_OUTPUT" | grep -oE 'https://supabase\.com/dashboard/project/[a-z]+' | head -1 | sed 's|.*/||')"
+            if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
+                sleep 3
+                SUPABASE_PROJECT_REF="$(supabase projects list 2>/dev/null | grep "$PROJECT_NAME" | awk -F'|' '{print $3}' | tr -d ' ')"
+            fi
+
+            if [[ -z "$SUPABASE_PROJECT_REF" ]]; then
+                warn "Supabase project may have been created but could not determine ref"
+                warn "Run --resume to look it up by name, or check: supabase projects list"
+            else
+                ok "Supabase project created (ref: $SUPABASE_PROJECT_REF)"
+                CREATED_RESOURCES+=("Supabase project: $SUPABASE_PROJECT_REF ($PROJECT_NAME)")
+            fi
+        fi
+    fi
+
+    set -e
+
+    # Save state for --resume (gitignored)
+    if [[ -n "$SUPABASE_PROJECT_REF" ]]; then
+        # Will be written to ~/Projects/$PROJECT_NAME/.spinup-state in Step 10
+        SPINUP_STATE_REF="$SUPABASE_PROJECT_REF"
+        warn "Supabase is provisioning in the background. In ~5 minutes, run:"
+        echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
+    fi
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
 # STEP 8 — GitHub secrets for CI
+#          Supabase secrets are set by --resume once credentials are ready.
 # ════════════════════════════════════════════════════════════════════════════
 
 step "8" "GitHub secrets"
-
-if [[ -n "$SUPABASE_URL_VALUE" ]]; then
-    echo "$SUPABASE_URL_VALUE" | gh secret set NEXT_PUBLIC_SUPABASE_URL \
-        --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
-        ok "NEXT_PUBLIC_SUPABASE_URL" || warn "Could not set NEXT_PUBLIC_SUPABASE_URL secret"
-fi
-
-if [[ -n "$SUPABASE_ANON_KEY" ]]; then
-    echo "$SUPABASE_ANON_KEY" | gh secret set NEXT_PUBLIC_SUPABASE_ANON_KEY \
-        --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
-        ok "NEXT_PUBLIC_SUPABASE_ANON_KEY" || warn "Could not set NEXT_PUBLIC_SUPABASE_ANON_KEY secret"
-fi
 
 if [[ -n "${VERCEL_TOKEN:-}" ]]; then
     echo "$VERCEL_TOKEN" | gh secret set VERCEL_TOKEN \
         --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
         ok "VERCEL_TOKEN" || warn "Could not set VERCEL_TOKEN secret"
 fi
+
+info "Supabase secrets will be set when you run --resume"
 
 # ════════════════════════════════════════════════════════════════════════════
 # STEP 9 — Labels and issues (optional)
@@ -1271,9 +1178,6 @@ fi
 if [[ -d "$LOCAL_PROJECT_PATH" ]]; then
     warn "Folder already exists at ${LOCAL_PROJECT_PATH}"
     warn "Skipping clone to avoid overwriting existing work"
-    warn "Your existing .env.local was not modified"
-    info "If you need fresh Supabase credentials for this project, get them from:"
-    echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/api"
     info "To get a fresh clone, remove the folder and run:"
     echo "  rm -rf ${LOCAL_PROJECT_PATH}"
     echo "  git clone https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git ${LOCAL_PROJECT_PATH}"
@@ -1282,29 +1186,37 @@ else
     if git clone "https://github.com/${GITHUB_ORG}/${PROJECT_NAME}.git" "$LOCAL_PROJECT_PATH" 2>&1; then
         ok "Cloned to ${LOCAL_PROJECT_PATH}"
 
-        # Populate .env.local with Supabase credentials
-        if [[ -n "$SUPABASE_URL_VALUE" && -n "$SUPABASE_ANON_KEY" ]]; then
-            LOCAL_ENV_PATH="${LOCAL_PROJECT_PATH}/.env.local"
+        # Create .env.local with placeholder Supabase values (--resume replaces them)
+        LOCAL_ENV_PATH="${LOCAL_PROJECT_PATH}/.env.local"
 
-            # Create .env.local from .env.example as base
-            if [[ -f "${LOCAL_PROJECT_PATH}/.env.example" ]]; then
-                cp "${LOCAL_PROJECT_PATH}/.env.example" "$LOCAL_ENV_PATH"
-            else
-                touch "$LOCAL_ENV_PATH"
-            fi
-
-            # Append Supabase credentials
-            cat >> "$LOCAL_ENV_PATH" <<EOF
-
-# Supabase (auto-populated by spinup-typed.sh)
-NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL_VALUE}
-NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-EOF
-            ok ".env.local populated with Supabase credentials"
+        if [[ -f "${LOCAL_PROJECT_PATH}/.env.example" ]]; then
+            cp "${LOCAL_PROJECT_PATH}/.env.example" "$LOCAL_ENV_PATH"
         else
-            warn "Supabase credentials not available — .env.local needs manual setup"
-            warn "Once Supabase provisioning completes, run:"
-            echo "  ./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume"
+            touch "$LOCAL_ENV_PATH"
+        fi
+
+        cat >> "$LOCAL_ENV_PATH" <<EOF
+
+# Supabase (placeholder values — run --resume to replace with real credentials)
+NEXT_PUBLIC_SUPABASE_URL=${PLACEHOLDER_SUPABASE_URL}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${PLACEHOLDER_SUPABASE_ANON_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${PLACEHOLDER_SUPABASE_SERVICE_ROLE_KEY}
+EOF
+        ok ".env.local created with placeholder Supabase values"
+
+        # Write .spinup-state so --resume can find the Supabase project ref
+        if [[ -n "${SPINUP_STATE_REF:-}" ]]; then
+            cat > "${LOCAL_PROJECT_PATH}/.spinup-state" <<EOF
+# Auto-generated by spinup-typed.sh — used by --resume
+SUPABASE_PROJECT_REF=${SPINUP_STATE_REF}
+PROJECT_NAME=${PROJECT_NAME}
+CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+EOF
+            # Ensure .spinup-state is gitignored
+            if ! grep -q '\.spinup-state' "${LOCAL_PROJECT_PATH}/.gitignore" 2>/dev/null; then
+                echo -e "\n# spinup state (used by --resume)\n.spinup-state" >> "${LOCAL_PROJECT_PATH}/.gitignore"
+            fi
+            ok ".spinup-state saved (Supabase ref for --resume)"
         fi
     else
         warn "Failed to clone to ${LOCAL_PROJECT_PATH}"
@@ -1341,7 +1253,11 @@ echo -e "${BOLD}║${NC}   Theme:         $AGENCY_THEME"
 echo -e "${BOLD}║${NC}"
 echo -e "${BOLD}║${NC} ${BOLD}LINKS${NC}"
 echo -e "${BOLD}║${NC}   GitHub:        https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
+if [[ -n "$VERCEL_PROJECT_ID" ]]; then
+echo -e "${BOLD}║${NC}   ${GREEN}Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}${NC}"
+else
 echo -e "${BOLD}║${NC}   Live URL:      https://${PROJECT_NAME}.${LABS_DOMAIN}"
+fi
 echo -e "${BOLD}║${NC}   Vercel:        $VERCEL_DASH"
 echo -e "${BOLD}║${NC}   Supabase:      $SUPABASE_DASHBOARD"
 echo -e "${BOLD}║${NC}"
@@ -1349,11 +1265,31 @@ echo -e "${BOLD}║${NC} ${BOLD}LOCAL${NC}"
 echo -e "${BOLD}║${NC}   Project dir:   ~/Projects/${PROJECT_NAME}"
 echo -e "${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
+if ! $SKIP_SUPABASE; then
+    if [[ -n "$SUPABASE_PROJECT_REF" ]]; then
+        echo -e "${YELLOW}⚠  Supabase is still provisioning. In ~5 minutes, run:${NC}"
+        echo -e "   ${BOLD}./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume${NC}"
+    else
+        echo -e "${RED}⚠  Supabase project creation failed.${NC}"
+        echo "   Fix the underlying issue (likely token permissions or org access), then run:"
+        echo -e "   ${BOLD}./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume --create-supabase${NC}"
+        echo "   Or create the Supabase project manually and run:"
+        echo -e "   ${BOLD}./automation/spinup-typed.sh --name ${PROJECT_NAME} --resume${NC}"
+    fi
+    echo ""
+fi
 echo -e "${BOLD}Next steps:${NC}"
 echo "  1. cd ~/Projects/${PROJECT_NAME}"
 echo "  2. npm install"
 echo "  3. npm run dev"
 echo "  4. Read CLAUDE.md before asking CC to build anything"
+if ! $SKIP_SUPABASE; then
+    if [[ -n "$SUPABASE_PROJECT_REF" ]]; then
+echo "  5. Run --resume (above) once Supabase is ready"
+    else
+echo "  5. Fix Supabase issue, then run --resume --create-supabase (above)"
+    fi
+fi
 echo ""
 if [[ -n "$EXTENSIONS" ]]; then
     echo -e "${BOLD}Extensions applied:${NC}"
@@ -1370,4 +1306,10 @@ if [[ -n "$EXTENSIONS" ]]; then
     echo "  [ ] Run extension tests: npm test"
 fi
 echo ""
-echo -e "${GREEN}Done!${NC} Project $PROJECT_NAME is ready."
+if [[ -n "$SUPABASE_PROJECT_REF" ]]; then
+    echo -e "${GREEN}Done!${NC} Project $PROJECT_NAME is ready. Live URL is up — Supabase features activate after --resume."
+elif ! $SKIP_SUPABASE; then
+    echo -e "${GREEN}Done!${NC} Project $PROJECT_NAME is ready. Live URL is up — Supabase needs manual recovery (see above)."
+else
+    echo -e "${GREEN}Done!${NC} Project $PROJECT_NAME is ready."
+fi

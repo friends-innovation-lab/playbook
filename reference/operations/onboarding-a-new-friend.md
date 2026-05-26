@@ -52,7 +52,7 @@ Hi [Name],
 Welcome to the Treehouse. A few values you'll need during first-time setup. Add them to your shell profile when the playbook tells you to.
 
 # Friends Innovation Lab — shared credentials
-export LAB_SUPABASE_ORG_ID="vbnqtawlnyzaioqbgwtw"
+export LAB_SUPABASE_ORG_ID="esiwooovlhcuifbbkodk"
 
 Some projects will need additional credentials (transactional email, rate limiting, AI APIs). Those get provisioned per-project when each one starts. You don't need them for setup or for your first test project.
 
