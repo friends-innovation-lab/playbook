@@ -4,6 +4,9 @@ This is your test run. You're going to spin up a real project, change three thin
 
 By the end, you'll have done the full lab loop once. The next time a real project lands, the steps will already be in your hands.
 
+> [!NOTE]
+> Throughout this doc, "terminal" means **VS Code's built-in terminal** (View → Terminal, or `` Ctrl+` ``). Don't use Mac's standalone Terminal app — working inside VS Code keeps your editor and terminal in one window.
+
 **Time:** about 35 minutes from start to finish.
 
 > [!NOTE]
@@ -17,11 +20,9 @@ By the end, you'll have done the full lab loop once. The next time a real projec
 
 A few things to know before you start.
 
-**Open VS Code and the terminal**
+**Open VS Code and its terminal**
 
-- Open VS Code, then open the built-in terminal: **View → Terminal** (or press `` Ctrl+` ``)
-- The backtick is the key just below Escape on most Macs
-- The terminal appears at the bottom of the VS Code window
+- If your terminal isn't already open: **View → Terminal** (or `` Ctrl+` `` — the backtick key is just below Escape)
 - Every command in this doc gets typed into that terminal
 
 **Terminal cursor behavior**

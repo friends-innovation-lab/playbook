@@ -52,12 +52,17 @@ Run this in Terminal:
 ```
 
 > [!NOTE]
-> macOS may show a security warning when you paste this command into Terminal.
-> It is safe to click **Paste Anyway** — this warning appears because the
-> command is long and contains a URL, not because it is harmful.
+> macOS may show a security warning when you paste this command into Terminal,
+> and it may specifically say the command "could be malware." That's normal
+> macOS caution about pasted terminal commands — not an actual threat.
+> It is safe to click **Paste Anyway** and proceed.
 
 It will ask for your Mac password. Type it and press Enter.
-Nothing appears as you type — that is normal.
+
+> [!NOTE]
+> Nothing appears as you type your password — no dots, no asterisks, no
+> movement at all. This is normal. macOS hides password input in the
+> terminal for security. Type your password and press Enter.
 The installation takes 2-5 minutes.
 
 After the installation finishes, Homebrew will show a "Next steps" section.
@@ -190,6 +195,19 @@ VS Code installs the visual editor, but it doesn't automatically add a terminal 
 2. Press `Cmd+Shift+P` to open the Command Palette
 3. Type: `Shell Command: Install 'code' command in PATH`
 4. Press Enter
+
+> [!NOTE]
+> macOS will show a password prompt from "osascript." This is macOS asking
+> permission to modify your system PATH so the `code` command works from
+> any terminal. Enter your Mac password and proceed.
+
+### Open VS Code's built-in terminal
+
+Now that the `code` command works, open VS Code's built-in terminal:
+
+1. In VS Code, go to **View → Terminal** (or press `` Ctrl+` ``)
+2. A terminal panel appears at the bottom of the VS Code window
+3. Use this terminal for the rest of the playbook
 
 Now you can open any file from the terminal with `code [filename]`. Verify it works:
 
@@ -347,7 +365,7 @@ sudo npm install -g vercel
 You'll be prompted for your Mac password. Type it (the cursor won't move as you type — that's normal) and press Enter.
 
 > [!NOTE]
-> When the install finishes, Vercel will ask if you want to install the Vercel Plugin for Claude Code. **Answer no.** This plugin is optional and not needed for first-time setup. The Vercel CLI itself (which you just installed) is all you need.
+> After login, Vercel may ask if you want to install the Vercel Plugin for Claude Code. **Answer no** — it's optional and unnecessary for lab work. If a warning appears saying the plugin failed to install, ignore it.
 
 Then log in to Vercel:
 
