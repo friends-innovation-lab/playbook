@@ -144,7 +144,7 @@ By now you've spent a few minutes exploring in Step 2 and Supabase has had time 
 
 ```bash
 cd ~/Projects/playbook
-./automation/spinup-typed.sh --name=test-one --resume
+./automation/spinup-typed.sh --name test-one --resume
 ```
 
 This is a normal part of every spinup, not a recovery step. It:
