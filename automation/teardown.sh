@@ -130,12 +130,9 @@ else
   CHECKS_PASSED=false
 fi
 
-if [ -n "$GITHUB_ORG" ]; then
-  ok "GITHUB_ORG is set ($GITHUB_ORG)"
-else
-  fail "GITHUB_ORG is not set. Add this to your shell profile: export GITHUB_ORG=friends-innovation-lab"
-  CHECKS_PASSED=false
-fi
+# GITHUB_ORG is optional — defaults to friends-innovation-lab (same as spinup-typed.sh)
+GITHUB_ORG="${GITHUB_ORG:-friends-innovation-lab}"
+ok "GITHUB_ORG: $GITHUB_ORG"
 
 if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
   ok "SUPABASE_ACCESS_TOKEN is set"
@@ -144,12 +141,9 @@ else
   CHECKS_PASSED=false
 fi
 
-if [ -n "$LAB_DOMAIN" ]; then
-  ok "LAB_DOMAIN is set ($LAB_DOMAIN)"
-else
-  fail "LAB_DOMAIN is not set. Add this to your shell profile: export LAB_DOMAIN=lab.cityfriends.tech"
-  CHECKS_PASSED=false
-fi
+# LAB_DOMAIN is optional — defaults to lab.cityfriends.tech (same as spinup-typed.sh)
+LAB_DOMAIN="${LAB_DOMAIN:-lab.cityfriends.tech}"
+ok "LAB_DOMAIN: $LAB_DOMAIN"
 
 echo ""
 
