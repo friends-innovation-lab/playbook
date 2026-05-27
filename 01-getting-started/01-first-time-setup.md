@@ -464,14 +464,14 @@ export SUPABASE_ACCESS_TOKEN=
 
 The blank values (`=` with nothing after) get filled in below. Save the file (Cmd+S in VS Code) but leave it open — you'll come back to add the actual values.
 
+> [!NOTE]
+> Contact Lapedra to get the `VERCEL_TOKEN` and `SUPABASE_ACCESS_TOKEN` values. These are shared team tokens — do not generate your own. She will send them securely via Rippling RPASS.
+
 ---
 
 ### VERCEL_TOKEN
 
 This is a shared team token that lets the spinup script create Vercel projects. Do not generate your own.
-
-> [!NOTE]
-> Contact Lapedra to get the VERCEL_TOKEN and SUPABASE_ACCESS_TOKEN values. These are shared team tokens — do not generate your own.
 
 **Paste the token into your shell profile.**
 
@@ -490,8 +490,9 @@ export VERCEL_TOKEN=your-actual-token-value-here
 Save the file (Cmd+S in VS Code).
 
 > [!IMPORTANT]
-> Copy the token immediately. Vercel only shows it once — if you
-> close the page without copying, you will need to create a new token.
+> Store this value somewhere secure on your machine (password manager
+> preferred). If you lose it, ask Lapedra to resend — never generate
+> your own, since the team uses shared tokens.
 
 ---
 
@@ -514,9 +515,7 @@ This tells the script which Vercel team to create projects under.
 
 This is a shared team token — do not generate your own.
 
-Contact Lapedra to get the `SUPABASE_ACCESS_TOKEN` value. She will send it to you securely via Rippling RPASS.
-
-Once you have it, switch to VS Code, find `export SUPABASE_ACCESS_TOKEN=`, and paste the value after the `=` sign. Save the file.
+Once you have the value from Lapedra, switch to VS Code, find `export SUPABASE_ACCESS_TOKEN=`, and paste it after the `=` sign. Save the file.
 
 **Why it's shared:** The spinup script creates Supabase projects on behalf of the Friends Innovation Lab org. This requires Owner-level access to the org. Rather than making everyone an Owner, we use a single shared service account token that has the right permissions. See [Security Policy](04-security-policy.md) for details on how this token is managed.
 
@@ -614,7 +613,8 @@ cd playbook
 code .
 ```
 
-VS Code will open a new window showing the playbook folder in the left sidebar. You should see folders like `01-getting-started`, `02-running-a-project`, and `automation`. If VS Code shows a modal asking "Do you trust the authors of the files in this folder?" — click **Yes, I trust the authors**. If you see an empty window with no files, the clone didn't complete correctly — go back to the `git clone` step and try again.
+> [!NOTE]
+> VS Code will open a new window showing the playbook folder in the left sidebar. You should see folders like `01-getting-started`, `02-running-a-project`, and `automation`. If VS Code shows a modal asking "Do you trust the authors of the files in this folder?" — click **Yes, I trust the authors**. If you see an empty window with no files, the clone didn't complete correctly — go back to the `git clone` step and try again.
 
 ---
 
