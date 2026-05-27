@@ -225,7 +225,7 @@ When you're happy with how it looks, stop the dev server: click in the terminal 
 ## Step 5 — Open a pull request
 
 > [!IMPORTANT]
-> Run all the git commands in this step in your terminal — either Mac Terminal or VS Code's integrated terminal (View → Terminal). Don't paste git commands into Claude Code's chat panel; CC will describe what the commands do but won't execute them, which means your changes won't actually get committed or pushed.
+> Run all the git commands in this step in VS Code's terminal (View → Terminal). Don't paste git commands into Claude Code's chat panel — CC will describe what the commands do but won't execute them, which means your changes won't actually get committed or pushed.
 
 Now you'll get the changes into the deployed site. The path is: branch → stage → commit → push → PR → CI → merge. Each of those is a small step. We'll do them one at a time.
 
