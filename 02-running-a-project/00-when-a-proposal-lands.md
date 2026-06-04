@@ -161,12 +161,16 @@ For most lab projects, the cadence looks like:
 
 - **Daily standups.** 15 minutes. What did you finish, what are you working on, what's blocked. Held in the project Slack channel as an async thread or a quick voice call, depending on team preference.
 - **Slack throughout.** The project channel is where async work happens. Quick questions, design mockups, build progress, client material analysis. Keep the project channel busy with real work — don't sandbag updates for the standup.
+- **Project Lead maintains the project log.** Weekly minimum, or whenever a significant decision is made with Claude.ai. The log lives at `/docs/project-log.md` and captures decisions, turning points, and open questions. It is the team's shared view into the orchestrator's reasoning — the Claude.ai chat itself is not visible to teammates.
 - **Project Lead checks in with Claude.ai daily.** The orchestrated workflow assumes the Project Lead stays in the loop with project state. New issues, completed work, decisions, blockers — all get reflected back to Claude.ai so it has accurate context for the next prompt cycle.
 
 For a 1-3 week proposal response, this cadence is enough. Longer projects may add a weekly all-hands or a midpoint Review Council check-in.
 
 > [!TIP]
 > The Project Lead checking in with Claude.ai daily is what makes the orchestrator pattern work. If you skip this, Claude.ai's context drifts away from reality and its prompts to CC become less useful over time.
+
+> [!IMPORTANT]
+> Claude.ai chats are not visible to teammates — only project files are. The project log is what closes that gap. Without it, your reasoning as Project Lead lives only in your personal chat history.
 
 ---
 
@@ -240,15 +244,20 @@ This is the most complex submission scenario the lab handles. Smaller projects (
 
 ---
 
-## What's coming
+## Tooling and skills
 
-The lab is investing in tooling for federal work. These items are in development and will be added to the workflow as they're ready.
+The lab maintains its own tooling to make project work faster, more consistent, and more durable. Some of this lives in the spinup script and project-template; some lives as Claude Code skills that orient CC to lab conventions and workflows.
 
-- **Stack-aware spinup.** Today the spinup script defaults to Next.js + Supabase + Vercel. Federal challenges sometimes require React + Rails + Docker (the VA's pattern, for example). The script is being expanded to support multiple stacks via a `--stack` flag. The first non-default stack (`rails-react`) will be added when a real project requires it.
-- **Federal handoff skill.** A Claude skill that generates first drafts of submission package deliverables — technical document, README, pain point analysis, staffing approach — by reading the project's `/docs/` folder, codebase, and planning artifacts. Reduces the time between "build is done" and "submission package is ready for Review Council."
-- **Templates Figma file.** The lab maintains a Templates Figma file with reusable page-level designs. As the lab handles more projects, common patterns are extracted into the Templates file so designers start from a meaningful baseline rather than blank pages.
+Current state:
 
-When these are ready, the operational doc gets updated to reflect them.
+| Tooling | Status |
+|---------|--------|
+| Spinup script with project types | Live. The script handles prototype, internal-tool, saas-web, ai-product, and federal project types, with extensions applied automatically (multi-tenancy, audit logging, soft deletes). |
+| Claude Design with Friends design system + USWDS | Live. Both design systems load automatically in Claude Design at the org level. |
+| Domain-first build workflow | Live. See [01-creating-a-project.md](01-creating-a-project.md). |
+| Lab Claude Code skills | In development. See [`/skills/`](../skills/) for current state and planned skills. |
+
+The skills initiative is the next significant tooling investment. As individual skills ship, they appear in the `/skills/` folder with their own SKILL.md.
 
 ---
 

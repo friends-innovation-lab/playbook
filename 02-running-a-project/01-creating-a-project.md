@@ -23,6 +23,9 @@ Claude.ai holds your project context across the whole engagement. It brainstorms
 > [!IMPORTANT]
 > Expect to go back and forth with Claude.ai a lot — especially in Phase 1 and Phase 5. This is the entire point of having an orchestrator. If you find yourself accepting Claude.ai's first response without pushing back, slow down.
 
+> [!IMPORTANT]
+> Claude.ai Project files are shared with the team; Claude.ai conversations are not. Teammates invited to the project can see the starter doc, planning artifacts, and Domain Model — but they cannot see your chat history with Claude.ai. Treat the artifacts in `/docs/` as the shared source of truth. The chat is your private workspace as Project Lead.
+
 ---
 
 ## The build loop
@@ -503,6 +506,31 @@ CC has a few terminal commands worth knowing:
 > [!TIP]
 > CC also supports custom slash commands defined in `.claude/commands/` in your project repo. The lab will be adding shared lab commands (`/adr`, `/audit`, etc.) — for now, the built-in commands above are enough.
 
+### Maintain a project log
+
+The orchestrator's reasoning lives in your Claude.ai chat history, which only you can see. To make that reasoning shareable and durable, maintain a project log in the repo.
+
+Create `/docs/project-log.md` after spinup. Update it weekly (or after any significant decision). It is a synthesis, not a transcript.
+
+What goes in the project log:
+
+- Key decisions made with Claude.ai and the reasoning behind them
+- Turning points — when the project direction shifted and why
+- Open questions you're carrying forward
+- Things Claude.ai pushed back on that changed your mind (or that you defended and why)
+
+What does NOT go in the project log:
+
+- A full transcript of conversations
+- Routine prompt-response pairs that don't carry decisions
+- Anything already captured as an ADR (link to the ADR instead)
+
+> [!TIP]
+> If you ever step away from a project for a few days and come back unsure where you left off, the project log should be enough to re-orient you in 5 minutes. If it isn't, the log is too sparse.
+
+> [!IMPORTANT]
+> Without a project log, all the reasoning that shaped the project lives in your personal Claude.ai chat history. If you step away, leave Friends, or just have a long gap, that context is lost. The repo has the artifacts; the project log has the why.
+
 ### When errors happen
 
 - Paste the error directly into CC for resolution. CC is the right tool to fix its own errors.
@@ -538,6 +566,7 @@ Use [PROMPT_10](claude-prompts.md#prompt_10--create-an-architecture-decision-rec
 - [ ] Develop branch passing CI
 - [ ] Manual smoke test passes
 - [ ] Architectural decisions captured as ADRs
+- [ ] Project log exists at `/docs/project-log.md` and is current
 
 ---
 
