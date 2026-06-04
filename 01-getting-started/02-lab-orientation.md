@@ -150,48 +150,38 @@ It reports which standards your project meets, which it deviates from, and which
 
 ## How design connects to code
 
-The lab supports two design workflows depending on the designer and the project. Both end at Claude Code (CC) implementing the design.
+The lab has one design workflow: Claude Design → Claude Code. Both prototypes and federal projects follow it.
 
-### Workflow 1 — Claude Design straight to CC
+The lab maintains multiple design systems in Claude Design, accessible at the org level. Which one you use depends on the project:
 
-The lab's primary design path. Best for prototypes and rapid work.
+| Project type | Design system |
+|--------------|---------------|
+| Internal tool | FFTC Design System |
+| Prototype, SaaS web, AI product | FFTC Design System (default) |
+| Federal | USWDS Design System |
+| Client-specific work | The matching client system (CMS, VA, etc.) |
 
-The FFTC Design System is available as an org template in Claude Design. There are two ways to use it:
+**Starting a new project.** Open Claude Design and click the **Design systems** tab. Pick the system that matches your project type. The system loads with all its conventions — colors, type rules, components — and the agent designs in-system from the first turn.
 
-**Starting a new project:** When you open a new chat in Claude Design, pick **FFTC Design System** from the template gallery on the new-project screen. You'll get a full copy of the system — colors, type rules, component examples, all of it. The agent reads the skill file automatically and designs in-system from the first turn. Do not start from a blank project — you'll lose every token and type rule and the agent will reinvent the look from scratch.
+> [!WARNING]
+> Don't start a new prototype without picking a design system. Without one, the agent will reinvent the look from scratch — losing every token, type rule, and component pattern the lab maintains.
 
-**Already working in a project:** Paste this URL into the chat and say "use this as the design system": `https://claude.ai/design/p/019de857-5e9d-7b97-9071-7b120aec10a4` — the agent gets read-only access and will copy the CSS and preview files it needs into your project. Alternatively, use the **Import** menu in your project and link it as a reference.
+**Already working in a project.** Open the attach menu (the `+` icon in the chat input). Under "Attach designs," click **Design system** and select the right one. The agent copies the CSS and preview files into your project and uses the system from that point forward.
 
-1. Designer opens Claude Design
-2. Designer iterates on screens
-3. Designer clicks "Hand off to Claude Code" — downloads a folder of design specs (HTML, CSS, tokens, a README explaining the components)
-4. The folder goes into the spun-up project
-5. CC implements it using the project-template's React + Tailwind + shadcn/ui stack
+1. Designer opens Claude Design (design system loaded at the org level — colors, typography, components, spacing all come pre-configured; USWDS is also loaded for federal projects)
+2. Designer iterates on screens, including system states (loading, empty, error, success, hover, focus, disabled, mobile)
+3. Designer clicks "Hand off to Claude Code" — downloads a folder of design specs (HTML, CSS, tokens, a `/fixtures/` folder of typed mock data, and a README explaining the components)
+4. The folder goes into the spun-up project at `/design-handoff/`
+5. Claude Code implements it using the project-template's React + Tailwind + shadcn/ui stack
 
-Icons in Claude Design use Lucide, which is the same icon library the project-template uses. No translation needed. No Figma involved.
+Icons in Claude Design use Lucide, the same icon library the project-template uses. No translation needed.
 
-### Workflow 2 — Claude Design through Figma to CC
+> [!IMPORTANT]
+> The `/fixtures/` folder is part of the handoff, not an afterthought. Components render off the fixtures (not hardcoded values), which is what lets Claude Code swap fixtures for real data later without component surgery. See [01-creating-a-project.md](../02-running-a-project/01-creating-a-project.md#phase-2--design) for the design workflow in full.
 
-For professional designers who want full design-tool refinement. Best for complex projects where designs need precise control before implementation.
+### Where Figma fits
 
-1. Designer starts in Claude Design (same Friends design system loaded)
-2. Designer uses Anima's Figma agent to bridge the design into Figma
-3. Designer continues refining on the Figma canvas — fine detail, custom interactions, detailed specs
-4. The Figma file goes to CC via the Figma MCP integration
-5. CC implements
-
-### For federal projects
-
-Designs follow USWDS conventions (the U.S. Web Design System).
-
-- Right now: federal designers use existing Figma files for USWDS conventions, plus Storybook for USWDS components
-- Coming soon: a USWDS design system in Claude Design (in setup)
-
-Until the USWDS Claude Design system is live, federal designs come from Figma + Storybook directly.
-
----
-
-The choice between workflows isn't strict. A designer might start in Claude Design, decide a screen needs more refinement, move to Figma via Anima, then hand to CC. The point is that designs always end up at CC, and CC always implements against the project-template's code conventions. The path through is flexible.
+Figma is no longer a step in the design-to-code pipeline. Its only remaining role in lab work is an optional archive step at the end of a project — when a client requires Figma deliverables, when a future designer will pick up the work, or when a federal handoff demands Figma assets. Most projects skip Figma entirely. See "Archiving to Figma (optional)" in [01-creating-a-project.md](../02-running-a-project/01-creating-a-project.md#archiving-to-figma-optional).
 
 ---
 
@@ -263,16 +253,9 @@ A short tour of the tools that show up during a project. You'll learn them by us
 - Talk to it in plain English; it writes and modifies code
 - Most lab work happens through CC, not by typing code line by line
 
-**Claude Design** — The lab's primary design tool. Browser-based.
+**Claude Design** — Browser-based. The lab's design tool. The Friends design system is loaded at the org level for all projects, and USWDS is loaded for federal projects, so designs start with the right conventions baked in. Produces handoff folders (HTML, CSS, tokens, `/fixtures/`, README) that go directly to Claude Code for implementation. The only design tool in the lab's workflow.
 
-- Friends design system pre-loaded at the org level
-- Produces handoff folders (HTML, CSS, tokens, README) that go directly to CC
-- No Figma required for most lab work
-
-**Figma** — Where designs continue when designers want full design-tool refinement.
-
-- Anima Figma agent bridges from Claude Design into Figma when needed
-- Federal projects also use existing Figma files for USWDS conventions
+**Figma** — Used only as an optional archive step at the end of a project, when a client requires Figma deliverables or a federal handoff demands them. Not part of the active design-to-code path.
 
 **Storybook** — Component documentation that ships inside every project.
 
@@ -328,8 +311,7 @@ Things to recognize when you encounter them:
 | `lab.cityfriends.tech` | The lab's domain for deployed prototypes |
 | `friends-innovation-lab` on GitHub | The org all lab projects live under |
 | `/docs/standards/` in a project | The lab standards copied into that project |
-| Hand off to Claude Code | Claude Design's export that produces a folder of design specs for CC to implement |
-| Anima Figma agent | The bridge from Claude Design into Figma for designers who want full design-tool control |
+| Hand off to Claude Code | Claude Design's export — a folder of design specs (HTML, CSS, tokens, `/fixtures/`, README) for Claude Code to implement |
 | Lucide icons | The icon library used in both Claude Design and the project-template — the same icons end up in your code |
 | Green checkmarks on a PR | CI checks passed; safe to merge |
 | Red X on a PR | A check failed; click for details |
