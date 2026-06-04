@@ -30,7 +30,6 @@ Once you've read START-HERE, the path forward is laid out there. Below is a quic
 - [First-time setup](01-getting-started/01-first-time-setup.md) — for new machines
 - [Creating a project](02-running-a-project/01-creating-a-project.md) — for real projects
 - [Claude.ai project starter](02-running-a-project/claude-ai-project-starter.md) — orchestrator config for new projects
-- [Challenge response playbook](02-running-a-project/04-challenge-response.md) — for federal procurement responses
 - [Troubleshooting](02-running-a-project/03-troubleshooting.md) — when things break
 - [Type-aware spinup guide](docs/spinup-typed.md) — full spinup script reference
 - [AI workflow with CC](reference/building/ai-workflow.md) — working with Claude Code

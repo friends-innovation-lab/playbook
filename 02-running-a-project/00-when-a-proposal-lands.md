@@ -223,7 +223,20 @@ A real federal example: the VA's Accredited Representative Portal challenge requ
 
 That's substantially more than a Figma file and a live URL. Federal submissions are multi-document deliverables with strict page limits, format requirements, and submission portals.
 
+### Pre-submission technical checks
+
+For federal challenge responses with accessibility requirements, run these checks before the Review Council pre-submission review:
+
+```bash
+npm run test:a11y
+```
+
+This must pass with zero violations. If accessibility testing requires a browser to be installed locally, see the [post-spinup note in 01-creating-a-project.md](01-creating-a-project.md#phase-3--spin-up-the-project).
+
 **What the Project Lead and Review Council do together:**
+
+> [!TIP]
+> A useful pre-demo framing to give the Review Council: "Review this as if the client demo is in 1 hour. What would make us look bad in front of a federal evaluation panel? What would make us stand out? List everything, prioritized." This forces specific, actionable feedback rather than general observations.
 
 - [ ] **Re-read the brief** to confirm every requirement has a deliverable. Use the brief as the checklist — line by line.
 - [ ] **Inventory what exists.** Live URL, codebase, project docs (project-overview, PRD, epics, ADRs), accessibility test results, Storybook deployment.
@@ -281,9 +294,6 @@ Once the team has been assembled, kickoff has happened, government materials are
 
 For the orchestrated build workflow:
 → [`01-creating-a-project.md` — Phase 1: Plan with Claude.ai](01-creating-a-project.md#phase-1--plan-with-claudeai)
-
-For the challenge response execution lifecycle:
-→ [`04-challenge-response.md`](04-challenge-response.md)
 
 For decommissioning when the project is done:
 → [`02-ending-a-project.md`](02-ending-a-project.md)
