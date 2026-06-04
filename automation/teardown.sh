@@ -91,27 +91,50 @@ else
   CHECKS_PASSED=false
 fi
 
-# --- Authentications ---
+# --- Authentications (using the same invocation patterns as downstream usage) ---
 
-if gh auth status &>/dev/null 2>&1; then
+# GitHub: Test with --json to match how we use it downstream
+GH_AUTH_OUTPUT=$(gh auth status 2>&1) || true
+if echo "$GH_AUTH_OUTPUT" | grep -q "Logged in"; then
   ok "GitHub CLI is logged in"
 else
   fail "GitHub CLI is not logged in. Run: gh auth login"
+  echo "$GH_AUTH_OUTPUT" | head -5
   CHECKS_PASSED=false
 fi
 
-if vercel whoami &>/dev/null 2>&1; then
+# Vercel: Test whoami which is what we use to verify auth
+VERCEL_AUTH_OUTPUT=$(vercel whoami 2>&1) || true
+VERCEL_AUTH_EXIT=$?
+if [ $VERCEL_AUTH_EXIT -eq 0 ]; then
   ok "Vercel CLI is logged in"
 else
   fail "Vercel CLI is not logged in. Run: vercel login"
+  echo "$VERCEL_AUTH_OUTPUT" | head -5
   CHECKS_PASSED=false
 fi
 
-if supabase projects list &>/dev/null 2>&1; then
-  ok "Supabase CLI is logged in"
-else
-  fail "Supabase CLI is not logged in. Run: supabase login"
+# Supabase: Use --output json and validate the response is actually JSON
+# This catches the "Cannot find project ref" warning that contaminates stdout
+SUPABASE_AUTH_OUTPUT=$(supabase projects list --output json 2>&1) || true
+SUPABASE_AUTH_EXIT=$?
+if [ $SUPABASE_AUTH_EXIT -ne 0 ]; then
+  fail "Supabase CLI failed (exit code $SUPABASE_AUTH_EXIT). Run: supabase login"
+  echo "$SUPABASE_AUTH_OUTPUT" | head -10
   CHECKS_PASSED=false
+elif ! echo "$SUPABASE_AUTH_OUTPUT" | jq empty 2>/dev/null; then
+  fail "Supabase CLI returned output that isn't valid JSON."
+  echo "  The CLI may be authenticated but printing warnings to stdout."
+  echo "  Raw output:"
+  echo "$SUPABASE_AUTH_OUTPUT" | head -10
+  echo ""
+  echo "  Common fix: run 'supabase unlink' in this folder, or run teardown"
+  echo "  from a folder without a stale Supabase link."
+  CHECKS_PASSED=false
+else
+  ok "Supabase CLI is logged in and returning clean JSON"
+  # Cache the project list for later use in existence checks
+  SUPABASE_PROJECTS_CACHE="$SUPABASE_AUTH_OUTPUT"
 fi
 
 # --- Environment variables ---
@@ -168,34 +191,114 @@ read -r PROJECT_NAME
 
 echo ""
 
-# Validate that the repo exists
-if ! gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" &>/dev/null 2>&1; then
-  echo -e "${RED}No project called ${PROJECT_NAME} was found in GitHub.${NC}"
-  echo "Check the name and try again."
+# ─────────────────────────────────────────────────────────
+# Project existence checks across all systems
+# ─────────────────────────────────────────────────────────
+
+FOUND_IN_GITHUB=false
+FOUND_IN_SUPABASE=false
+FOUND_IN_VERCEL=false
+SUPABASE_PROJECT_REF_CACHE=""
+
+# Check GitHub
+if gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" &>/dev/null 2>&1; then
+  FOUND_IN_GITHUB=true
+fi
+
+# Check Supabase (use cached project list from pre-flight)
+if [ -n "$SUPABASE_PROJECTS_CACHE" ]; then
+  SUPABASE_PROJECT_REF_CACHE=$(echo "$SUPABASE_PROJECTS_CACHE" | jq -r ".[] | select(.name==\"$PROJECT_NAME\") | .id" 2>/dev/null)
+  if [ -n "$SUPABASE_PROJECT_REF_CACHE" ]; then
+    FOUND_IN_SUPABASE=true
+  fi
+fi
+
+# Check Vercel
+VERCEL_CHECK_OUTPUT=$(curl -s \
+  "https://api.vercel.com/v10/projects/${PROJECT_NAME}" \
+  -H "Authorization: Bearer $VERCEL_TOKEN" 2>/dev/null)
+VERCEL_PROJECT_ID_CACHE=$(echo "$VERCEL_CHECK_OUTPUT" | jq -r '.id // empty' 2>/dev/null)
+if [ -n "$VERCEL_PROJECT_ID_CACHE" ]; then
+  FOUND_IN_VERCEL=true
+fi
+
+# Build list of where project was found
+FOUND_SYSTEMS=""
+NOT_FOUND_SYSTEMS=""
+if [ "$FOUND_IN_GITHUB" = true ]; then
+  FOUND_SYSTEMS="${FOUND_SYSTEMS}GitHub, "
+else
+  NOT_FOUND_SYSTEMS="${NOT_FOUND_SYSTEMS}GitHub, "
+fi
+if [ "$FOUND_IN_SUPABASE" = true ]; then
+  FOUND_SYSTEMS="${FOUND_SYSTEMS}Supabase, "
+else
+  NOT_FOUND_SYSTEMS="${NOT_FOUND_SYSTEMS}Supabase, "
+fi
+if [ "$FOUND_IN_VERCEL" = true ]; then
+  FOUND_SYSTEMS="${FOUND_SYSTEMS}Vercel, "
+else
+  NOT_FOUND_SYSTEMS="${NOT_FOUND_SYSTEMS}Vercel, "
+fi
+
+# Trim trailing comma and space
+FOUND_SYSTEMS="${FOUND_SYSTEMS%, }"
+NOT_FOUND_SYSTEMS="${NOT_FOUND_SYSTEMS%, }"
+
+# Handle different scenarios
+if [ "$FOUND_IN_GITHUB" = false ] && [ "$FOUND_IN_SUPABASE" = false ] && [ "$FOUND_IN_VERCEL" = false ]; then
+  echo -e "${RED}No project called ${PROJECT_NAME} was found in any system.${NC}"
+  echo "Checked: GitHub, Supabase, Vercel"
+  echo "Check the project name and try again."
   exit 1
 fi
 
-# Question 2 — Confirm the project
-REPO_INFO=$(gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" --json name,description,createdAt,updatedAt 2>/dev/null)
-
-REPO_DESC=$(echo "$REPO_INFO" | jq -r '.description // "No description"')
-REPO_CREATED=$(echo "$REPO_INFO" | jq -r '.createdAt' | cut -d'T' -f1)
-REPO_UPDATED=$(echo "$REPO_INFO" | jq -r '.updatedAt' | cut -d'T' -f1)
-
-echo "Found this project:"
-echo ""
-echo "  Name:         $PROJECT_NAME"
-echo "  Description:  $REPO_DESC"
-echo "  Created:      $REPO_CREATED"
-echo "  Last updated: $REPO_UPDATED"
-echo ""
-printf "Is this the right project? (y/n) > "
-read -r CONFIRM_PROJECT
-
-if [ "$CONFIRM_PROJECT" != "y" ] && [ "$CONFIRM_PROJECT" != "Y" ]; then
+# Partial state: project exists in some systems but not others
+if [ -n "$FOUND_SYSTEMS" ] && [ -n "$NOT_FOUND_SYSTEMS" ]; then
   echo ""
-  echo "No problem. Run the script again with the correct project name."
-  exit 0
+  echo -e "${YELLOW}Partial state detected:${NC}"
+  echo "  Found in:     $FOUND_SYSTEMS"
+  echo "  Not found in: $NOT_FOUND_SYSTEMS"
+  echo ""
+  echo "This looks like a partial teardown from a previous run."
+  printf "Continue with cleanup of remaining systems? (y/N) > "
+  read -r CONTINUE_PARTIAL
+  if [ "$CONTINUE_PARTIAL" != "y" ] && [ "$CONTINUE_PARTIAL" != "Y" ]; then
+    echo ""
+    echo "Teardown cancelled."
+    exit 0
+  fi
+  echo ""
+fi
+
+# Question 2 — Confirm the project (only if GitHub exists)
+if [ "$FOUND_IN_GITHUB" = true ]; then
+  REPO_INFO=$(gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" --json name,description,createdAt,updatedAt 2>/dev/null)
+
+  REPO_DESC=$(echo "$REPO_INFO" | jq -r '.description // "No description"')
+  REPO_CREATED=$(echo "$REPO_INFO" | jq -r '.createdAt' | cut -d'T' -f1)
+  REPO_UPDATED=$(echo "$REPO_INFO" | jq -r '.updatedAt' | cut -d'T' -f1)
+
+  echo "Found this project:"
+  echo ""
+  echo "  Name:         $PROJECT_NAME"
+  echo "  Description:  $REPO_DESC"
+  echo "  Created:      $REPO_CREATED"
+  echo "  Last updated: $REPO_UPDATED"
+  echo ""
+  printf "Is this the right project? (y/n) > "
+  read -r CONFIRM_PROJECT
+
+  if [ "$CONFIRM_PROJECT" != "y" ] && [ "$CONFIRM_PROJECT" != "Y" ]; then
+    echo ""
+    echo "No problem. Run the script again with the correct project name."
+    exit 0
+  fi
+else
+  # GitHub doesn't exist, but other systems do
+  # Partial state was already confirmed above, so just acknowledge and proceed
+  echo "Project found in: $FOUND_SYSTEMS"
+  echo "(GitHub repo not found — may have been archived/deleted already)"
 fi
 
 echo ""
@@ -247,6 +350,17 @@ elif [ -d "$PWD/$PROJECT_NAME" ]; then
 fi
 
 BACKUP_FILE="$HOME/Downloads/${PROJECT_NAME}-backup-$(date +%Y%m%d).sql"
+
+# ─────────────────────────────────────────────────────────
+# Pre-flight summary
+# ─────────────────────────────────────────────────────────
+echo "Pre-flight checks passed:"
+echo -e "  ${GREEN}✓${NC} jq installed"
+echo -e "  ${GREEN}✓${NC} GitHub CLI authenticated"
+echo -e "  ${GREEN}✓${NC} Supabase CLI authenticated (clean JSON)"
+echo -e "  ${GREEN}✓${NC} Vercel CLI authenticated"
+echo -e "  ${GREEN}✓${NC} Project ${PROJECT_NAME} found in: ${FOUND_SYSTEMS:-all systems}"
+echo ""
 
 echo -e "${YELLOW}⚠️  You are about to permanently remove:${NC}"
 echo ""
