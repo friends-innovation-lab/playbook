@@ -1,39 +1,28 @@
 # Ending a Project
 
-Run this when a project is finished — after a prototype engagement
-ends, a challenge response is submitted, or an internal tool is retired.
+Run this when a project is finished — a prototype engagement ends, a challenge response is submitted, an internal tool is retired, or a SaaS / AI product is shut down. The same teardown flow applies regardless of project type.
 
 > [!CAUTION]
-> This script permanently removes infrastructure. Read every prompt
-> carefully before confirming. The database will be exported before
-> deletion but everything else is irreversible.
+> This script permanently removes infrastructure. Read every prompt carefully before confirming. The database will be exported before deletion but everything else is irreversible.
 
 ---
 
 ## Before you run teardown
 
-Confirm with Lapedra that the project is ready to be decommissioned.
-Make sure:
-- All work is committed and pushed to GitHub
-- The client or team has confirmed they no longer need the live URL
-- Any data that needs to be preserved has been exported or handed off
+- [ ] All work is committed and pushed to GitHub
+- [ ] The client or team has confirmed they no longer need the live URL
+- [ ] Any data that needs to be preserved has been exported or handed off
+- [ ] Lapedra has confirmed the project is ready to be decommissioned
 
 ---
 
 ## Running the teardown script
 
-Make sure you are in your projects folder:
-```bash
-cd ~/Projects
-```
-
-Then run:
 ```bash
 cd ~/Projects/playbook && ./automation/teardown.sh
 ```
 
-The script will ask you which project to remove and what to tear down.
-It will export the database before deleting anything.
+The script will ask you which project to remove and what to tear down. It will export the database before deleting anything.
 
 For full details on what the script does:
 → [automation/README.md](../automation/README.md)
@@ -52,6 +41,7 @@ Teardown archives the repo rather than deleting it. The repo remains visible in 
 - They cannot receive new commits, PRs, or issues
 - They don't consume active resources or appear in active project lists
 - If the project ever needs to be resurrected, the archive can be unarchived
+- The project log at `/docs/project-log.md`, the Domain Model, ADRs, and all planning artifacts remain in the archived repo as the durable record of how the project ran
 
 If you specifically need the repo permanently deleted (rare — usually for compliance or client agreement reasons), do that manually through GitHub's repo settings page after teardown completes.
 
@@ -75,6 +65,19 @@ Local cleanup is interactive (not automatic) so you don't accidentally lose loca
 
 ## After teardown
 
+> [!TIP]
+> The archived repo — with its project log, Domain Model, ADRs, and planning artifacts intact — is the lab's institutional memory of this project. Future projects can reference it. Future team members can read it. The archive is not a graveyard; it's a library.
+
 - Check the teardown log saved to `operations/teardown-log/`
 - Update Lapedra so she can track active vs. retired projects
 - If the project had a Sentry project, archive it at sentry.io
+
+> [!NOTE]
+> The teardown log saves to `operations/teardown-log/` in the playbook folder. If that directory doesn't exist, the script writes to `~/Downloads/` instead. Check both locations if you can't find the log.
+
+---
+
+## Related
+
+- [01-creating-a-project.md](01-creating-a-project.md) — the workflow that creates what we're tearing down
+- [00-when-a-proposal-lands.md](00-when-a-proposal-lands.md) — proposal-driven projects (most teardowns will be these)
