@@ -73,7 +73,7 @@ After demo or submission, one of three outcomes:
 - GitHub repo archived (still readable, not deleted)
 - Vercel project removed
 - Subdomain released
-- Teardown record saved to `automation/teardown-log/`
+- Teardown record saved to `operations/teardown-log/`
 
 **Done when:** Teardown script completes and record is saved.
 
