@@ -223,18 +223,26 @@ else
 fi
 
 # Supabase: Use --output json and validate the response is actually JSON
-# This catches the "Cannot find project ref" warning that contaminates stdout
-SUPABASE_AUTH_OUTPUT=$(supabase projects list --output json 2>&1) || true
+# Note: Supabase CLI may print warnings to stderr (e.g., "Cannot find project ref")
+# We capture stderr separately so it doesn't contaminate the JSON validation
+SUPABASE_STDERR_FILE=$(mktemp)
+trap 'rm -f "$SUPABASE_STDERR_FILE"' EXIT
+SUPABASE_AUTH_OUTPUT=$(supabase projects list --output json 2>"$SUPABASE_STDERR_FILE") || true
 SUPABASE_AUTH_EXIT=$?
+SUPABASE_AUTH_STDERR=$(cat "$SUPABASE_STDERR_FILE")
+rm -f "$SUPABASE_STDERR_FILE"
+
 if [ $SUPABASE_AUTH_EXIT -ne 0 ]; then
   fail "Supabase CLI failed (exit code $SUPABASE_AUTH_EXIT). Run: supabase login"
-  echo "$SUPABASE_AUTH_OUTPUT" | head -10
+  [ -n "$SUPABASE_AUTH_STDERR" ] && echo "$SUPABASE_AUTH_STDERR" | head -5
+  [ -n "$SUPABASE_AUTH_OUTPUT" ] && echo "$SUPABASE_AUTH_OUTPUT" | head -5
   CHECKS_PASSED=false
 elif ! echo "$SUPABASE_AUTH_OUTPUT" | jq empty 2>/dev/null; then
   fail "Supabase CLI returned output that isn't valid JSON."
   echo "  The CLI may be authenticated but printing warnings to stdout."
-  echo "  Raw output:"
+  echo "  Raw stdout:"
   echo "$SUPABASE_AUTH_OUTPUT" | head -10
+  [ -n "$SUPABASE_AUTH_STDERR" ] && echo "  Stderr:" && echo "$SUPABASE_AUTH_STDERR" | head -5
   echo ""
   echo "  Common fix: run 'supabase unlink' in this folder, or run teardown"
   echo "  from a folder without a stale Supabase link."
