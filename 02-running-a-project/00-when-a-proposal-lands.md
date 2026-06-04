@@ -1,8 +1,44 @@
 # When a Proposal Lands
 
-This doc covers what happens between a proposal landing in Lapedra's inbox and the team being at the keyboard executing the build. The execution part is covered in [`04-challenge-response.md`](04-challenge-response.md). This doc covers everything before that.
+This doc covers what happens between a proposal landing in Lapedra's inbox and the team being at the keyboard executing the build. It's for anyone on a project team who's just been told a project is starting. The execution workflow — planning, design, spinup, build, ship — lives in [`01-creating-a-project.md`](01-creating-a-project.md). This doc covers everything before that.
 
-If you're on a project team, you're reading this when you've just been told a project is starting. The pre-decision part — whether we pursue the proposal at all — happens above the lab and isn't yours to navigate. You'll be notified when the answer is yes.
+---
+
+## The flow at a glance
+
+```mermaid
+flowchart TD
+    A[Proposal lands] --> B{Lapedra + Directors<br/>decide to pursue}
+    B -->|No| Z[Stop]
+    B -->|Yes| C[Team assembly<br/>same day]
+    C --> D[Kickoff meeting<br/>same day or next morning]
+    D --> E[Government materials intake<br/>raw → Qori → synthesized]
+    E --> F[Hand off to build workflow<br/>01-creating-a-project.md]
+    F --> G[Working cadence<br/>daily standups, Slack, orchestrator]
+    G --> H[Review Council<br/>pre-demo + pre-submission]
+    H --> I[Submission package]
+    I --> J[Submit]
+```
+
+---
+
+## Quick reference — your first 24 hours as Project Lead
+
+You've just been told a project is starting. Here's the checklist:
+
+- [ ] Schedule the kickoff meeting (same day or next morning)
+- [ ] Review the brief and any provided materials yourself before the meeting
+- [ ] Identify who's on the team and notify them
+- [ ] At kickoff: align on brief, timeline, roles, communication, brainstorm
+- [ ] Create the project Slack channel
+- [ ] Run government materials through Qori (if research is provided)
+- [ ] Open Claude.ai and start [Phase 1 of 01-creating-a-project.md](01-creating-a-project.md#phase-1--plan-with-claudeai)
+- [ ] Coordinate spinup with the designer/developer when planning + design are complete ([Phase 3](01-creating-a-project.md#phase-3--spin-up-the-project))
+- [ ] Add government materials to `client-docs/` in the new repo
+- [ ] Review starter issues and adjust based on the project plan
+- [ ] Daily standups begin
+
+Welcome to the project. The lab has your back.
 
 ---
 
@@ -12,6 +48,9 @@ A proposal arrives. Lapedra reads it, meets with the Directors, and decides whet
 
 That's the only part of business development you need to know about. The rest stays at the leadership level. When the project is greenlit, you'll be told, and the lab process begins.
 
+> [!NOTE]
+> If you're reading this, the proposal was greenlit — the pursue/decline decision happened above the lab. Your job starts at team assembly.
+
 ---
 
 ## Step 2 — Team assembly
@@ -20,13 +59,16 @@ Once a project is greenlit, team assembly happens the same day. There's no waiti
 
 The current pattern at Friends' size is small:
 
-- **Project Lead** — the Director the project is handed to (currently the Director of Product & UX; the Director of Engineering will share this when hired)
-- **One designer + one developer** — typically. At current team size, this is often one person playing both roles
-- **Specialists added as needed** — researcher, content strategist, accessibility specialist on larger projects
-
-Assignment is based on availability. This is why every designer and developer in the lab needs to be fully provisioned — when a proposal lands and a team needs to be assembled in hours, every available person needs to be ready to spin up a project on day one.
+| Role | Who | Notes |
+|------|-----|-------|
+| Project Lead | The Director the project is handed to | Currently Director of Product & UX; Director of Engineering will share this when hired |
+| Designer + developer | Typically one of each | At current team size, often one person playing both roles |
+| Specialists | Researcher, content strategist, accessibility specialist | Added on larger projects as needed |
 
 When the team grows, this section gets revisited. For now, the simplest pattern is: the Project Lead names the team, the team is told, and work begins.
+
+> [!IMPORTANT]
+> Assignment is based on availability, which is why every designer and developer in the lab needs to be fully provisioned. When a proposal lands and a team needs to be assembled in hours, every available person has to be ready to spin up a project on day one.
 
 ---
 
@@ -40,7 +82,10 @@ The kickoff covers:
 - **Timeline.** When is the deadline? When are interim checkpoints? When does the Review Council need to see the prototype?
 - **Roles.** Who is the Project Lead? Who is the designer? Who is the developer? Who is the research synthesizer? On a small team, one person plays multiple roles — name those explicitly.
 - **Logistics.** Where does the team communicate (Slack channel, named after the project)? Where does work get tracked (GitHub Issues in the project repo)? Where do government materials live (the project's `client-docs/` folder, covered in Step 4)?
-- **Brainstorm.** A short brainstorming session — 30 minutes, not an hour. Surface high-level approaches. Identify concerns. Get the team thinking together. The Project Lead leaves this meeting with context beyond the brief itself, ready to start the planning conversation with Claude.ai.
+- **Brainstorm.** A short brainstorming session — surface high-level approaches, identify concerns, get the team thinking together. The Project Lead leaves this meeting with context beyond the brief itself, ready to start the planning conversation with Claude.ai.
+
+> [!TIP]
+> The brainstorm at kickoff is 30 minutes, not an hour. Surface high-level approaches and concerns. The deep brainstorm happens later in [Phase 1 of 01-creating-a-project.md](01-creating-a-project.md#phase-1--plan-with-claudeai) with Claude.ai as the orchestrator.
 
 Schedule the kickoff for the same day or the next morning. Don't let a project sit for days before the team meets.
 
@@ -91,22 +136,22 @@ The intake step is the same shape. The materials may differ.
 
 ---
 
-## Step 5 — Project setup
+## Step 5 — Hand off to the build workflow
 
-After the kickoff meeting and government materials intake, the team starts the technical workflow.
+The pre-execution phase ends here. Everything from this point — Claude.ai orchestrator setup, planning artifacts, design, spinup, issue creation — lives in [`01-creating-a-project.md`](01-creating-a-project.md). This doc covers what's unique to proposals; 01 covers the build workflow that applies to every project type.
 
-**The Project Lead opens Claude.ai** and sets up the orchestrator using the workflow described in [`01-creating-a-project.md`](01-creating-a-project.md). The brainstorm output from the kickoff meeting becomes early context for the planning conversation. The synthesized government materials inform the PRD, epics, and issue list.
+Before handing off, confirm:
 
-**A designer or developer runs the spinup script** to provision infrastructure. Pick the project type (`prototype`, `federal`, `internal-tool`, etc.) based on what the proposal requires.
+- [ ] Kickoff meeting complete
+- [ ] Team assigned and notified
+- [ ] Slack channel created
+- [ ] Government materials in `client-docs/raw/`
+- [ ] Qori synthesis (if applicable) in `client-docs/synthesized/`
 
-**The team creates the Slack channel for project communication** if it doesn't exist already.
-
-**Government materials get added to the new project repo.** The `client-docs/raw/` folder receives the original files. The Qori synthesis gets downloaded from `qori-studies` and added to `client-docs/synthesized/`.
-
-**Initial issue tickets get created.** The spinup script seeds a starter set of issue templates appropriate to the project type. The Project Lead reviews these against the project plan from Claude.ai and adjusts as needed — adds project-specific issues, removes ones that don't apply, sequences them by dependency.
+Then: the Project Lead opens Claude.ai and starts [Phase 1 of 01-creating-a-project.md](01-creating-a-project.md#phase-1--plan-with-claudeai). The brainstorm output from the kickoff meeting becomes early context for the planning conversation. The synthesized government materials inform the PRD, Domain Model, epics, and issue list.
 
 > [!NOTE]
-> The lab's default stack is Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + Vercel. Some federal proposals require different stacks (e.g., the VA's Accredited Representative Portal requires React + Ruby on Rails using their `vets-api` and `vets-website` starter branches). When a proposal specifies a stack, that overrides the default. Stack-aware spinup is a tooling investment the lab is making over time — see "What's coming" below.
+> The lab's default stack is Next.js + TypeScript + Tailwind + shadcn/ui + Supabase + Vercel. Some federal proposals require different stacks (for example, the VA's Accredited Representative Portal requires React + Ruby on Rails using their `vets-api` and `vets-website` starter branches). When a proposal specifies a stack, that overrides the default. Stack-aware spinup is a tooling investment the lab is making over time — see "What's coming" below.
 
 ---
 
@@ -120,6 +165,9 @@ For most lab projects, the cadence looks like:
 
 For a 1-3 week proposal response, this cadence is enough. Longer projects may add a weekly all-hands or a midpoint Review Council check-in.
 
+> [!TIP]
+> The Project Lead checking in with Claude.ai daily is what makes the orchestrator pattern work. If you skip this, Claude.ai's context drifts away from reality and its prompts to CC become less useful over time.
+
 ---
 
 ## Step 7 — The Review Council
@@ -128,21 +176,26 @@ The Review Council is the small group that reviews lab work before it goes to th
 
 **Members:**
 
-- **Lapedra (CEO)**
-- **Director of Product & UX** (currently)
-- **Director of Engineering** (when hired)
+| Role | Person |
+|------|--------|
+| CEO | Lapedra |
+| Director of Product & UX | Currently |
+| Director of Engineering | When hired |
 
 **When they review:**
 
-- **Pre-demo review** — before any demo to the client or evaluators. Surfaces what would make the lab look bad and what would make it stand out.
-- **Pre-submission review** — before any final submission package goes out. Confirms the brief is answered, the deliverables are complete, and the technical work is defensible.
-- **Major decision points** — when the Project Lead needs leadership input on scope, approach, or tradeoffs.
+| Trigger | What they look for |
+|---------|--------------------|
+| Pre-demo review | What would make the lab look bad and what would make it stand out |
+| Pre-submission review | The brief is answered, deliverables are complete, technical work is defensible |
+| Major decision points | Scope, approach, or tradeoffs the Project Lead needs leadership input on |
 
 **How to request a review:**
 
 The Project Lead messages the Review Council in Slack with the project context, what's being reviewed, and the deadline. Reviews are scheduled within 24 hours when possible.
 
-The Review Council is not a gate that slows work down. It's a forcing function for clarity — if you can't articulate what you've built and why to three people who care about the lab's reputation, you can't articulate it to a federal evaluator either.
+> [!IMPORTANT]
+> The Review Council is not a gate that slows work down. It's a forcing function for clarity — if you can't articulate what you've built and why to three people who care about the lab's reputation, you can't articulate it to a federal evaluator either.
 
 ---
 
@@ -152,27 +205,32 @@ For most lab work, the deliverable is a live URL plus whatever supporting materi
 
 A real federal example: the VA's Accredited Representative Portal challenge required:
 
-- **Modified GitHub repos** shared to a specific GitHub account designated by the agency
-- **README** with build and run instructions
-- **Technical document, ≤10 pages**, covering frontend/backend design (architecture and UX), alternatives and trade-offs, new APIs, and demonstrated competence in: full-stack development, mocking dependencies, automated testing, exception handling, monitoring and observability, accessibility, GitHub usage
-- **Pain point analysis, ≤8 pages**, with structured evidence-based prioritization
-- **Management/staffing approach, ≤2 pages**
-- **Docker setup** that builds from source (no pre-built images)
-- **Compliance certifications** (SDVOSB certification 852.219-75, in the lab's case)
-- **Live URL**, accessible without VPN
-- **No hyperlinks or embedded attachments** in any volume
+| Requirement | Detail |
+|-------------|--------|
+| Modified GitHub repos | Shared to a specific GitHub account designated by the agency |
+| README | Build and run instructions |
+| Technical document | ≤10 pages covering frontend/backend design, alternatives, APIs, and demonstrated competence across nine specific areas |
+| Pain point analysis | ≤8 pages with structured evidence-based prioritization |
+| Management/staffing approach | ≤2 pages |
+| Docker setup | Builds from source — no pre-built images |
+| Compliance certifications | SDVOSB certification 852.219-75 in the lab's case |
+| Live URL | Accessible without VPN |
+| No hyperlinks or embedded attachments | In any volume |
 
 That's substantially more than a Figma file and a live URL. Federal submissions are multi-document deliverables with strict page limits, format requirements, and submission portals.
 
 **What the Project Lead and Review Council do together:**
 
-1. **Re-read the brief** to confirm every requirement has a deliverable. Use the brief as the checklist — line by line.
-2. **Inventory what exists.** Live URL, codebase, project docs (project-overview, PRD, epics, ADRs), accessibility test results, Storybook deployment.
-3. **Identify what needs to be created.** The technical document, the pain point analysis, the staffing approach, screenshots with annotations, the README at the level the agency requires.
-4. **Draft each deliverable.** Use Claude (the chat assistant or CC) to draft from project context. The technical document, for example, can be drafted by pointing CC at the project's `/docs/` folder, the codebase, and the planning artifacts. The first draft comes from real project state, not blank pages.
-5. **Review Council reviews.** Pre-submission. They read every deliverable, confirm the brief is answered, surface anything missing.
-6. **Final assembly.** The package gets compiled per the agency's submission portal requirements (ATOMS for VA, others for other agencies). Page limits enforced. No prohibited elements (e.g., no hyperlinks for VA submissions). Cover pages and tables of contents added where required.
-7. **Submit.** Through the agency's portal plus any required emails.
+- [ ] **Re-read the brief** to confirm every requirement has a deliverable. Use the brief as the checklist — line by line.
+- [ ] **Inventory what exists.** Live URL, codebase, project docs (project-overview, PRD, epics, ADRs), accessibility test results, Storybook deployment.
+- [ ] **Identify what needs to be created.** The technical document, the pain point analysis, the staffing approach, screenshots with annotations, the README at the level the agency requires.
+- [ ] **Draft each deliverable.** Use Claude (the chat assistant or CC) to draft from project context. The technical document, for example, can be drafted by pointing CC at the project's `/docs/` folder, the codebase, and the planning artifacts. The first draft comes from real project state, not blank pages.
+- [ ] **Review Council reviews.** Pre-submission. They read every deliverable, confirm the brief is answered, surface anything missing.
+- [ ] **Final assembly.** The package gets compiled per the agency's submission portal requirements (ATOMS for VA, others for other agencies). Page limits enforced. No prohibited elements (e.g., no hyperlinks for VA submissions). Cover pages and tables of contents added where required.
+- [ ] **Submit.** Through the agency's portal plus any required emails.
+
+> [!WARNING]
+> Federal submission portals have strict format requirements. Page limits are enforced. Prohibited elements (hyperlinks for VA, for example) will cause rejection. Re-read the brief line by line as a checklist before submitting.
 
 **Screenshots and annotations.** When the brief asks for visual proof of the prototype's behavior, screenshots are the standard format. Walk through the primary user flow, capture each screen, annotate what's happening (what the user just did, what the system is showing). Claude can help draft annotation copy. The screenshots themselves are captured manually by the Project Lead or designer.
 
@@ -210,35 +268,11 @@ These aren't blockers. They're the natural shape of a young lab figuring out its
 
 Once the team has been assembled, kickoff has happened, government materials are synthesized, the project is set up, and the Slack channel is live: the technical execution begins.
 
-For the technical execution lifecycle:
-→ [`04-challenge-response.md`](04-challenge-response.md)
-
 For the orchestrated build workflow:
-→ [`01-creating-a-project.md`](01-creating-a-project.md)
+→ [`01-creating-a-project.md` — Phase 1: Plan with Claude.ai](01-creating-a-project.md#phase-1--plan-with-claudeai)
+
+For the challenge response execution lifecycle:
+→ [`04-challenge-response.md`](04-challenge-response.md)
 
 For decommissioning when the project is done:
 → [`02-ending-a-project.md`](02-ending-a-project.md)
-
----
-
-## Quick reference for the Project Lead
-
-You've just been told a project is starting. Your first 24 hours:
-
-1. Schedule the kickoff meeting (same day or next morning)
-2. Review the brief and any provided materials yourself before the meeting
-3. Identify who's on the team and notify them
-4. At kickoff: align on brief, timeline, roles, communication, brainstorm
-5. Create the project Slack channel
-6. Run government materials through Qori (if research is provided)
-7. Open Claude.ai, set up the orchestrator project, paste in the brainstorm output
-8. Coordinate spinup with the designer/developer
-9. Add government materials to `client-docs/` once the project repo exists
-10. Review starter issues and adjust based on project plan
-11. Daily standups begin
-
-Welcome to the project. The lab has your back.
-
----
-
-*This doc is part of the Friends Innovation Lab playbook. It covers the operational pre-execution phase. The technical execution phase is covered in [`04-challenge-response.md`](04-challenge-response.md).*
