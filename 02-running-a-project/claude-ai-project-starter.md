@@ -105,8 +105,8 @@ After spinup completes, the user should:
 
 1. Clone the new project locally to `~/Projects/[project-name]`
 2. Save the planning artifacts (project-overview, prd, domain-model, epics) to `/docs/` in the new repo
-3. Fill in the project's CLAUDE.md using PROMPT_9 — CC will read the planning artifacts and propose project-specific context
-4. Create issues from the issue list in GitHub Issues using PROMPT_8
+3. Fill in the project's CLAUDE.md using PROMPT_8 — CC will read the planning artifacts and propose project-specific context
+4. Create issues from the issue list in GitHub Issues using PROMPT_9
 
 You can generate prompts for CC that help with steps 3 and 4.
 

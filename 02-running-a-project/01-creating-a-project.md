@@ -94,17 +94,24 @@ Download [`claude-ai-project-starter.md`](claude-ai-project-starter.md) from the
 
 Paste [PROMPT_0](claude-prompts.md#prompt_0--orient-claudeai-to-the-starter-doc) from `claude-prompts.md`.
 
-**4. Brainstorm — expect lots of back-and-forth.**
+PROMPT_0 tells Claude.ai to read the starter doc and confirm it understands its role as orchestrator. You're not introducing the project yet — that comes in step 4.
 
-Brainstorming is not a single message. You'll send something, Claude.ai will respond, you'll push back, Claude.ai will refine. Continue until the project feels real.
+**4. Open the brainstorm.**
 
-- Paste [PROMPT_1](claude-prompts.md#prompt_1--open-the-brainstorm) from `claude-prompts.md` to open the brainstorm
-- Paste [PROMPT_2](claude-prompts.md#prompt_2--stress-test-the-project-shape) from `claude-prompts.md` to stress-test the direction before committing
+Paste [PROMPT_1](claude-prompts.md#prompt_1--open-the-brainstorm) from `claude-prompts.md`. This is where you tell Claude.ai what the project is — name, who it's for, where the brief came from, what success looks like, what you're uncertain about.
+
+Then have a real conversation. Claude.ai will ask clarifying questions. Answer them. Push back. Send follow-ups. Expect 5–10 turns before the project starts to feel real.
 
 > [!TIP]
 > A good brainstorm has at least 5–10 back-and-forth turns. If you've only sent two messages and Claude.ai has produced the "answer," you have an outline, not a project. Keep pushing.
 
-**5. Generate the planning artifacts.**
+**5. Stress-test the direction before committing.**
+
+When the project shape feels real but before you commit to it, paste [PROMPT_2](claude-prompts.md#prompt_2--stress-test-the-project-shape) from `claude-prompts.md`. This asks Claude.ai to push back on the project — what's weakest, what you're assuming, the most likely way it fails.
+
+Argue with Claude.ai's pushback. Some of it will be wrong, some will be right. Update where it's right, defend where it's wrong. Iterate until the project survives the stress test.
+
+**6. Generate the planning artifacts.**
 
 When the project feels real, paste [PROMPT_3](claude-prompts.md#prompt_3--generate-the-planning-artifacts) from `claude-prompts.md`. Claude.ai will produce these five artifacts in order, pausing for your review between each:
 
@@ -125,7 +132,7 @@ When the project feels real, paste [PROMPT_3](claude-prompts.md#prompt_3--genera
 > [!NOTE]
 > The Domain Model can evolve through Phase 2 — design discovery sometimes surfaces missing entities or fields. When that happens, the project lead updates the Domain Model as a named act in the Claude.ai chat. Design and Code never edit it themselves.
 
-**6. Domain Model review (second pair of eyes).**
+**7. Domain Model review (second pair of eyes).**
 
 Before Phase 2 starts, a second person reviews the Domain Model. This is cheap insurance against an expensive mistake — once Claude Design and Claude Code start consuming the model, fixing it is much more expensive than catching it now.
 
@@ -364,6 +371,8 @@ Find the handoff folder you downloaded from Claude Design (probably in your Down
 
 ### Fill in the project's CLAUDE.md
 
+Fill in CLAUDE.md before any other CC work on this project. Every future CC session reads this file first to orient itself — stack, standards, current focus. Skipping it means the first CC invocations happen with no project context.
+
 The spinup script created a `CLAUDE.md` at the project root with placeholder sections. You need to fill it in with project-specific context so CC has accurate information about this project.
 
 Open the integrated terminal in VS Code (View → Terminal), then start CC:
@@ -372,11 +381,11 @@ Open the integrated terminal in VS Code (View → Terminal), then start CC:
 claude
 ```
 
-Paste [PROMPT_9](claude-prompts.md#prompt_9--fill-in-the-projects-claudemd) from `claude-prompts.md`. CC will read the planning artifacts and propose a filled-in CLAUDE.md for your approval.
+Paste [PROMPT_8](claude-prompts.md#prompt_8--fill-in-the-projects-claudemd) from `claude-prompts.md`. CC will read the planning artifacts and propose a filled-in CLAUDE.md for your approval.
 
 ### Create GitHub issues from the issue list
 
-In CC, paste [PROMPT_8](claude-prompts.md#prompt_8--create-github-issues-from-the-issue-list) from `claude-prompts.md`. CC will read your epics and issue list, then create each issue in GitHub using the `gh` CLI.
+In CC, paste [PROMPT_9](claude-prompts.md#prompt_9--create-github-issues-from-the-issue-list) from `claude-prompts.md`. CC will read your epics and issue list, then create each issue in GitHub using the `gh` CLI.
 
 > [!TIP]
 > Watch CC's output in the terminal as it creates each issue. If it pauses for confirmation, review the issue title and body before approving.

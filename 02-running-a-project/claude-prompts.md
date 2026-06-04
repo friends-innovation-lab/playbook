@@ -2,7 +2,7 @@
 
 These are the copy-paste prompts used throughout the project lifecycle. Each is referenced by ID from [`01-creating-a-project.md`](01-creating-a-project.md). Fill in the `[BRACKETED]` placeholders before sending.
 
-The prompts are numbered roughly in lifecycle order, but you'll use them throughout a project, not just sequentially. PROMPT_5 splits into 5a (prototype) and 5b (full-weight) — use the one matching your project type. PROMPT_7 happens between design and spinup. PROMPT_8 and PROMPT_9 happen during local setup. PROMPT_10 is for ongoing architectural decisions throughout the build.
+The prompts are numbered roughly in lifecycle order, but you'll use them throughout a project, not just sequentially. PROMPT_5 splits into 5a (prototype) and 5b (full-weight) — use the one matching your project type. PROMPT_7 happens between design and spinup. PROMPT_8 (CLAUDE.md) and PROMPT_9 (GitHub issues) happen during local setup — in that order. PROMPT_10 is for ongoing architectural decisions throughout the build.
 
 > [!TIP]
 > These prompts are starting points, not scripts. Adjust them to match your project's specifics. The structure matters more than the exact words.
@@ -244,33 +244,9 @@ If the handoff is clean to proceed, say so explicitly.
 
 ---
 
-## PROMPT_8 — Create GitHub issues from the issue list
+## PROMPT_8 — Fill in the project's CLAUDE.md
 
-**Use when:** In Phase 4, after planning artifacts and design handoff are saved to the repo.
-
-**Paste into:** Claude Code
-
-```markdown
-Read /docs/epics.md and the issue list from /docs/prd.md (or wherever the initial issue list lives — confirm with me first if you can't find it).
-
-For each issue, create a GitHub issue in this repo using the `gh` CLI. Include:
-- A clear title
-- A description with acceptance criteria from the issue list
-- The relevant epic as a label or in the body
-- Any sequencing notes (depends on issue #X, blocks issue #Y)
-
-Show me the first issue you'll create and wait for my confirmation before creating the rest. Then proceed through the list, showing the `gh` command for each before running it.
-```
-
-**What to expect:** CC will draft the first issue, wait for approval, then work through the list. You can interrupt and adjust at any point.
-
-← [Back to Phase 4 — Create GitHub issues](01-creating-a-project.md#create-github-issues-from-the-issue-list)
-
----
-
-## PROMPT_9 — Fill in the project's CLAUDE.md
-
-**Use when:** Phase 4, after planning artifacts are saved to `/docs/`. The spinup script creates a CLAUDE.md with placeholder sections; this prompt fills them in.
+**Use when:** Phase 4, after planning artifacts are saved to `/docs/`. The spinup script creates a CLAUDE.md with placeholder sections; this prompt fills them in. Do this before any other CC work on the project.
 
 **Paste into:** Claude Code
 
@@ -295,6 +271,30 @@ Show me the proposed CLAUDE.md before saving. Wait for approval.
 **What to expect:** CC will read the planning docs and draft a filled-in CLAUDE.md. Review carefully — this file shapes every future CC session's behavior. Push back on anything inaccurate before approving.
 
 ← [Back to Phase 4 — Fill in CLAUDE.md](01-creating-a-project.md#fill-in-the-projects-claudemd)
+
+---
+
+## PROMPT_9 — Create GitHub issues from the issue list
+
+**Use when:** In Phase 4, after CLAUDE.md is filled in and planning artifacts and design handoff are saved to the repo.
+
+**Paste into:** Claude Code
+
+```markdown
+Read /docs/epics.md and the issue list from /docs/prd.md (or wherever the initial issue list lives — confirm with me first if you can't find it).
+
+For each issue, create a GitHub issue in this repo using the `gh` CLI. Include:
+- A clear title
+- A description with acceptance criteria from the issue list
+- The relevant epic as a label or in the body
+- Any sequencing notes (depends on issue #X, blocks issue #Y)
+
+Show me the first issue you'll create and wait for my confirmation before creating the rest. Then proceed through the list, showing the `gh` command for each before running it.
+```
+
+**What to expect:** CC will draft the first issue, wait for approval, then work through the list. You can interrupt and adjust at any point.
+
+← [Back to Phase 4 — Create GitHub issues](01-creating-a-project.md#create-github-issues-from-the-issue-list)
 
 ---
 
