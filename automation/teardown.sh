@@ -25,6 +25,47 @@ ok()   { echo -e "  ${GREEN}✓${NC} $1"; }
 fail() { echo -e "  ${RED}✗${NC} $1"; }
 warn() { echo -e "  ${YELLOW}!${NC} $1"; }
 
+# ─────────────────────────────────────────────────────────
+# JSON-safe command helpers (Layer 2 safety)
+# ─────────────────────────────────────────────────────────
+
+# Run a command and exit with clear error if it fails
+# Usage: output=$(run_or_die "description" command arg1 arg2)
+run_or_die() {
+  local description="$1"
+  shift
+  local output
+  output=$("$@" 2>&1)
+  local exit_code=$?
+  if [ $exit_code -ne 0 ]; then
+    echo ""
+    echo -e "${RED}ERROR during: $description${NC}"
+    echo "Command: $*"
+    echo "Exit code: $exit_code"
+    echo "Output:"
+    echo "$output"
+    exit 1
+  fi
+  echo "$output"
+}
+
+# Validate input is JSON, exit with clear error if not
+# Usage: validated=$(parse_json_or_die "description" "$raw_output")
+parse_json_or_die() {
+  local description="$1"
+  local input="$2"
+  if ! echo "$input" | jq empty 2>/dev/null; then
+    echo ""
+    echo -e "${RED}ERROR: Expected JSON for '$description' but got:${NC}"
+    echo "$input" | head -20
+    echo ""
+    echo "This usually means the CLI printed a warning to stdout that"
+    echo "contaminated the JSON output."
+    exit 1
+  fi
+  echo "$input"
+}
+
 # ═════════════════════════════════════════════════════════
 # STEP 0 — Welcome
 # ═════════════════════════════════════════════════════════
@@ -217,9 +258,12 @@ fi
 VERCEL_CHECK_OUTPUT=$(curl -s \
   "https://api.vercel.com/v10/projects/${PROJECT_NAME}" \
   -H "Authorization: Bearer $VERCEL_TOKEN" 2>/dev/null)
-VERCEL_PROJECT_ID_CACHE=$(echo "$VERCEL_CHECK_OUTPUT" | jq -r '.id // empty' 2>/dev/null)
-if [ -n "$VERCEL_PROJECT_ID_CACHE" ]; then
-  FOUND_IN_VERCEL=true
+# Only parse if response is valid JSON
+if echo "$VERCEL_CHECK_OUTPUT" | jq empty 2>/dev/null; then
+  VERCEL_PROJECT_ID_CACHE=$(echo "$VERCEL_CHECK_OUTPUT" | jq -r '.id // empty')
+  if [ -n "$VERCEL_PROJECT_ID_CACHE" ]; then
+    FOUND_IN_VERCEL=true
+  fi
 fi
 
 # Build list of where project was found
@@ -273,7 +317,15 @@ fi
 
 # Question 2 — Confirm the project (only if GitHub exists)
 if [ "$FOUND_IN_GITHUB" = true ]; then
-  REPO_INFO=$(gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" --json name,description,createdAt,updatedAt 2>/dev/null)
+  REPO_INFO=$(gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" --json name,description,createdAt,updatedAt 2>&1)
+
+  # Validate JSON response
+  if ! echo "$REPO_INFO" | jq empty 2>/dev/null; then
+    echo ""
+    echo -e "${RED}ERROR: GitHub CLI returned non-JSON response:${NC}"
+    echo "$REPO_INFO" | head -10
+    exit 1
+  fi
 
   REPO_DESC=$(echo "$REPO_INFO" | jq -r '.description // "No description"')
   REPO_CREATED=$(echo "$REPO_INFO" | jq -r '.createdAt' | cut -d'T' -f1)
@@ -416,8 +468,14 @@ if [ "$DO_SUPABASE" = true ]; then
   echo ""
 
   # 5a. Find the Supabase project ref
-  SUPABASE_PROJECT_REF=$(supabase projects list --output json 2>/dev/null \
-    | jq -r '.[] | select(.name=="'"$PROJECT_NAME"'") | .id')
+  # Use cached value from pre-flight if available, otherwise fetch with error handling
+  if [ -n "$SUPABASE_PROJECT_REF_CACHE" ]; then
+    SUPABASE_PROJECT_REF="$SUPABASE_PROJECT_REF_CACHE"
+  else
+    SUPABASE_RAW=$(run_or_die "Fetching Supabase projects" supabase projects list --output json)
+    SUPABASE_RAW=$(parse_json_or_die "Supabase project list" "$SUPABASE_RAW")
+    SUPABASE_PROJECT_REF=$(echo "$SUPABASE_RAW" | jq -r ".[] | select(.name==\"$PROJECT_NAME\") | .id")
+  fi
 
   if [ -z "$SUPABASE_PROJECT_REF" ]; then
     echo "  No Supabase project found for ${PROJECT_NAME} — skipping database export."
@@ -464,15 +522,20 @@ if [ "$DO_SUPABASE" = true ]; then
 
     sleep 3
 
-    # Verify deletion
-    STATUS=$(supabase projects list --output json 2>/dev/null \
-      | jq -r '[.[] | select(.name=="'"$PROJECT_NAME"'")] | length')
-    if [ "$STATUS" -eq 0 ]; then
-      ok "Supabase project deleted"
-      SUPABASE_RESULT="Data exported + project deleted"
+    # Verify deletion (non-fatal if this check fails)
+    VERIFY_RAW=$(supabase projects list --output json 2>&1) || true
+    if echo "$VERIFY_RAW" | jq empty 2>/dev/null; then
+      STATUS=$(echo "$VERIFY_RAW" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
+      if [ "$STATUS" -eq 0 ]; then
+        ok "Supabase project deleted"
+        SUPABASE_RESULT="Data exported + project deleted"
+      else
+        warn "Supabase project may still be deleting. Check supabase.com/dashboard"
+        SUPABASE_RESULT="Data exported, project deletion pending"
+      fi
     else
-      warn "Supabase project may still be deleting. Check supabase.com/dashboard"
-      SUPABASE_RESULT="Data exported, project deletion pending"
+      warn "Could not verify deletion (CLI returned non-JSON). Check supabase.com/dashboard"
+      SUPABASE_RESULT="Data exported, deletion verification failed"
     fi
 
     echo ""
@@ -490,11 +553,24 @@ if [ "$DO_VERCEL" = true ]; then
   echo ""
 
   # 6a. Get the Vercel project ID
-  VERCEL_RESPONSE=$(curl -s \
-    "https://api.vercel.com/v10/projects/${PROJECT_NAME}" \
-    -H "Authorization: Bearer $VERCEL_TOKEN")
+  # Use cached value from pre-flight if available, otherwise fetch with error handling
+  if [ -n "$VERCEL_PROJECT_ID_CACHE" ]; then
+    VERCEL_PROJECT_ID="$VERCEL_PROJECT_ID_CACHE"
+  else
+    VERCEL_RESPONSE=$(curl -s \
+      "https://api.vercel.com/v10/projects/${PROJECT_NAME}" \
+      -H "Authorization: Bearer $VERCEL_TOKEN")
 
-  VERCEL_PROJECT_ID=$(echo "$VERCEL_RESPONSE" | jq -r '.id // empty')
+    # Validate JSON response
+    if ! echo "$VERCEL_RESPONSE" | jq empty 2>/dev/null; then
+      echo ""
+      echo -e "${RED}ERROR: Vercel API returned non-JSON response:${NC}"
+      echo "$VERCEL_RESPONSE" | head -10
+      exit 1
+    fi
+
+    VERCEL_PROJECT_ID=$(echo "$VERCEL_RESPONSE" | jq -r '.id // empty')
+  fi
 
   if [ -z "$VERCEL_PROJECT_ID" ]; then
     echo "  No Vercel project found for ${PROJECT_NAME}. It may have already been removed."
@@ -597,7 +673,14 @@ fi
 # ═════════════════════════════════════════════════════════
 
 TODAY=$(date +%Y-%m-%d)
-GH_USER=$(gh api user 2>/dev/null | jq -r '.login // "unknown"')
+
+# Get GitHub username for the log (non-fatal if this fails)
+GH_USER_RAW=$(gh api user 2>&1) || true
+if echo "$GH_USER_RAW" | jq empty 2>/dev/null; then
+  GH_USER=$(echo "$GH_USER_RAW" | jq -r '.login // "unknown"')
+else
+  GH_USER="unknown"
+fi
 
 # Determine where to save the teardown log
 TEARDOWN_LOG_DIR="${PLAYBOOK_DIR}/operations/teardown-log"
