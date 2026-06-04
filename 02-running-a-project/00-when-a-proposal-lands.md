@@ -263,11 +263,13 @@ The skills initiative is the next significant tooling investment. As individual 
 
 ## Things to figure out as we go
 
-The lab is small, and some patterns aren't fully established yet. These are real open questions the team will work through on the first real projects:
+The lab is small, and some patterns aren't fully established yet. These are real open questions the team will work through on the first several projects:
 
-- **Figma file convention per project.** Today, each project likely gets its own new file inside the lab's Figma folder rather than pages within one shared file. Confirm with the designer at kickoff. Document the chosen pattern in the project's `/docs/` folder so it's consistent for the next person.
-- **Starter prompt → CC → Figma flow.** The lab maintains starter prompts in [`reference/prompts/`](../reference/prompts/) for common project types (challenge response, dashboard, form tool, etc.). The flow from prompt to Figma design via Claude Code with the Figma plugin needs to be tested end-to-end on a real project. Until tested, treat the prompts as starting points rather than complete recipes.
-- **Issue ticket conventions.** The spinup script creates starter issues based on project type. These are scaffolding, not gospel. Project Leads should adjust them based on the actual project. Patterns will emerge over the first several projects.
+- **Issue ticket conventions.** The spinup script creates starter issues based on project type. These are scaffolding, not gospel. Project Leads should adjust them based on the actual project. Patterns will emerge over the first several projects, and the spinup defaults will evolve to reflect what works.
+
+- **Project log content discipline.** The project log lives at `/docs/project-log.md` and is meant to capture decisions, turning points, and open questions — a synthesis, not a transcript. The right level of detail isn't fully settled yet. Too sparse and the log can't re-orient someone returning after a break; too detailed and it becomes a chore that nobody maintains. The first few projects will calibrate this.
+
+- **CD ↔ CC handoff feedback loop.** When a design needs to evolve mid-build — a new entity surfaces, a flow needs adjusting, a state was missed — what's the lightest-weight way to round-trip back through Claude Design without losing context? The current pattern is "stop, take the change back to the project lead, update the Domain Model, re-brief Claude Design." That works but it's heavyweight for small changes. The lab will figure out where the floor is.
 
 These aren't blockers. They're the natural shape of a young lab figuring out its conventions in real work. Document what works as it works, and the next project benefits.
 
