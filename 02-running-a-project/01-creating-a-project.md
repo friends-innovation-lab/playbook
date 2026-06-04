@@ -67,7 +67,7 @@ If you're not sure all your tools are set up, run a dry-run of the spinup script
 The script will report what's missing if anything. Fix any issues before continuing.
 
 > [!TIP]
-> Verify your shared credential is set: run `echo $LAB_SUPABASE_ORG_ID` in your terminal. If a value comes back, you're set. If it's blank, return to first-time-setup Step 11 and add it.
+> Verify your shared credential is set: run `echo $LAB_SUPABASE_ORG_ID` in your terminal. If a value comes back, you're set. If it's blank, return to [Step 11 in first-time-setup](../01-getting-started/01-first-time-setup.md#step-11--set-up-your-environment-variables-1015-minutes) and add it.
 
 ---
 
@@ -92,21 +92,21 @@ Download [`claude-ai-project-starter.md`](claude-ai-project-starter.md) from the
 
 **3. Tell Claude to read the starter doc.**
 
-Paste PROMPT_0 from [`claude-prompts.md`](claude-prompts.md).
+Paste [PROMPT_0](claude-prompts.md#prompt_0--orient-claudeai-to-the-starter-doc) from `claude-prompts.md`.
 
 **4. Brainstorm — expect lots of back-and-forth.**
 
 Brainstorming is not a single message. You'll send something, Claude.ai will respond, you'll push back, Claude.ai will refine. Continue until the project feels real.
 
-- Paste PROMPT_1 from [`claude-prompts.md`](claude-prompts.md) to open the brainstorm
-- Paste PROMPT_2 from [`claude-prompts.md`](claude-prompts.md) to stress-test the direction before committing
+- Paste [PROMPT_1](claude-prompts.md#prompt_1--open-the-brainstorm) from `claude-prompts.md` to open the brainstorm
+- Paste [PROMPT_2](claude-prompts.md#prompt_2--stress-test-the-project-shape) from `claude-prompts.md` to stress-test the direction before committing
 
 > [!TIP]
 > A good brainstorm has at least 5–10 back-and-forth turns. If you've only sent two messages and Claude.ai has produced the "answer," you have an outline, not a project. Keep pushing.
 
 **5. Generate the planning artifacts.**
 
-When the project feels real, paste PROMPT_3 from [`claude-prompts.md`](claude-prompts.md). Claude.ai will produce these five artifacts in order, pausing for your review between each:
+When the project feels real, paste [PROMPT_3](claude-prompts.md#prompt_3--generate-the-planning-artifacts) from `claude-prompts.md`. Claude.ai will produce these five artifacts in order, pausing for your review between each:
 
 | # | Artifact | What it is |
 |---|----------|------------|
@@ -158,27 +158,48 @@ The reviewer doesn't need to approve perfection — they surface anything that w
 Design conforms to the Domain Model. The domain is written first; Claude Design does not invent data shapes. This is the whole reason for the Domain Model — without it, designs will quietly define the data, and the build will reverse-engineer data from screens. Backwards. Expensive.
 
 > [!WARNING]
-> If Claude Design's output contains a value that should come from a database — a specific look, a brand list, a price — stop and ask: is this conforming to the Domain Model, or inventing it? Invented data in the design is a refactor waiting to happen.
+> If Claude Design's output contains a value that should come from a database — an agency name, a contract ID, an RFP number, a user role, a workflow status, a document type — stop and ask: is this conforming to the Domain Model, or inventing it? Invented data in the design is a refactor waiting to happen.
 
 ### Design with Claude Design
 
 **1. Open Claude Design.** Confirm the Friends design system is loaded (or USWDS for federal projects — both are live in Claude Design).
 
-**2. Brief Claude Design with the Domain Model.** Paste PROMPT_4 from [`claude-prompts.md`](claude-prompts.md). Attach the Domain Model file before sending.
+**2. Brief Claude Design with the Domain Model.** Paste [PROMPT_4](claude-prompts.md#prompt_4--brief-claude-design) from `claude-prompts.md`. Attach the Domain Model file before sending.
 
 **3. Verify Claude Design summarizes the Domain Model back to you accurately** before letting it design anything. If it gets entity names or relationships wrong, correct it first.
 
 **4. Iterate.** Like with Claude.ai, expect multiple rounds. Claude Design produces screens; you push back; it refines.
 
-**5. When the design is ready, click "Hand off to Claude Code."** This downloads a handoff folder.
+**5. Make sure all system states are designed.**
 
-**6. Verify the handoff includes a `/fixtures/` folder** with typed mock data conforming to the Domain Model. If it doesn't, the handoff is incomplete — ask Claude Design to produce it before moving on.
+Don't let Claude Design design only the happy path. Before accepting the handoff, confirm Claude Design has designed:
+
+- Loading states (skeletons, spinners)
+- Empty states (no data yet, search returned nothing)
+- Error states (failed load, validation errors, network errors)
+- Success states (toasts, confirmation messages)
+- Hover, focus, and disabled states for interactive elements
+- Mobile/responsive variants
+
+> [!TIP]
+> Claude Design will design the happy path by default. You usually have to ask explicitly for system states. [PROMPT_4](claude-prompts.md#prompt_4--brief-claude-design) includes the prompt language for this — use it.
+
+**6. When the design is ready, click "Hand off to Claude Code."** This downloads a handoff folder.
+
+**7. Verify the handoff includes a `/fixtures/` folder** with typed mock data conforming to the Domain Model. If it doesn't, the handoff is incomplete — ask Claude Design to produce it before moving on.
 
 > [!IMPORTANT]
 > The handoff isn't complete without a `/fixtures/` folder. Components should render off fixtures shaped like the Domain Model — never hardcode values inside components. This is what lets Claude Code swap fixtures for real data later without component surgery.
 
 > [!NOTE]
 > If design surfaces a missing entity or field in the Domain Model, stop and bring it back to the project lead. The project lead updates the Domain Model in the Claude.ai project. Do not let Claude Design silently invent fields.
+
+**8. Have Claude.ai review the handoff against the Domain Model.**
+
+Before moving to spinup, upload the handoff's `/fixtures/` directory contents and the README to your Claude.ai project files. Use [PROMPT_7](claude-prompts.md#prompt_7--claudeai-reviews-the-claude-design-handoff) in `claude-prompts.md` to ask Claude.ai to audit the handoff for domain conformance — invented fields, missing entities, flattened relationships, unstable IDs.
+
+> [!IMPORTANT]
+> This is the last check before infrastructure gets provisioned. Catching a domain conformance issue here is much cheaper than catching it after CC has built against bad fixtures.
 
 ### Before you move on to Phase 3
 
@@ -187,6 +208,8 @@ Design conforms to the Domain Model. The domain is written first; Claude Design 
 - [ ] Handoff includes a `/fixtures/` folder with typed mock data
 - [ ] All values in components come from the fixtures (no hardcoded data)
 - [ ] If the Domain Model was updated during design, the updated version is saved
+- [ ] Handoff reviewed by Claude.ai using [PROMPT_7](claude-prompts.md#prompt_7--claudeai-reviews-the-claude-design-handoff)
+- [ ] Any flagged issues addressed (either in Claude Design or by updating the Domain Model)
 
 ---
 
@@ -198,7 +221,17 @@ Planning and design are done. Now you provision real infrastructure.
 
 Spinup runs in two phases. The first phase creates the repo, deploys to Vercel, and gives you a live URL in about 2 minutes. Supabase provisioning starts in the background but takes longer. The second phase (`--resume`) wires up Supabase once it's ready. This two-phase approach means you're never blocked waiting for Supabase — you get a working deployment immediately.
 
-Make sure you are in your projects folder first:
+### Step 1: Open VS Code
+
+If VS Code isn't already open, open it now.
+
+### Step 2: Open the integrated terminal
+
+Click **View** in the top menu, then click **Terminal**. A terminal panel will appear at the bottom of VS Code.
+
+### Step 3: Navigate to the playbook folder
+
+In the terminal, run:
 
 ```bash
 cd ~/Projects/playbook
@@ -221,7 +254,7 @@ Each type applies different scaffolding:
 
 Pick a name that's descriptive and lowercase with hyphens. For example: `va-benefits-prototype`, `truebid-rfp-import`, `proposal-fy26-q1`.
 
-### Step 1 — Initial spinup (~2 minutes)
+### Step 4: Run the initial spinup (~2 minutes)
 
 ```bash
 ./automation/spinup-typed.sh --type=[type] --name=[project-name]
@@ -240,14 +273,10 @@ When this finishes, you'll have:
 
 The script will print a summary with all the URLs. Save them somewhere.
 
-### Per-project credentials
-
-Some projects need additional credentials — transactional email (Resend), rate limiting (Upstash), AI APIs (Anthropic), agency-specific keys. These get provisioned per-project when the project actually needs them. Lapedra will give you the values during project kickoff if applicable.
-
 > [!NOTE]
 > The live URL is configured but not reachable the instant the script exits — Vercel needs about 1 minute to complete the first production build. If you click the URL immediately and get an error, wait a minute and refresh.
 
-### Step 2 — Wire up Supabase (~5 minutes later)
+### Step 5: Wire up Supabase (~5 minutes later)
 
 Wait about 5 minutes for Supabase to finish provisioning, then run:
 
@@ -306,25 +335,51 @@ npm run dev
 
 ### Save the planning artifacts to the repo
 
-Take the project overview, PRD, Domain Model, and epic breakdown that Claude.ai produced in Phase 1, and save them to `/docs/` in the new project:
+**Step: Download each artifact from Claude.ai.**
 
-```
-/docs/project-overview.md
-/docs/prd.md
-/docs/domain-model.md
-/docs/epics.md
-```
+In your Claude.ai project, for each of these artifacts, click the artifact → click the download icon → save to your Downloads folder:
+
+| Artifact | Save as |
+|----------|---------|
+| Project overview | `project-overview.md` |
+| PRD | `prd.md` |
+| Domain Model | `domain-model.md` |
+| Epic breakdown | `epics.md` |
+
+**Step: Drag the files into `/docs/` in VS Code.**
+
+In VS Code's file explorer (left sidebar), find or create the `/docs/` folder in your project. Drag all four files from Downloads into `/docs/`.
 
 > [!NOTE]
-> This makes the planning artifacts persistent and findable — not just living in the Claude.ai chat. When you (or anyone) looks at this project six months from now, the planning artifacts are right there in the repo.
+> If `/docs/` doesn't exist yet, right-click the project root in VS Code → New Folder → name it `docs`.
 
 ### Save the design handoff to the repo
 
-Take the handoff folder Claude Design produced and put it at `/design-handoff/` in the project. Make sure it includes the `/fixtures/` folder. CC will read from there during the build phase.
+**Step: Drag the design handoff into `/design-handoff/` in VS Code.**
+
+Find the handoff folder you downloaded from Claude Design (probably in your Downloads folder). Drag the entire folder into your project root in VS Code's file explorer. Rename it to `design-handoff` if it isn't already.
+
+> [!IMPORTANT]
+> The `/fixtures/` folder must be inside `/design-handoff/`. Verify it's there before continuing.
+
+### Fill in the project's CLAUDE.md
+
+The spinup script created a `CLAUDE.md` at the project root with placeholder sections. You need to fill it in with project-specific context so CC has accurate information about this project.
+
+Open the integrated terminal in VS Code (View → Terminal), then start CC:
+
+```bash
+claude
+```
+
+Paste [PROMPT_9](claude-prompts.md#prompt_9--fill-in-the-projects-claudemd) from `claude-prompts.md`. CC will read the planning artifacts and propose a filled-in CLAUDE.md for your approval.
 
 ### Create GitHub issues from the issue list
 
-Either manually create them, or ask Claude.ai to generate a `gh issue create` command for each one and run them in the terminal.
+In CC, paste [PROMPT_8](claude-prompts.md#prompt_8--create-github-issues-from-the-issue-list) from `claude-prompts.md`. CC will read your epics and issue list, then create each issue in GitHub using the `gh` CLI.
+
+> [!TIP]
+> Watch CC's output in the terminal as it creates each issue. If it pauses for confirmation, review the issue title and body before approving.
 
 ### Switch to the develop branch
 
@@ -342,6 +397,7 @@ You'll work on develop and feature branches off develop for the rest of the proj
 - [ ] `npm run dev` works
 - [ ] Planning artifacts saved to `/docs/` including `domain-model.md`
 - [ ] Design handoff saved to `/design-handoff/` including the `/fixtures/` folder
+- [ ] CLAUDE.md filled in and reviewed
 - [ ] GitHub issues created
 - [ ] You're on the `develop` branch
 
@@ -351,9 +407,20 @@ You'll work on develop and feature branches off develop for the rest of the proj
 
 ### Why this phase exists
 
-This phase has the most back-and-forth of the whole project. You will not just send CC a prompt and get a finished feature. You'll talk to Claude.ai, Claude.ai will write a prompt for CC, you'll paste it into CC, CC will produce a plan, you'll paste the plan back into Claude.ai, Claude.ai will validate or push back, you'll tell CC to proceed, CC will implement, you'll tell Claude.ai what happened. Then repeat. For every issue.
+This phase has the most back-and-forth of the whole project. You will not just send CC a prompt and get a finished feature. The loop is:
 
-This is not inefficiency. The back-and-forth is what produces good software with AI tools. Anyone who tells you they "just ask CC to build the thing and it works" is either lying, working on something trivial, or about to pay for it later in refactors.
+- You tell Claude.ai what you want to do next
+- Claude.ai writes a prompt for CC
+- You paste it into CC (in the terminal)
+- CC produces a plan
+- You paste the plan back to Claude.ai using [PROMPT_6](claude-prompts.md#prompt_6--validate-ccs-plan-via-claudeai)
+- Claude.ai validates or pushes back
+- You tell CC to proceed (or adjust)
+- CC implements
+- You tell Claude.ai what got built
+
+> [!IMPORTANT]
+> This is not inefficiency. The back-and-forth is what produces good software with AI tools. Anyone who tells you they "just ask CC to build the thing and it works" is either lying, working on something trivial, or about to pay for it later in refactors.
 
 ### Build the domain first, then mount the design
 
@@ -361,10 +428,28 @@ The first CC session on a new project always builds the domain layer — schema,
 
 If your first instinct is to ask CC to build the login page, stop. Ask it to build the data foundation first.
 
-Paste PROMPT_5 from [`claude-prompts.md`](claude-prompts.md) for the first CC build session, right after spinup.
+Use the prompt matching your project type:
 
-> [!IMPORTANT]
-> Open CC by clicking the Claude icon in the VS Code left sidebar. Start every CC session the same way: have CC read CLAUDE.md and tell you what it understands about the project before writing any code.
+| Project type | Use this prompt |
+|--------------|-----------------|
+| `prototype` | [PROMPT_5a](claude-prompts.md#prompt_5a--first-cc-build-session-prototype-lightweight) (lightweight: types + fixtures only) |
+| `internal-tool`, `saas-web`, `ai-product`, `federal` | [PROMPT_5b](claude-prompts.md#prompt_5b--first-cc-build-session-full-weight) (full-weight: schema, migrations, types, API stubs, fixtures) |
+
+> [!NOTE]
+> The lab's approach to building data first, then UI on top, follows the principles of [Domain-Driven Design](https://martinfowler.com/bliki/DomainDrivenDesign.html) — a well-established pattern in serious software engineering. The depth varies with project type; the sequence does not.
+
+**Open CC in the integrated terminal.**
+
+In VS Code, open the terminal (View → Terminal), then run:
+
+```bash
+claude
+```
+
+This starts a Claude Code session in your terminal. You'll see CC's responses stream directly in the terminal. To exit, type `/exit` or press Ctrl+C.
+
+> [!TIP]
+> Working in the terminal lets you see CC's full output as it works — file reads, command outputs, plan generation. This is the preferred working mode in the lab.
 
 ### The orchestrated loop
 
@@ -376,7 +461,7 @@ For each work unit (typically one issue at a time):
 2. **Claude.ai generates a CC prompt.** Clear, scoped, with the relevant context CC needs.
 3. **Paste the prompt into CC.**
 4. **CC produces a plan before implementing.** This is required — CC will list the files it'll modify, the changes it'll make, and any new dependencies. CC waits for explicit approval before doing the work.
-5. **Paste CC's plan back into Claude.ai.** Use PROMPT_6 from [`claude-prompts.md`](claude-prompts.md) to structure the validation. Claude validates: Does it match the intent? Are there missing considerations? Will it conflict with existing code?
+5. **Paste CC's plan back into Claude.ai.** Use [PROMPT_6](claude-prompts.md#prompt_6--validate-ccs-plan-via-claudeai) from `claude-prompts.md` to structure the validation. Claude validates: Does it match the intent? Are there missing considerations? Will it conflict with existing code?
 6. **Claude.ai responds with "proceed" or specific adjustments.**
 7. **Tell CC to proceed** (or to adjust per Claude.ai's notes).
 8. **CC implements.**
@@ -386,6 +471,28 @@ Repeat for each work unit until the project is built.
 
 > [!IMPORTANT]
 > Step 4 — "CC produces a plan before implementing" — is non-negotiable. Do not let CC start writing code before showing you a plan. If CC starts implementing immediately, stop it and ask for the plan. The plan is where mistakes get caught cheaply.
+
+### Working with CC in the terminal
+
+CC has a few terminal commands worth knowing:
+
+| Command | What it does | When to use |
+|---------|--------------|-------------|
+| `claude` | Start a new CC session | Beginning of a work session |
+| `claude --continue` or `claude -c` | Resume your most recent session | Coming back after a break |
+| `/clear` | Reset the conversation context within a session | Starting a new logical task, or when CC seems confused |
+| `/help` | List available commands | When you forget what's available |
+| `/exit` or Ctrl+C | End the session | Done working |
+
+**Best practices:**
+
+- **One CC session per logical work unit.** When you start a new issue or change focus, `/clear` (or exit and restart). This keeps context clean.
+- **Don't `/clear` mid-task.** You'll lose useful context that CC was using to make decisions.
+- **Resume with `claude -c` when picking up where you left off.** Faster than re-orienting CC to the project.
+- **Run CC inside the project folder.** Open your terminal inside the project directory (use `cd ~/Projects/[project-name]`) before running `claude`. CC reads CLAUDE.md from the current directory.
+
+> [!TIP]
+> CC also supports custom slash commands defined in `.claude/commands/` in your project repo. The lab will be adding shared lab commands (`/adr`, `/audit`, etc.) — for now, the built-in commands above are enough.
 
 ### When errors happen
 
@@ -400,6 +507,21 @@ Repeat for each work unit until the project is built.
 
 > [!TIP]
 > Being stuck is a signal to go back to Claude.ai, not a signal to push harder with CC. CC is a builder, not a thinker. Claude.ai is where uncertainty gets worked out.
+
+### Architecture Decision Records (ADRs)
+
+When CC (or you) makes a significant architectural decision during the build, capture it as an ADR. Examples of when to write one:
+
+- Choosing between two libraries or approaches
+- Designing a non-obvious data model relationship
+- Deciding to deviate from the project-template's defaults
+- Picking a deployment, caching, or auth strategy
+- Trading off performance vs. simplicity
+
+Use [PROMPT_10](claude-prompts.md#prompt_10--create-an-architecture-decision-record-adr) in `claude-prompts.md` to ask CC to generate an ADR for the decision. CC will save it to `/docs/decisions/[number]-[title].md`.
+
+> [!TIP]
+> Claude.ai will proactively prompt you when a moment calls for an ADR. If Claude.ai doesn't catch it but you notice the conversation is about an architectural choice, write the ADR anyway. Future-you and future-team will thank you.
 
 ### Before you move on to shipping
 
