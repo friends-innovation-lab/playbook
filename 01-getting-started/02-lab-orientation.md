@@ -302,6 +302,15 @@ A short tour of the tools that show up during a project. You'll learn them by us
 
 You won't encounter Railway in a standard prototype or federal project. It only comes up for projects that need persistent backend services or scheduled jobs — which is rare in lab work. If a project needs it, your project lead will set it up.
 
+**Sentry** — Error tracking for production projects.
+
+- The lab uses Sentry on projects that need visibility into production errors. It's not a default — most prototypes and short-lived demos skip it.
+- Sentry comes up when a project will run in production with real users, when silent failures would have real consequences (auth, payments, anything user-facing), or when error triage needs to happen before users complain.
+- When a project needs Sentry, Lapedra provides the Sentry org access and project credentials at kickoff. The Sentry project URL gets documented in the project's CLAUDE.md so future CC sessions know it exists.
+
+> [!NOTE]
+> When a project is decommissioned, the Sentry project gets archived as part of the teardown checklist (see [02-ending-a-project.md](../02-running-a-project/02-ending-a-project.md)).
+
 > [!NOTE]
 > You don't need to create accounts for these yourself. The lab provisions your access during onboarding.
 
