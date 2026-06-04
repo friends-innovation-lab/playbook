@@ -66,6 +66,38 @@ parse_json_or_die() {
   echo "$input"
 }
 
+# ─────────────────────────────────────────────────────────
+# State file helpers (Layer 3 idempotency)
+# ─────────────────────────────────────────────────────────
+
+# State file tracks teardown progress for resumability
+# Format: key=value pairs, one per line
+# Keys: supabase_backup, supabase_delete, vercel_delete, github_archive, local_delete
+# Values: done, skipped
+
+STATE_FILE=""  # Set after project name is known
+
+# Check if a step is already complete in the state file
+# Usage: if step_done "supabase_backup"; then skip; fi
+step_done() {
+  local step="$1"
+  [ -f "$STATE_FILE" ] && grep -q "^${step}=done$" "$STATE_FILE"
+}
+
+# Mark a step as complete in the state file
+# Usage: mark_done "supabase_backup"
+mark_done() {
+  local step="$1"
+  echo "${step}=done" >> "$STATE_FILE"
+}
+
+# Mark a step as skipped in the state file
+# Usage: mark_skipped "supabase_backup"
+mark_skipped() {
+  local step="$1"
+  echo "${step}=skipped" >> "$STATE_FILE"
+}
+
 # ═════════════════════════════════════════════════════════
 # STEP 0 — Welcome
 # ═════════════════════════════════════════════════════════
@@ -450,6 +482,52 @@ fi
 
 echo ""
 
+# ─────────────────────────────────────────────────────────
+# State file setup (Layer 3 idempotency)
+# ─────────────────────────────────────────────────────────
+
+TODAY=$(date +%Y-%m-%d)
+STATE_FILE_DIR="${PLAYBOOK_DIR}/operations/teardown-log"
+if [ ! -d "$PLAYBOOK_DIR/operations" ]; then
+  STATE_FILE_DIR="$HOME/Downloads"
+fi
+mkdir -p "$STATE_FILE_DIR"
+STATE_FILE="${STATE_FILE_DIR}/${PROJECT_NAME}-${TODAY}.state"
+
+# Check for existing incomplete state file
+if [ -f "$STATE_FILE" ] && ! grep -q "^teardown_complete=true$" "$STATE_FILE"; then
+  echo ""
+  echo -e "${YELLOW}Found incomplete teardown from earlier today.${NC}"
+  echo "Already completed:"
+
+  # Show what's done
+  if step_done "supabase_backup"; then echo -e "  ${GREEN}✓${NC} Database backed up"; fi
+  if step_done "supabase_delete"; then echo -e "  ${GREEN}✓${NC} Supabase project deleted"; fi
+  if step_done "vercel_delete"; then echo -e "  ${GREEN}✓${NC} Vercel project deleted"; fi
+  if step_done "github_archive"; then echo -e "  ${GREEN}✓${NC} GitHub repo archived"; fi
+  if step_done "local_delete"; then echo -e "  ${GREEN}✓${NC} Local folder deleted"; fi
+
+  echo ""
+  printf "Continue and finish the teardown? (y/N) > "
+  read -r CONTINUE_RESUME
+  if [ "$CONTINUE_RESUME" != "y" ] && [ "$CONTINUE_RESUME" != "Y" ]; then
+    echo ""
+    echo "Teardown cancelled. State file preserved at:"
+    echo "  $STATE_FILE"
+    exit 0
+  fi
+  echo ""
+  echo "Resuming teardown..."
+  echo ""
+else
+  # Create new state file
+  cat > "$STATE_FILE" << EOF
+# Teardown state for ${PROJECT_NAME}
+# Started: $(date '+%Y-%m-%d %H:%M:%S')
+# This file tracks progress for resumability after failures
+EOF
+fi
+
 # Track results for the final summary
 GITHUB_RESULT="Skipped"
 SUPABASE_RESULT="Skipped"
@@ -464,7 +542,7 @@ BACKUP_RESULT="No database backup — Supabase not configured or skipped"
 SUPABASE_PROJECT_REF=""
 
 if [ "$DO_SUPABASE" = true ]; then
-  echo "Backing up database..."
+  echo "Supabase teardown..."
   echo ""
 
   # 5a. Find the Supabase project ref
@@ -478,64 +556,99 @@ if [ "$DO_SUPABASE" = true ]; then
   fi
 
   if [ -z "$SUPABASE_PROJECT_REF" ]; then
-    echo "  No Supabase project found for ${PROJECT_NAME} — skipping database export."
+    echo "  No Supabase project found for ${PROJECT_NAME} — skipping."
     echo ""
     SUPABASE_RESULT="No project found — already deleted or never created"
+    mark_skipped "supabase_backup"
+    mark_skipped "supabase_delete"
   else
-    # 5b. Export the database via Management API
-    echo "  Exporting database..."
-
-    curl -s \
-      "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/backups/download" \
-      -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-      --output "$BACKUP_FILE"
-
-    if [ -s "$BACKUP_FILE" ]; then
-      ok "Database exported to: ${BACKUP_FILE}"
-      BACKUP_RESULT="Database exported to: ${BACKUP_FILE}"
+    # 5b. Export the database via Management API (idempotent: skip if already done)
+    if step_done "supabase_backup"; then
+      echo -e "  ${GREEN}✓${NC} Database backup already complete (from previous run)"
+      BACKUP_RESULT="Database backup completed in previous run"
     else
-      rm -f "$BACKUP_FILE"
-      echo ""
-      warn "Automatic export failed."
-      echo "  Manually export from:"
-      echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/database"
-      echo ""
-      printf "Do you want to continue without a backup? (y/n) > "
-      read -r CONTINUE_NO_BACKUP
+      echo "  Exporting database..."
 
-      if [ "$CONTINUE_NO_BACKUP" != "y" ] && [ "$CONTINUE_NO_BACKUP" != "Y" ]; then
+      curl -s \
+        "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/backups/download" \
+        -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+        --output "$BACKUP_FILE"
+
+      if [ -s "$BACKUP_FILE" ]; then
+        ok "Database exported to: ${BACKUP_FILE}"
+        BACKUP_RESULT="Database exported to: ${BACKUP_FILE}"
+        mark_done "supabase_backup"
+      else
+        rm -f "$BACKUP_FILE"
         echo ""
-        echo "Teardown cancelled. Export your data manually, then run this script again."
-        exit 1
-      fi
+        warn "Automatic export failed."
+        echo "  Manually export from:"
+        echo "  https://supabase.com/dashboard/project/${SUPABASE_PROJECT_REF}/settings/database"
+        echo ""
+        printf "Do you want to continue without a backup? (y/n) > "
+        read -r CONTINUE_NO_BACKUP
 
-      echo ""
-      warn "Continuing without a database backup."
-      echo ""
-      BACKUP_RESULT="Export failed — continued without backup"
+        if [ "$CONTINUE_NO_BACKUP" != "y" ] && [ "$CONTINUE_NO_BACKUP" != "Y" ]; then
+          echo ""
+          echo "Teardown cancelled. Export your data manually, then run this script again."
+          echo "Progress saved to: $STATE_FILE"
+          exit 1
+        fi
+
+        echo ""
+        warn "Continuing without a database backup."
+        echo ""
+        BACKUP_RESULT="Export failed — continued without backup"
+        mark_skipped "supabase_backup"
+      fi
     fi
 
-    # 5c. Delete the Supabase project
-    curl -s -X DELETE \
-      "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}" \
-      -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" >/dev/null
-
-    sleep 3
-
-    # Verify deletion (non-fatal if this check fails)
-    VERIFY_RAW=$(supabase projects list --output json 2>&1) || true
-    if echo "$VERIFY_RAW" | jq empty 2>/dev/null; then
-      STATUS=$(echo "$VERIFY_RAW" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
-      if [ "$STATUS" -eq 0 ]; then
-        ok "Supabase project deleted"
-        SUPABASE_RESULT="Data exported + project deleted"
-      else
-        warn "Supabase project may still be deleting. Check supabase.com/dashboard"
-        SUPABASE_RESULT="Data exported, project deletion pending"
-      fi
+    # 5c. Delete the Supabase project (idempotent: check existence first)
+    if step_done "supabase_delete"; then
+      echo -e "  ${GREEN}✓${NC} Supabase project already deleted (from previous run)"
+      SUPABASE_RESULT="Project deleted in previous run"
     else
-      warn "Could not verify deletion (CLI returned non-JSON). Check supabase.com/dashboard"
-      SUPABASE_RESULT="Data exported, deletion verification failed"
+      # Check if project still exists before trying to delete
+      VERIFY_EXISTS=$(supabase projects list --output json 2>&1) || true
+      PROJECT_EXISTS=false
+      if echo "$VERIFY_EXISTS" | jq empty 2>/dev/null; then
+        EXISTS_COUNT=$(echo "$VERIFY_EXISTS" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
+        if [ "$EXISTS_COUNT" -gt 0 ]; then
+          PROJECT_EXISTS=true
+        fi
+      fi
+
+      if [ "$PROJECT_EXISTS" = false ]; then
+        echo -e "  ${GREEN}✓${NC} Supabase project already gone"
+        SUPABASE_RESULT="Project already deleted"
+        mark_done "supabase_delete"
+      else
+        echo "  Deleting Supabase project..."
+        curl -s -X DELETE \
+          "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}" \
+          -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" >/dev/null
+
+        sleep 3
+
+        # Verify deletion (non-fatal if this check fails)
+        VERIFY_RAW=$(supabase projects list --output json 2>&1) || true
+        if echo "$VERIFY_RAW" | jq empty 2>/dev/null; then
+          STATUS=$(echo "$VERIFY_RAW" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
+          if [ "$STATUS" -eq 0 ]; then
+            ok "Supabase project deleted"
+            SUPABASE_RESULT="Data exported + project deleted"
+            mark_done "supabase_delete"
+          else
+            warn "Supabase project may still be deleting. Check supabase.com/dashboard"
+            SUPABASE_RESULT="Data exported, project deletion pending"
+            # Don't mark done — let user re-run to verify
+          fi
+        else
+          warn "Could not verify deletion (CLI returned non-JSON). Check supabase.com/dashboard"
+          SUPABASE_RESULT="Data exported, deletion verification failed"
+          # Don't mark done — let user re-run to verify
+        fi
+      fi
     fi
 
     echo ""
@@ -549,53 +662,62 @@ fi
 # ═════════════════════════════════════════════════════════
 
 if [ "$DO_VERCEL" = true ]; then
-  echo "Removing Vercel project..."
-  echo ""
-
-  # 6a. Get the Vercel project ID
-  # Use cached value from pre-flight if available, otherwise fetch with error handling
-  if [ -n "$VERCEL_PROJECT_ID_CACHE" ]; then
-    VERCEL_PROJECT_ID="$VERCEL_PROJECT_ID_CACHE"
+  # Check if already done from previous run
+  if step_done "vercel_delete"; then
+    echo -e "${GREEN}✓${NC} Vercel project already deleted (from previous run)"
+    VERCEL_RESULT="Project deleted in previous run"
   else
-    VERCEL_RESPONSE=$(curl -s \
-      "https://api.vercel.com/v10/projects/${PROJECT_NAME}" \
-      -H "Authorization: Bearer $VERCEL_TOKEN")
+    echo "Removing Vercel project..."
+    echo ""
 
-    # Validate JSON response
-    if ! echo "$VERCEL_RESPONSE" | jq empty 2>/dev/null; then
-      echo ""
-      echo -e "${RED}ERROR: Vercel API returned non-JSON response:${NC}"
-      echo "$VERCEL_RESPONSE" | head -10
-      exit 1
+    # 6a. Get the Vercel project ID
+    # Use cached value from pre-flight if available, otherwise fetch with error handling
+    if [ -n "$VERCEL_PROJECT_ID_CACHE" ]; then
+      VERCEL_PROJECT_ID="$VERCEL_PROJECT_ID_CACHE"
+    else
+      VERCEL_RESPONSE=$(curl -s \
+        "https://api.vercel.com/v10/projects/${PROJECT_NAME}" \
+        -H "Authorization: Bearer $VERCEL_TOKEN")
+
+      # Validate JSON response
+      if ! echo "$VERCEL_RESPONSE" | jq empty 2>/dev/null; then
+        echo ""
+        echo -e "${RED}ERROR: Vercel API returned non-JSON response:${NC}"
+        echo "$VERCEL_RESPONSE" | head -10
+        echo "Progress saved to: $STATE_FILE"
+        exit 1
+      fi
+
+      VERCEL_PROJECT_ID=$(echo "$VERCEL_RESPONSE" | jq -r '.id // empty')
     fi
 
-    VERCEL_PROJECT_ID=$(echo "$VERCEL_RESPONSE" | jq -r '.id // empty')
-  fi
+    if [ -z "$VERCEL_PROJECT_ID" ]; then
+      echo "  No Vercel project found for ${PROJECT_NAME}. It may have already been removed."
+      echo "  Skipping."
+      echo ""
+      VERCEL_RESULT="No project found — already removed or never created"
+      mark_skipped "vercel_delete"
+    else
+      # 6b. Remove the custom domain first
+      curl -s -X DELETE \
+        "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains/${PROJECT_NAME}.${LAB_DOMAIN}" \
+        -H "Authorization: Bearer $VERCEL_TOKEN" >/dev/null
 
-  if [ -z "$VERCEL_PROJECT_ID" ]; then
-    echo "  No Vercel project found for ${PROJECT_NAME}. It may have already been removed."
-    echo "  Skipping."
-    echo ""
-    VERCEL_RESULT="No project found — already removed or never created"
-  else
-    # 6b. Remove the custom domain first
-    curl -s -X DELETE \
-      "https://api.vercel.com/v10/projects/${PROJECT_NAME}/domains/${PROJECT_NAME}.${LAB_DOMAIN}" \
-      -H "Authorization: Bearer $VERCEL_TOKEN" >/dev/null
+      ok "Subdomain removed: ${PROJECT_NAME}.${LAB_DOMAIN}"
 
-    ok "Subdomain removed: ${PROJECT_NAME}.${LAB_DOMAIN}"
+      # 6c. Delete the Vercel project
+      curl -s -X DELETE \
+        "https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}" \
+        -H "Authorization: Bearer $VERCEL_TOKEN" >/dev/null
 
-    # 6c. Delete the Vercel project
-    curl -s -X DELETE \
-      "https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}" \
-      -H "Authorization: Bearer $VERCEL_TOKEN" >/dev/null
+      ok "Vercel project deleted"
+      VERCEL_RESULT="Project and domain removed"
+      mark_done "vercel_delete"
 
-    ok "Vercel project deleted"
-    VERCEL_RESULT="Project and domain removed"
-
-    echo ""
-    echo "Vercel teardown complete."
-    echo ""
+      echo ""
+      echo "Vercel teardown complete."
+      echo ""
+    fi
   fi
 fi
 
@@ -604,24 +726,32 @@ fi
 # ═════════════════════════════════════════════════════════
 
 if [ "$DO_GITHUB" = true ]; then
-  echo "Archiving GitHub repo..."
-  echo ""
-
-  if ! gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" &>/dev/null 2>&1; then
-    echo "  No GitHub repo found for ${PROJECT_NAME}. It may have already been archived or deleted."
-    echo "  Skipping."
-    echo ""
-    GITHUB_RESULT="No repo found — already archived or deleted"
+  # Check if already done from previous run
+  if step_done "github_archive"; then
+    echo -e "${GREEN}✓${NC} GitHub repo already archived (from previous run)"
+    GITHUB_RESULT="Archived in previous run"
   else
-    if ! gh repo archive "${GITHUB_ORG}/${PROJECT_NAME}" --yes; then
+    echo "Archiving GitHub repo..."
+    echo ""
+
+    if ! gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" &>/dev/null 2>&1; then
+      echo "  No GitHub repo found for ${PROJECT_NAME}. It may have already been archived or deleted."
+      echo "  Skipping."
       echo ""
-      echo -e "${RED}Something went wrong archiving the GitHub repo.${NC}"
-      echo "You can archive it manually at github.com/${GITHUB_ORG}/${PROJECT_NAME}/settings"
-      GITHUB_RESULT="Archive failed — do it manually"
+      GITHUB_RESULT="No repo found — already archived or deleted"
+      mark_skipped "github_archive"
     else
-      ok "GitHub repo archived (read-only, preserved for reference)"
-      GITHUB_RESULT="Archived — still readable at github.com/${GITHUB_ORG}/${PROJECT_NAME}"
-    fi
+      if ! gh repo archive "${GITHUB_ORG}/${PROJECT_NAME}" --yes; then
+        echo ""
+        echo -e "${RED}Something went wrong archiving the GitHub repo.${NC}"
+        echo "You can archive it manually at github.com/${GITHUB_ORG}/${PROJECT_NAME}/settings"
+        GITHUB_RESULT="Archive failed — do it manually"
+        # Don't mark done — let user re-run or do manually
+      else
+        ok "GitHub repo archived (read-only, preserved for reference)"
+        GITHUB_RESULT="Archived — still readable at github.com/${GITHUB_ORG}/${PROJECT_NAME}"
+        mark_done "github_archive"
+      fi
 
     echo ""
     echo "GitHub teardown complete."
@@ -634,45 +764,52 @@ fi
 # ═════════════════════════════════════════════════════════
 
 if [ "$DO_LOCAL" = true ]; then
-  # Re-check local folder path
-  LOCAL_PATH=""
-  if [[ "$PWD" == *"/${PROJECT_NAME}"* ]]; then
-    LOCAL_PATH="$PWD"
-  elif [ -d "$PWD/$PROJECT_NAME" ]; then
-    LOCAL_PATH="$PWD/$PROJECT_NAME"
-  fi
-
-  if [ -z "$LOCAL_PATH" ]; then
-    echo "  No local folder found for ${PROJECT_NAME} — skipping."
-    echo ""
-    LOCAL_RESULT="No local folder found"
+  # Check if already done from previous run
+  if step_done "local_delete"; then
+    echo -e "${GREEN}✓${NC} Local folder already deleted (from previous run)"
+    LOCAL_RESULT="Deleted in previous run"
   else
-    echo "Found local folder at: ${LOCAL_PATH}"
-    echo ""
-    printf "Delete it? This will permanently remove all local files. (y/n) > "
-    read -r DELETE_LOCAL
-
-    if [ "$DELETE_LOCAL" = "y" ] || [ "$DELETE_LOCAL" = "Y" ]; then
-      # If we're inside the project folder, cd out first
-      if [[ "$PWD" == *"/${PROJECT_NAME}"* ]]; then
-        cd "$(echo "$PWD" | sed "s|/${PROJECT_NAME}.*||")"
-      fi
-      rm -rf "$LOCAL_PATH"
-      ok "Local folder deleted"
-      LOCAL_RESULT="Deleted"
-    else
-      echo "  Kept local folder at: ${LOCAL_PATH}"
-      LOCAL_RESULT="Kept at ${LOCAL_PATH}"
+    # Re-check local folder path
+    LOCAL_PATH=""
+    if [[ "$PWD" == *"/${PROJECT_NAME}"* ]]; then
+      LOCAL_PATH="$PWD"
+    elif [ -d "$PWD/$PROJECT_NAME" ]; then
+      LOCAL_PATH="$PWD/$PROJECT_NAME"
     fi
-    echo ""
+
+    if [ -z "$LOCAL_PATH" ]; then
+      echo "  No local folder found for ${PROJECT_NAME} — skipping."
+      echo ""
+      LOCAL_RESULT="No local folder found"
+      mark_skipped "local_delete"
+    else
+      echo "Found local folder at: ${LOCAL_PATH}"
+      echo ""
+      printf "Delete it? This will permanently remove all local files. (y/n) > "
+      read -r DELETE_LOCAL
+
+      if [ "$DELETE_LOCAL" = "y" ] || [ "$DELETE_LOCAL" = "Y" ]; then
+        # If we're inside the project folder, cd out first
+        if [[ "$PWD" == *"/${PROJECT_NAME}"* ]]; then
+          cd "$(echo "$PWD" | sed "s|/${PROJECT_NAME}.*||")"
+        fi
+        rm -rf "$LOCAL_PATH"
+        ok "Local folder deleted"
+        LOCAL_RESULT="Deleted"
+        mark_done "local_delete"
+      else
+        echo "  Kept local folder at: ${LOCAL_PATH}"
+        LOCAL_RESULT="Kept at ${LOCAL_PATH}"
+        mark_skipped "local_delete"
+      fi
+      echo ""
+    fi
   fi
 fi
 
 # ═════════════════════════════════════════════════════════
 # STEP 9 — Create teardown record
 # ═════════════════════════════════════════════════════════
-
-TODAY=$(date +%Y-%m-%d)
 
 # Get GitHub username for the log (non-fatal if this fails)
 GH_USER_RAW=$(gh api user 2>&1) || true
@@ -720,6 +857,10 @@ EOF
 
 ok "Teardown record saved to: ${TEARDOWN_LOG}"
 echo ""
+
+# Mark teardown as complete and rename state file
+echo "teardown_complete=true" >> "$STATE_FILE"
+mv "$STATE_FILE" "${STATE_FILE%.state}.state.complete" 2>/dev/null || true
 
 # ═════════════════════════════════════════════════════════
 # STEP 10 — Final summary
