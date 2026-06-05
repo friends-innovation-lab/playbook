@@ -266,6 +266,15 @@ Run this in Terminal:
 brew install gh
 ```
 
+**Upgrade to the latest version:**
+
+```bash
+brew upgrade gh
+gh --version
+```
+
+CLIs get bug fixes regularly. Run this periodically — at minimum, when starting a new project or if you hit unexpected errors.
+
 Then log in to GitHub:
 
 Run this in Terminal:
@@ -316,6 +325,18 @@ Run this in Terminal:
 brew install supabase/tap/supabase
 ```
 
+**Upgrade to the latest version:**
+
+```bash
+brew upgrade supabase/tap/supabase
+supabase --version
+```
+
+CLIs get bug fixes regularly. Run this periodically — at minimum, when starting a new project or if you hit unexpected errors.
+
+> [!IMPORTANT]
+> The teardown script requires Supabase CLI version 2.104.0 or newer. Earlier versions (2.102.0–2.103.x) have a known bug that breaks JSON output. Run `brew upgrade supabase/tap/supabase` if your version is older.
+
 Then log in to Supabase:
 
 Run this in Terminal:
@@ -355,6 +376,15 @@ npm install -g vercel
 > about unsupported Node versions and deprecation notices. These are normal
 > and do not mean the installation failed. As long as the install completes
 > and `vercel --version` works, you can ignore them.
+
+**Upgrade to the latest version:**
+
+```bash
+npm update -g vercel
+vercel --version
+```
+
+CLIs get bug fixes regularly. Run this periodically — at minimum, when starting a new project or if you hit unexpected errors.
 
 If you get a permissions error, use this instead:
 
