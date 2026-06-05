@@ -21,7 +21,7 @@ Every project we spin up is:
 ## How to use this playbook
 
 > [!IMPORTANT]
-> **New here? Start with [START-HERE.md](START-HERE.md).** It's a quick read that explains what the lab is, what it can do, and how the rest of the docs walk you through getting set up.
+> New here? Start with [START-HERE.md](./START-HERE.md). It's a quick read that explains what the lab is, what it can do, and how the rest of the docs walk you through getting set up.
 
 Once you've read START-HERE, the path forward is laid out there. Below is a quick reference for finding specific docs once you know what you're looking for.
 
@@ -33,7 +33,6 @@ Once you've read START-HERE, the path forward is laid out there. Below is a quic
 - [Troubleshooting](02-running-a-project/03-troubleshooting.md) — when things break
 - [Type-aware spinup guide](docs/spinup-typed.md) — full spinup script reference
 - [AI workflow with CC](reference/building/ai-workflow.md) — working with Claude Code
-- [Starter prompts](reference/prompts/) — prompt templates for common tasks
 - [Design system](reference/building/design-system.md) — Friends brand and component conventions
 - [Demo standards](reference/delivering/demo-standards.md) — preparing for client demos
 - [Submission checklist](reference/delivering/submission-checklist.md) — preparing for submissions
@@ -57,13 +56,11 @@ Topic-organized reference docs. Dip in when you need them; not
 meant to be read start to finish.
 
 - `reference/building/` — AI workflow, design system, design tokens, agency theming, Storybook
-- `reference/prompts/` — Starter prompts for common project types
 - `reference/delivering/` — Demo standards, submission checklist, handoff
 - `reference/operations/` — Costs, offboarding, prototype lifecycle, onboarding-a-new-friend
 - `reference/design/` — UI/UX guide
 - `reference/development/` — Technical standards: code quality, testing, security, deployment, git workflow
 - `reference/products/` — Standalone product documentation (Qori, Truebid)
-- `reference/_archive/` — Retired content preserved for reference
 
 ### Lab automation
 Scripts and supporting files for the lab itself.
