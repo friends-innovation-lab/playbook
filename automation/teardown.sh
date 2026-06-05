@@ -531,10 +531,11 @@ echo ""
 
 TODAY=$(date +%Y-%m-%d)
 STATE_FILE_DIR="${PLAYBOOK_DIR}/operations/teardown-log"
-if [ ! -d "$PLAYBOOK_DIR/operations" ]; then
+if ! mkdir -p "$STATE_FILE_DIR" 2>/dev/null || [ ! -w "$STATE_FILE_DIR" ]; then
   STATE_FILE_DIR="$HOME/Downloads"
+  mkdir -p "$STATE_FILE_DIR"
+  echo "Note: Could not write to ${PLAYBOOK_DIR}/operations/teardown-log. Saving state to ~/Downloads instead."
 fi
-mkdir -p "$STATE_FILE_DIR"
 STATE_FILE="${STATE_FILE_DIR}/${PROJECT_NAME}-${TODAY}.state"
 
 # Check for existing incomplete state file
@@ -988,12 +989,12 @@ fi
 TEARDOWN_LOG_DIR="${PLAYBOOK_DIR}/operations/teardown-log"
 TEARDOWN_LOG="${TEARDOWN_LOG_DIR}/${PROJECT_NAME}-${TODAY}.md"
 
-if [ ! -d "$PLAYBOOK_DIR/operations" ]; then
-  # Playbook repo not found at expected path — save to Downloads
+if ! mkdir -p "$TEARDOWN_LOG_DIR" 2>/dev/null || [ ! -w "$TEARDOWN_LOG_DIR" ]; then
   TEARDOWN_LOG_DIR="$HOME/Downloads"
   TEARDOWN_LOG="${TEARDOWN_LOG_DIR}/${PROJECT_NAME}-teardown-${TODAY}.md"
+  mkdir -p "$TEARDOWN_LOG_DIR"
   if ! $DRY_RUN; then
-    warn "Playbook repo not found at expected path. Saving teardown record to ~/Downloads instead."
+    echo "Note: Could not write to ${PLAYBOOK_DIR}/operations/teardown-log. Saving log to ~/Downloads instead."
   fi
 fi
 
