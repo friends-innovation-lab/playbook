@@ -659,16 +659,31 @@ if [ "$DO_SUPABASE" = true ]; then
       SUPABASE_RESULT="Project deleted in previous run"
     else
       # Check if project still exists before trying to delete
-      VERIFY_EXISTS=$(supabase projects list --output json 2>&1) || true
-      PROJECT_EXISTS=false
-      if echo "$VERIFY_EXISTS" | jq empty 2>/dev/null; then
-        EXISTS_COUNT=$(echo "$VERIFY_EXISTS" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
-        if [ "$EXISTS_COUNT" -gt 0 ]; then
-          PROJECT_EXISTS=true
-        fi
+      # Layer 6: Fail-safe existence check — abort on uncertainty, don't assume "gone"
+      VERIFY_STDERR_FILE=$(mktemp)
+      VERIFY_EXISTS=$(supabase projects list --output json 2>"$VERIFY_STDERR_FILE") || true
+      VERIFY_STDERR_CONTENT=$(cat "$VERIFY_STDERR_FILE")
+      rm -f "$VERIFY_STDERR_FILE"
+
+      if ! echo "$VERIFY_EXISTS" | jq empty 2>/dev/null; then
+        echo ""
+        echo -e "${RED}ERROR: Could not verify Supabase project state.${NC}"
+        echo "The CLI returned invalid JSON. Cannot safely proceed."
+        echo ""
+        echo "Raw output:"
+        echo "$VERIFY_EXISTS" | head -10
+        [ -n "$VERIFY_STDERR_CONTENT" ] && echo "Stderr: $VERIFY_STDERR_CONTENT"
+        echo ""
+        echo "Check the project manually at:"
+        echo "  https://supabase.com/dashboard"
+        echo ""
+        echo "Then re-run teardown if the project still exists."
+        echo "Progress saved to: $STATE_FILE"
+        exit 1
       fi
 
-      if [ "$PROJECT_EXISTS" = false ]; then
+      EXISTS_COUNT=$(echo "$VERIFY_EXISTS" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
+      if [ "$EXISTS_COUNT" -eq 0 ]; then
         echo -e "  ${GREEN}✓${NC} Supabase project already gone"
         SUPABASE_RESULT="Project already deleted"
         mark_done "supabase_delete"
@@ -684,7 +699,10 @@ if [ "$DO_SUPABASE" = true ]; then
         sleep 3
 
         # Verify deletion (non-fatal if this check fails)
-        VERIFY_RAW=$(supabase projects list --output json 2>&1) || true
+        # Separate stderr to avoid JSON contamination in verification
+        VERIFY_POST_STDERR=$(mktemp)
+        VERIFY_RAW=$(supabase projects list --output json 2>"$VERIFY_POST_STDERR") || true
+        rm -f "$VERIFY_POST_STDERR"
         if echo "$VERIFY_RAW" | jq empty 2>/dev/null; then
           STATUS=$(echo "$VERIFY_RAW" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
           if [ "$STATUS" -eq 0 ]; then
@@ -724,7 +742,11 @@ if [ "$DO_VERCEL" = true ]; then
     echo ""
 
     # 6a. Get the Vercel project ID
+    # Layer 6: Fail-safe existence check — distinguish "not found" from other errors
     # Use cached value from pre-flight if available, otherwise fetch with error handling
+    VERCEL_PROJECT_ID=""
+    VERCEL_SKIP_DELETION=false
+
     if [ -n "$VERCEL_PROJECT_ID_CACHE" ]; then
       VERCEL_PROJECT_ID="$VERCEL_PROJECT_ID_CACHE"
     else
@@ -741,15 +763,60 @@ if [ "$DO_VERCEL" = true ]; then
         exit 1
       fi
 
-      VERCEL_PROJECT_ID=$(echo "$VERCEL_RESPONSE" | jq -r '.id // empty')
+      # Check for error response before extracting project ID
+      VERCEL_ERROR_CODE=$(echo "$VERCEL_RESPONSE" | jq -r '.error.code // empty')
+      if [ -n "$VERCEL_ERROR_CODE" ]; then
+        if [ "$VERCEL_ERROR_CODE" = "not_found" ]; then
+          echo "  No Vercel project found for ${PROJECT_NAME} — already removed or never created."
+          echo ""
+          VERCEL_RESULT="No project found — already removed or never created"
+          mark_skipped "vercel_delete"
+          VERCEL_SKIP_DELETION=true
+        else
+          echo ""
+          echo -e "${RED}ERROR: Could not verify Vercel project state.${NC}"
+          echo "API returned error code: ${VERCEL_ERROR_CODE}"
+          echo ""
+          echo "Full response:"
+          echo "$VERCEL_RESPONSE" | jq . 2>/dev/null || echo "$VERCEL_RESPONSE"
+          echo ""
+          echo "Check the project manually at:"
+          echo "  https://vercel.com/dashboard"
+          echo ""
+          echo "If you've verified manually that the project is already deleted,"
+          echo "you can mark this step complete by editing:"
+          echo "  $STATE_FILE"
+          echo "and adding the line: vercel_delete=done"
+          echo ""
+          echo "Then re-run teardown to continue."
+          exit 1
+        fi
+      else
+        VERCEL_PROJECT_ID=$(echo "$VERCEL_RESPONSE" | jq -r '.id // empty')
+        if [ -z "$VERCEL_PROJECT_ID" ]; then
+          echo ""
+          echo -e "${RED}ERROR: Could not verify Vercel project state.${NC}"
+          echo "API returned unexpected response (no project ID, no error code)."
+          echo ""
+          echo "Response:"
+          echo "$VERCEL_RESPONSE" | jq . 2>/dev/null || echo "$VERCEL_RESPONSE"
+          echo ""
+          echo "Check the project manually at:"
+          echo "  https://vercel.com/dashboard"
+          echo ""
+          echo "If you've verified manually that the project is already deleted,"
+          echo "you can mark this step complete by editing:"
+          echo "  $STATE_FILE"
+          echo "and adding the line: vercel_delete=done"
+          echo ""
+          echo "Then re-run teardown to continue."
+          exit 1
+        fi
+      fi
     fi
 
-    if [ -z "$VERCEL_PROJECT_ID" ]; then
-      echo "  No Vercel project found for ${PROJECT_NAME}. It may have already been removed."
-      echo "  Skipping."
-      echo ""
-      VERCEL_RESULT="No project found — already removed or never created"
-      mark_skipped "vercel_delete"
+    if [ "$VERCEL_SKIP_DELETION" = true ]; then
+      : # Already handled above, skip to next section
     elif $DRY_RUN; then
       dry "Remove subdomain: ${PROJECT_NAME}.${LAB_DOMAIN}"
       dry "Delete Vercel project: ${VERCEL_PROJECT_ID}"
@@ -791,12 +858,45 @@ if [ "$DO_GITHUB" = true ]; then
     echo "Archiving GitHub repo..."
     echo ""
 
-    if ! gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" &>/dev/null 2>&1; then
-      echo "  No GitHub repo found for ${PROJECT_NAME}. It may have already been archived or deleted."
-      echo "  Skipping."
-      echo ""
-      GITHUB_RESULT="No repo found — already archived or deleted"
-      mark_skipped "github_archive"
+    # Layer 6: Fail-safe existence check — distinguish "not found" from other errors
+    # We capture stderr and check for the specific "not found" message because:
+    #   - gh CLI doesn't have distinct exit codes for "not found" vs other errors
+    #   - A network error or auth failure should NOT be treated as "repo doesn't exist"
+    #
+    # FRAGILITY NOTE: We match on "Could not resolve to a Repository" which is the
+    # current gh CLI error message for non-existent repos. If this breaks in a future
+    # gh version, update the string match below. Ideally gh would provide structured
+    # error output (--json errors) but as of 2024 it doesn't for repo view failures.
+    GH_VIEW_STDERR=$(mktemp)
+    GH_VIEW_OUTPUT=$(gh repo view "${GITHUB_ORG}/${PROJECT_NAME}" --json name 2>"$GH_VIEW_STDERR") || true
+    GH_VIEW_EXIT=$?
+    GH_VIEW_STDERR_CONTENT=$(cat "$GH_VIEW_STDERR")
+    rm -f "$GH_VIEW_STDERR"
+
+    if [ $GH_VIEW_EXIT -ne 0 ]; then
+      if echo "$GH_VIEW_STDERR_CONTENT" | grep -qi "Could not resolve to a Repository"; then
+        echo "  No GitHub repo found for ${PROJECT_NAME} — already archived/deleted or never created."
+        echo ""
+        GITHUB_RESULT="No repo found — already archived or deleted"
+        mark_skipped "github_archive"
+      else
+        echo ""
+        echo -e "${RED}ERROR: Could not verify GitHub repo state.${NC}"
+        echo "gh repo view failed with exit code $GH_VIEW_EXIT"
+        echo ""
+        [ -n "$GH_VIEW_STDERR_CONTENT" ] && echo "Error: $GH_VIEW_STDERR_CONTENT"
+        echo ""
+        echo "Check the repo manually at:"
+        echo "  https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
+        echo ""
+        echo "If you've verified manually that the repo is already archived/deleted,"
+        echo "you can mark this step complete by editing:"
+        echo "  $STATE_FILE"
+        echo "and adding the line: github_archive=done"
+        echo ""
+        echo "Then re-run teardown to continue."
+        exit 1
+      fi
     elif $DRY_RUN; then
       dry "Archive GitHub repo: ${GITHUB_ORG}/${PROJECT_NAME}"
       GITHUB_RESULT="[DRY RUN] Would archive repo"
