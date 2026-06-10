@@ -23,7 +23,26 @@ will pass and you will be ready to start your first project.
 
 ---
 
-## Step 1 — Open Terminal
+## Step 1 — Join the Friends Claude Team workspace
+
+This is the account that everything else connects through. Claude.ai projects, the org-level design systems in Claude Design, the orchestrator workflow with Claude Code — all of it requires membership in the Friends Claude Team workspace.
+
+**Use the invite link:**
+
+<!-- INVITE LINK ROTATION: This link expires quarterly. Update before September 2026. -->
+
+→ [https://claude.ai/join/org/F0CuGTVVyz_Aq_QbMJwBEw](https://claude.ai/join/org/F0CuGTVVyz_Aq_QbMJwBEw)
+
+Sign in with your work email. If you already have a personal Claude.ai account, you'll be prompted to join the Friends workspace alongside it — the workspaces stay separate.
+
+> [!IMPORTANT]
+> You must use the Friends Claude Team workspace for all lab work, not a personal Claude.ai account. The personal account doesn't have access to the org-level design systems (FFTC, USWDS, etc.), shared projects, or any of the workflow patterns the rest of this playbook assumes.
+
+If the invite link doesn't work or has expired, ask Lapedra for the current one.
+
+---
+
+## Step 2 — Open Terminal
 
 Terminal is the command-line interface on your Mac. You type commands
 here to install tools, run scripts, and manage your projects.
@@ -39,7 +58,7 @@ Keep Terminal open. You will use it for every step below.
 
 ---
 
-## Step 2 — Install Homebrew (2–5 minutes)
+## Step 3 — Install Homebrew (2–5 minutes)
 
 Homebrew is a package manager for Mac. It lets you install developer
 tools with a single command. Install it first — everything else
@@ -106,7 +125,7 @@ You should see a version number — any recent version of Homebrew (4.x or 5.x) 
 
 ---
 
-## Step 3 — Install Git
+## Step 4 — Install Git
 
 Git tracks changes to code and lets the team share work.
 Every project uses it.
@@ -151,7 +170,7 @@ These should return your name and email. If they return nothing, the previous st
 
 ---
 
-## Step 4 — Install Node.js (1–2 minutes)
+## Step 5 — Install Node.js (1–2 minutes)
 
 Node.js runs JavaScript on your computer. Every project in the lab
 requires Node.js version 20 or higher.
@@ -173,7 +192,7 @@ You should see `v20.0.0` or higher (any version starting with `v20`, `v22`, `v24
 
 ---
 
-## Step 5 — Install VS Code and Claude Code (5–10 minutes)
+## Step 6 — Install VS Code and Claude Code (5–10 minutes)
 
 VS Code is the editor you'll use for working on lab projects. Claude Code is the AI coding assistant that runs inside VS Code. Install both now.
 
@@ -255,7 +274,7 @@ it means the connection did not complete — try step 4 again.
 
 ---
 
-## Step 6 — Install GitHub CLI
+## Step 7 — Install GitHub CLI
 
 The GitHub CLI lets the spinup script create and manage GitHub repos
 automatically on your behalf.
@@ -314,7 +333,7 @@ gh auth refresh -h github.com -s delete_repo
 
 ---
 
-## Step 7 — Install Supabase CLI
+## Step 8 — Install Supabase CLI
 
 The Supabase CLI lets the spinup script create and manage databases
 automatically.
@@ -360,7 +379,7 @@ You may see a warning that says "Cannot find project ref. Have you run supabase 
 
 ---
 
-## Step 8 — Install Vercel CLI
+## Step 9 — Install Vercel CLI
 
 The Vercel CLI lets the spinup script create and deploy projects
 automatically.
@@ -418,7 +437,7 @@ You should see your Vercel username.
 
 ---
 
-## Step 9 — Install jq
+## Step 10 — Install jq
 
 jq processes JSON data. The spinup script uses it internally.
 
@@ -436,7 +455,7 @@ You should see something like `jq-1.7.1`. The exact version doesn't matter — a
 
 ---
 
-## Step 10 — Install PostgreSQL tools (1–2 minutes)
+## Step 11 — Install PostgreSQL tools (1–2 minutes)
 
 The teardown script uses `pg_dump` to export database backups
 before removing a project.
@@ -455,7 +474,7 @@ You should see something like `pg_dump (PostgreSQL) 16.x`. The exact version doe
 
 ---
 
-## Step 11 — Set up your environment variables (10–15 minutes)
+## Step 12 — Set up your environment variables (10–15 minutes)
 
 Environment variables are settings stored on your machine that
 scripts use automatically. You set them once and they work
@@ -592,7 +611,7 @@ Each command should print the token value — a long string of random characters
 
 ---
 
-## Step 12 — Create a projects folder
+## Step 13 — Create a projects folder
 
 Keep all lab projects in one place.
 
@@ -607,7 +626,7 @@ You only need to do this once.
 
 ---
 
-## Step 13 — Clone the playbook
+## Step 14 — Clone the playbook
 
 The playbook is the lab's operational manual. You need a local copy
 so the spinup and teardown scripts are available on your machine.

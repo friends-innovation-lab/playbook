@@ -70,7 +70,7 @@ If you're not sure all your tools are set up, run a dry-run of the spinup script
 The script will report what's missing if anything. Fix any issues before continuing.
 
 > [!TIP]
-> Verify your shared credential is set: run `echo $LAB_SUPABASE_ORG_ID` in your terminal. If a value comes back, you're set. If it's blank, return to [Step 11 in first-time-setup](../01-getting-started/01-first-time-setup.md#step-11--set-up-your-environment-variables-1015-minutes) and add it.
+> Verify your shared credential is set: run `echo $LAB_SUPABASE_ORG_ID` in your terminal. If a value comes back, you're set. If it's blank, return to [Step 12 in first-time-setup](../01-getting-started/01-first-time-setup.md#step-12--set-up-your-environment-variables-1015-minutes) and add it.
 
 ---
 

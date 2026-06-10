@@ -7,7 +7,7 @@ work correctly. Find your issue below and follow the steps.
 
 ## Homebrew not found after installation
 
-*↩ Related to [Step 2 — Install Homebrew](../01-getting-started/01-first-time-setup.md#step-2--install-homebrew)*
+*↩ Related to [Step 3 — Install Homebrew](../01-getting-started/01-first-time-setup.md#step-3--install-homebrew-25-minutes)*
 
 **Symptom:** You run `brew --version` and see:
 ```
@@ -46,7 +46,7 @@ You should see `Homebrew 4.x.x`.
 
 ## Supabase keys are empty after spinup
 
-*↩ Related to [Step 7 — Install Supabase CLI](../01-getting-started/01-first-time-setup.md#step-7--install-supabase-cli)*
+*↩ Related to [Step 8 — Install Supabase CLI](../01-getting-started/01-first-time-setup.md#step-8--install-supabase-cli)*
 
 **Symptom:** The spinup script completed but `.env.local` has
 blank values for `NEXT_PUBLIC_SUPABASE_URL` and
@@ -79,7 +79,7 @@ If you still can't get keys after 15 minutes, go to **supabase.com/dashboard** �
 
 ## Supabase CLI returns Unauthorized
 
-*↩ Related to [Step 7 — Install Supabase CLI](../01-getting-started/01-first-time-setup.md#step-7--install-supabase-cli)*
+*↩ Related to [Step 8 — Install Supabase CLI](../01-getting-started/01-first-time-setup.md#step-8--install-supabase-cli)*
 
 **Symptom:** You run `supabase projects list` and see:
 ```
@@ -110,7 +110,7 @@ Unexpected error retrieving projects: {"message":"Unauthorized"}
 
 ## Dev server crashes with Supabase error
 
-*↩ Related to [Step 7 — Install Supabase CLI](../01-getting-started/01-first-time-setup.md#step-7--install-supabase-cli)*
+*↩ Related to [Step 8 — Install Supabase CLI](../01-getting-started/01-first-time-setup.md#step-8--install-supabase-cli)*
 
 **Symptom:** You run `npm run dev` and see:
 ```
@@ -127,7 +127,7 @@ are empty.
 
 ## Vercel environment variables not set
 
-*↩ Related to [Step 11 — Set up your environment variables](../01-getting-started/01-first-time-setup.md#step-11--set-up-your-environment-variables)*
+*↩ Related to [Step 12 — Set up your environment variables](../01-getting-started/01-first-time-setup.md#step-12--set-up-your-environment-variables-1015-minutes)*
 
 **Symptom:** The spinup script completed but when you open your
 project on the live URL it shows errors that don't happen locally.
@@ -158,7 +158,7 @@ variables may have failed silently.
 
 ## Subdomain not resolving
 
-*↩ Related to [Step 8 — Install Vercel CLI](../01-getting-started/01-first-time-setup.md#step-8--install-vercel-cli)*
+*↩ Related to [Step 9 — Install Vercel CLI](../01-getting-started/01-first-time-setup.md#step-9--install-vercel-cli)*
 
 **Symptom:** `[name].lab.cityfriends.tech` returns an error or
 does not load.
@@ -186,7 +186,7 @@ or the domain was not configured correctly in Vercel.
 
 ## GitHub repo was not created
 
-*↩ Related to [Step 6 — Install GitHub CLI](../01-getting-started/01-first-time-setup.md#step-6--install-github-cli)*
+*↩ Related to [Step 7 — Install GitHub CLI](../01-getting-started/01-first-time-setup.md#step-7--install-github-cli)*
 
 **Symptom:** The spinup script exited early or the GitHub repo
 does not appear under `github.com/friends-innovation-lab`.
@@ -263,7 +263,7 @@ supabase login
 
 ## Sentry DSN not set
 
-*↩ Related to [Step 11 — Set up your environment variables](../01-getting-started/01-first-time-setup.md#step-11--set-up-your-environment-variables)*
+*↩ Related to [Step 12 — Set up your environment variables](../01-getting-started/01-first-time-setup.md#step-12--set-up-your-environment-variables-1015-minutes)*
 
 **Symptom:** The app runs but errors are not appearing in Sentry,
 or you see a warning about a missing DSN.
@@ -295,7 +295,7 @@ automatically.
 
 ## Vercel CLI install fails with permissions error
 
-*↩ Related to [Step 8 — Install Vercel CLI](../01-getting-started/01-first-time-setup.md#step-8--install-vercel-cli)*
+*↩ Related to [Step 9 — Install Vercel CLI](../01-getting-started/01-first-time-setup.md#step-9--install-vercel-cli)*
 
 **Symptom:** You see this error when running `npm install -g vercel`:
 ```
@@ -319,7 +319,7 @@ Nothing appears as you type — that is normal.
 
 ## Git commit fails — user identity not configured
 
-*↩ Related to [Step 3 — Install Git](../01-getting-started/01-first-time-setup.md#step-3--install-git)*
+*↩ Related to [Step 4 — Install Git](../01-getting-started/01-first-time-setup.md#step-4--install-git)*
 
 **Symptom:** You try to commit and see:
 ```
@@ -405,7 +405,7 @@ Ask Lapedra about the lab's Figma plan.
 
 ## Claude Code not connecting
 
-*↩ Related to [Step 5 — Install VS Code and Claude Code](../01-getting-started/01-first-time-setup.md#step-5--install-vs-code-and-claude-code)*
+*↩ Related to [Step 6 — Install VS Code and Claude Code](../01-getting-started/01-first-time-setup.md#step-6--install-vs-code-and-claude-code-510-minutes)*
 
 **Symptom:** You installed the Claude Code extension but the panel
 shows a sign-in button even after logging in, or the Claude icon
