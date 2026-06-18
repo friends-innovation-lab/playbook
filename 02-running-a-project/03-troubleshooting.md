@@ -317,6 +317,36 @@ Nothing appears as you type — that is normal.
 
 ---
 
+## Vercel signed in with the wrong method
+
+*↩ Related to [Step 9 — Install Vercel CLI](../01-getting-started/01-first-time-setup.md#step-9--install-vercel-cli)*
+
+**Symptom:** Spinup completes but the project doesn't deploy to Vercel, or you see errors about Vercel not having access to the GitHub repo.
+
+**Why it happens:** You signed into Vercel with email/password instead of "Continue with GitHub." The lab's spinup workflow needs Vercel to be linked to your GitHub identity so it can deploy from your repos. Without that link, Vercel can see the project but can't access the code.
+
+**How to fix it:**
+
+1. Log out of Vercel in the terminal:
+   ```bash
+   vercel logout
+   ```
+2. Log out of Vercel on the web at vercel.com/dashboard (click your avatar → Log Out).
+3. Go to vercel.com/login and choose **Continue with GitHub**.
+4. Log back in via the CLI:
+   ```bash
+   vercel login
+   ```
+   When prompted, choose Continue with GitHub again.
+5. Verify the link worked:
+   ```bash
+   vercel whoami
+   ```
+   Then go to vercel.com/account and confirm "GitHub" appears under Login Connections.
+6. Re-run the spinup script for your project. The Vercel deployment should now succeed.
+
+---
+
 ## Git commit fails — user identity not configured
 
 *↩ Related to [Step 4 — Install Git](../01-getting-started/01-first-time-setup.md#step-4--install-git)*

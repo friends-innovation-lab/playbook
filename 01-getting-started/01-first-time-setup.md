@@ -424,7 +424,10 @@ Run this in Terminal:
 vercel login
 ```
 
-Follow the prompts and log in with your email or GitHub account.
+When Vercel asks how you want to log in, choose **Continue with GitHub**. This links your Vercel account to your GitHub identity, which is required for the lab's spinup workflow — Vercel needs GitHub access to deploy from your repositories.
+
+> [!IMPORTANT]
+> Do not log in with email/password. The spinup script links Vercel projects to GitHub repos, and that integration only works if Vercel knows about your GitHub account. If you've already logged in with email and want to switch, see [Vercel signed in with the wrong method](../02-running-a-project/03-troubleshooting.md#vercel-signed-in-with-the-wrong-method) in troubleshooting.
 
 **Verify it worked:**
 ```bash
