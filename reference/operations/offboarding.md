@@ -15,6 +15,7 @@ Complete this checklist within 24 hours of their last day.
 - [ ] Remove from `friends-innovation-lab` team
 - Go to vercel.com → Settings → Members
 - Find the person and remove them
+- This revokes their individual token's access to team resources (the token survives on their personal account, but team resources are what we're protecting)
 
 ### Supabase
 - [ ] Remove from org
@@ -41,7 +42,7 @@ If the departing team member had access to any of the following,
 rotate them immediately:
 
 - `SUPABASE_SERVICE_ROLE_KEY` — generate a new one in Supabase dashboard
-- `VERCEL_TOKEN` — revoke in Vercel settings and generate a new one
+- `VERCEL_TOKEN` — no shared rotation needed; removing the member from the Vercel team invalidates their individual token's team access
 - `RESEND_API_KEY` — revoke and generate a new one
 - `UPSTASH_REDIS_REST_TOKEN` — rotate in Upstash dashboard
 

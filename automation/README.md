@@ -19,7 +19,7 @@ supabase login
 
 Add these to your shell profile (~/.zshrc or ~/.bashrc):
 ```bash
-export VERCEL_TOKEN=         # vercel.com → Settings → Tokens
+export VERCEL_TOKEN=         # Self-generated: vercel.com → Account Settings → Tokens (scoped to Friends Innovation Lab)
 export VERCEL_ORG_ID=        # vercel.com → Settings → General → Team ID
 export GITHUB_ORG=friends-innovation-lab
 export SUPABASE_ORG_ID=      # supabase.com → org settings

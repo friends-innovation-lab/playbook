@@ -52,7 +52,7 @@ Add these to your shell profile (`~/.zshrc` or `~/.bashrc`):
 
 ```bash
 export GITHUB_ORG=friends-innovation-lab
-export VERCEL_TOKEN=your-vercel-token            # vercel.com → Settings → Tokens
+export VERCEL_TOKEN=your-vercel-token            # Self-generated: vercel.com → Account Settings → Tokens (scoped to Friends Innovation Lab)
 export VERCEL_ORG_ID=your-vercel-team-id         # vercel.com → Settings → General
 export LAB_SUPABASE_ORG_ID=your-ci-org-id        # recommended: Friends Lab CI org
 export SUPABASE_ORG_ID=your-supabase-org-id      # fallback if LAB_SUPABASE_ORG_ID not set
@@ -177,7 +177,7 @@ so re-running is safe.
 
 ### "Vercel project creation failed"
 
-- Check that `VERCEL_TOKEN` has the right scopes
+- Check that `VERCEL_TOKEN` is scoped to the Friends Innovation Lab team
 - Verify `VERCEL_ORG_ID` matches your team
 - Try `--skip-vercel` and create the project manually
 
