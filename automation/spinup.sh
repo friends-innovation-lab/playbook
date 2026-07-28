@@ -128,17 +128,26 @@ fi
 
 # --- Authentications ---
 
-if gh auth status &>/dev/null 2>&1; then
-  ok "GitHub CLI is logged in"
+# Source shared validation library
+_PREFLIGHT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/preflight-lib.sh"
+if [ ! -f "$_PREFLIGHT_LIB" ]; then
+  fail "Missing preflight-lib.sh — expected at ${_PREFLIGHT_LIB}"
+  exit 1
+fi
+source "$_PREFLIGHT_LIB"
+
+if validate_github_api; then
+  ok "GitHub CLI is logged in (${GITHUB_VALIDATE_USER})"
 else
-  fail "GitHub CLI is not logged in. Run: gh auth login"
+  fail "GitHub authentication failed — gh api user returned no valid user. Run: gh auth login"
   CHECKS_PASSED=false
 fi
 
-if vercel whoami &>/dev/null 2>&1; then
-  ok "Vercel CLI is logged in"
+if validate_vercel_token; then
+  ok "VERCEL_TOKEN valid (${VERCEL_VALIDATE_USER})"
 else
-  fail "Vercel CLI is not logged in. Run: vercel login"
+  fail "VERCEL_TOKEN validation failed"
+  print_vercel_token_help
   CHECKS_PASSED=false
 fi
 
@@ -176,12 +185,7 @@ fi
 
 # --- Environment variables ---
 
-if [ -n "$VERCEL_TOKEN" ]; then
-  ok "VERCEL_TOKEN is set"
-else
-  fail "VERCEL_TOKEN is not set. Get a token at vercel.com → Settings → Tokens, then add to your shell profile."
-  CHECKS_PASSED=false
-fi
+# VERCEL_TOKEN already validated above by validate_vercel_token
 
 if [ -n "$VERCEL_ORG_ID" ]; then
   ok "VERCEL_ORG_ID is set"
@@ -202,6 +206,18 @@ if [ "$DB_FLAG" = true ]; then
     ok "SUPABASE_ORG_ID is set"
   else
     fail "SUPABASE_ORG_ID is not set. Find it at supabase.com → org settings, then add to your shell profile."
+    CHECKS_PASSED=false
+  fi
+
+  if validate_supabase_token; then
+    ok "SUPABASE_ACCESS_TOKEN valid"
+  else
+    if [ "$SUPABASE_VALIDATE_ERROR" = "not_set" ]; then
+      fail "SUPABASE_ACCESS_TOKEN is not set. Contact Lapedra for the shared team token via Rippling RPASS."
+    else
+      fail "SUPABASE_ACCESS_TOKEN is set but failed validation — token may be expired or revoked"
+      echo "    Contact Lapedra for a new shared team token via Rippling RPASS."
+    fi
     CHECKS_PASSED=false
   fi
 fi

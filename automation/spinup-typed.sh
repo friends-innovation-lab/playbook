@@ -551,19 +551,29 @@ if ! $SKIP_VERCEL; then
     fi
 fi
 
-# Auth checks
-if gh auth status &>/dev/null 2>&1; then
-    ok "GitHub authenticated"
+# Source shared validation library
+_PREFLIGHT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/preflight-lib.sh"
+if [[ ! -f "$_PREFLIGHT_LIB" ]]; then
+    fail "Missing preflight-lib.sh — expected at ${_PREFLIGHT_LIB}"
+    exit 1
+fi
+source "$_PREFLIGHT_LIB"
+
+# Auth checks — real API validation
+if validate_github_api; then
+    ok "GitHub authenticated (${GITHUB_VALIDATE_USER})"
 else
-    fail "GitHub not authenticated (run: gh auth login)"
+    fail "GitHub authentication failed — gh api user returned no valid user"
+    echo "    Run: gh auth login"
     CHECKS_PASSED=false
 fi
 
 if ! $SKIP_VERCEL; then
-    if [[ -n "${VERCEL_TOKEN:-}" ]]; then
-        ok "VERCEL_TOKEN set"
+    if validate_vercel_token; then
+        ok "VERCEL_TOKEN valid (${VERCEL_VALIDATE_USER})"
     else
-        fail "VERCEL_TOKEN not set"
+        fail "VERCEL_TOKEN validation failed"
+        print_vercel_token_help
         CHECKS_PASSED=false
     fi
     if [[ -n "${VERCEL_ORG_ID:-}" ]]; then
@@ -575,6 +585,17 @@ if ! $SKIP_VERCEL; then
 fi
 
 if ! $SKIP_SUPABASE; then
+    if validate_supabase_token; then
+        ok "SUPABASE_ACCESS_TOKEN valid"
+    else
+        if [[ "$SUPABASE_VALIDATE_ERROR" == "not_set" ]]; then
+            fail "SUPABASE_ACCESS_TOKEN is not set. Contact Lapedra for the shared team token via Rippling RPASS."
+        else
+            fail "SUPABASE_ACCESS_TOKEN is set but failed validation — token may be expired or revoked"
+            echo "    Contact Lapedra for a new shared team token via Rippling RPASS."
+        fi
+        CHECKS_PASSED=false
+    fi
     if [[ -n "$RESOLVED_SUPABASE_ORG" ]]; then
         ok "Supabase org ID resolved ($RESOLVED_SUPABASE_ORG)"
     else
