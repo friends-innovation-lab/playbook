@@ -199,19 +199,25 @@ else
   CHECKS_PASSED=false
 fi
 
-# --- Authentications (using the same invocation patterns as downstream usage) ---
+# --- Authentications ---
 
-# GitHub: Test with --json to match how we use it downstream
-GH_AUTH_OUTPUT=$(gh auth status 2>&1) || true
-if echo "$GH_AUTH_OUTPUT" | grep -q "Logged in"; then
-  ok "GitHub CLI is logged in"
+# Source shared validation library
+_PREFLIGHT_LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/preflight-lib.sh"
+if [ ! -f "$_PREFLIGHT_LIB" ]; then
+  fail "Missing preflight-lib.sh — expected at ${_PREFLIGHT_LIB}"
+  exit 1
+fi
+source "$_PREFLIGHT_LIB"
+
+# GitHub: real API call
+if validate_github_api; then
+  ok "GitHub CLI is logged in (${GITHUB_VALIDATE_USER})"
 else
-  fail "GitHub CLI is not logged in. Run: gh auth login"
-  echo "$GH_AUTH_OUTPUT" | head -5
+  fail "GitHub authentication failed — gh api user returned no valid user. Run: gh auth login"
   CHECKS_PASSED=false
 fi
 
-# Vercel: Test whoami which is what we use to verify auth
+# Vercel: CLI session check (token validated below in env vars section)
 VERCEL_AUTH_OUTPUT=$(vercel whoami 2>&1) || true
 VERCEL_AUTH_EXIT=$?
 if [ $VERCEL_AUTH_EXIT -eq 0 ]; then
@@ -255,10 +261,11 @@ fi
 
 # --- Environment variables ---
 
-if [ -n "$VERCEL_TOKEN" ]; then
-  ok "VERCEL_TOKEN is set"
+if validate_vercel_token; then
+  ok "VERCEL_TOKEN valid (${VERCEL_VALIDATE_USER})"
 else
-  fail "VERCEL_TOKEN is not set. Get a token at vercel.com → Settings → Tokens, then add to your shell profile."
+  fail "VERCEL_TOKEN validation failed"
+  print_vercel_token_help
   CHECKS_PASSED=false
 fi
 
@@ -273,10 +280,15 @@ fi
 GITHUB_ORG="${GITHUB_ORG:-friends-innovation-lab}"
 ok "GITHUB_ORG: $GITHUB_ORG"
 
-if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
-  ok "SUPABASE_ACCESS_TOKEN is set"
+if validate_supabase_token; then
+  ok "SUPABASE_ACCESS_TOKEN valid"
 else
-  fail "SUPABASE_ACCESS_TOKEN is not set. Get a token at supabase.com → account → access tokens, then add to your shell profile."
+  if [ "${SUPABASE_VALIDATE_ERROR:-}" = "not_set" ]; then
+    fail "SUPABASE_ACCESS_TOKEN is not set. Contact Lapedra for the shared team token via Rippling RPASS."
+  else
+    fail "SUPABASE_ACCESS_TOKEN is set but failed validation — token may be expired or revoked"
+    echo "    Contact Lapedra for a new shared team token via Rippling RPASS."
+  fi
   CHECKS_PASSED=false
 fi
 
