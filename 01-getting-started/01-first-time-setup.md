@@ -435,6 +435,28 @@ vercel whoami
 ```
 You should see your Vercel username.
 
+**Verify your team membership:**
+
+> [!IMPORTANT]
+> You must accept the Friends Innovation Lab Vercel team invite **before** logging in, and you must log in with the **same account** that accepted the invite. Team membership attaches to the account that accepted — if you accept with one account and log in with another, Vercel will not see you as a team member.
+
+```bash
+vercel teams ls
+```
+
+You should see `friends-innovation-lab` in the list. If it is missing:
+
+1. Log out: `vercel logout`
+2. Confirm you accepted the team invite (check your email for the Vercel invite)
+3. Log back in with the account that accepted the invite: `vercel login`
+4. Run `vercel teams ls` again
+
+Once the team appears, switch to it:
+
+```bash
+vercel switch friends-innovation-lab
+```
+
 > [!TIP]
 > Having trouble? See [Vercel CLI permissions error](../02-running-a-project/03-troubleshooting.md#vercel-cli-install-fails-with-permissions-error)
 
@@ -517,13 +539,25 @@ export SUPABASE_ACCESS_TOKEN=
 The blank values (`=` with nothing after) get filled in below. Save the file (Cmd+S in VS Code) but leave it open — you'll come back to add the actual values.
 
 > [!NOTE]
-> Contact Lapedra to get the `VERCEL_TOKEN` and `SUPABASE_ACCESS_TOKEN` values. These are shared team tokens — do not generate your own. She will send them securely via Rippling RPASS.
+> Contact Lapedra to get the `SUPABASE_ACCESS_TOKEN` value — this is a shared team token, do not generate your own. She will send it securely via Rippling RPASS. The `VERCEL_TOKEN` is self-generated — instructions are in the VERCEL_TOKEN section below.
 
 ---
 
 ### VERCEL_TOKEN
 
-This is a shared team token that lets the spinup script create Vercel projects. Do not generate your own.
+Each team member generates their own Vercel token, scoped to the Friends Innovation Lab team.
+
+1. Go to **[vercel.com/account/tokens](https://vercel.com/account/tokens)** (Account Settings → Tokens)
+2. Click **Create**
+3. **Token Name** — use something identifiable: `lab-spinup-yourname` (e.g. `lab-spinup-lapedra`)
+4. **Scope** — select **Friends Innovation Lab** from the dropdown
+
+   > [!WARNING]
+   > The scope dropdown is the most common failure point. If **Friends Innovation Lab** does not appear in the list, your team membership from Step 9 is not set up correctly. Go back to Step 9 and complete the "Verify your team membership" section before continuing.
+
+5. **Expiration** — set to **1 year** (the lab standard maximum) and note the date somewhere you'll see it (calendar reminder recommended)
+6. Click **Create Token**
+7. **Copy the token immediately** — Vercel only shows it once
 
 **Paste the token into your shell profile.**
 
@@ -542,9 +576,9 @@ export VERCEL_TOKEN=your-actual-token-value-here
 Save the file (Cmd+S in VS Code).
 
 > [!IMPORTANT]
-> Store this value somewhere secure on your machine (password manager
-> preferred). If you lose it, ask Lapedra to resend — never generate
-> your own, since the team uses shared tokens.
+> Store this token in your password manager along with its expiration date.
+> When it expires, generate a new one following the same steps above
+> and update your `~/.zshrc`.
 
 ---
 
@@ -611,6 +645,24 @@ Each command should print the token value — a long string of random characters
 
 > [!TIP]
 > Having trouble? See [Environment variable shows blank](../02-running-a-project/03-troubleshooting.md#environment-variable-shows-blank)
+
+**Verify the Vercel token actually works:**
+
+```bash
+curl -s -H "Authorization: Bearer $VERCEL_TOKEN" https://api.vercel.com/v2/user
+```
+
+- If you see JSON containing your user info (`"username"`, `"email"`, etc.) — the token is valid.
+- If the response contains `"invalidToken": true` — the token is bad, most likely scoped incorrectly. Go back to the VERCEL_TOKEN section and regenerate with the scope set to Friends Innovation Lab.
+
+> [!WARNING]
+> **When replacing a Vercel token later**, fully quit Terminal (**Cmd+Q**) and reopen it. Running `source ~/.zshrc` or `exec zsh` does **not** clear a stale `VERCEL_TOKEN` from the environment — the old value silently overrides `vercel login` and causes confusing failures.
+>
+> Also verify you don't have duplicate entries:
+> ```bash
+> grep -n VERCEL_TOKEN ~/.zshrc
+> ```
+> This should return **exactly one line**. If you see two or more, delete the old one — duplicate exports are how stale tokens persist even after you think you've updated.
 
 ---
 
