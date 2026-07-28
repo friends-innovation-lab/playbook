@@ -594,6 +594,7 @@ SUPABASE_RESULT="Skipped"
 VERCEL_RESULT="Skipped"
 LOCAL_RESULT="Skipped"
 BACKUP_RESULT="No database backup — Supabase not configured or skipped"
+TEARDOWN_HAD_ERRORS=false
 
 # ═════════════════════════════════════════════════════════
 # STEP 5 — Export Supabase data
@@ -610,12 +611,22 @@ if [ "$DO_SUPABASE" = true ]; then
   if [ -n "$SUPABASE_PROJECT_REF_CACHE" ]; then
     SUPABASE_PROJECT_REF="$SUPABASE_PROJECT_REF_CACHE"
   else
-    SUPABASE_RAW=$(run_or_die "Fetching Supabase projects" supabase projects list --output json)
-    SUPABASE_RAW=$(parse_json_or_die "Supabase project list" "$SUPABASE_RAW")
-    SUPABASE_PROJECT_REF=$(echo "$SUPABASE_RAW" | jq -r ".[] | select(.name==\"$PROJECT_NAME\") | .id")
+    SUPABASE_FETCH_STDERR=$(mktemp)
+    SUPABASE_RAW=$(supabase projects list --output json 2>"$SUPABASE_FETCH_STDERR") || true
+    rm -f "$SUPABASE_FETCH_STDERR"
+    if echo "$SUPABASE_RAW" | jq empty 2>/dev/null; then
+      SUPABASE_PROJECT_REF=$(echo "$SUPABASE_RAW" | jq -r ".[] | select(.name==\"$PROJECT_NAME\") | .id")
+    else
+      fail "Could not fetch Supabase project list — CLI returned invalid data"
+      echo "    Check manually at: https://supabase.com/dashboard"
+      SUPABASE_RESULT="✗ Failed to fetch project list — check manually"
+      mark_skipped "supabase_backup"
+      mark_skipped "supabase_delete"
+      TEARDOWN_HAD_ERRORS=true
+    fi
   fi
 
-  if [ -z "$SUPABASE_PROJECT_REF" ]; then
+  if [ -z "$SUPABASE_PROJECT_REF" ] && [ "$SUPABASE_RESULT" = "Skipped" ]; then
     echo "  No Supabase project found for ${PROJECT_NAME} — skipping."
     echo ""
     SUPABASE_RESULT="No project found — already deleted or never created"
@@ -672,65 +683,57 @@ if [ "$DO_SUPABASE" = true ]; then
       SUPABASE_RESULT="Project deleted in previous run"
     else
       # Check if project still exists before trying to delete
-      # Layer 6: Fail-safe existence check — abort on uncertainty, don't assume "gone"
       VERIFY_STDERR_FILE=$(mktemp)
       VERIFY_EXISTS=$(supabase projects list --output json 2>"$VERIFY_STDERR_FILE") || true
       VERIFY_STDERR_CONTENT=$(cat "$VERIFY_STDERR_FILE")
       rm -f "$VERIFY_STDERR_FILE"
 
       if ! echo "$VERIFY_EXISTS" | jq empty 2>/dev/null; then
-        echo ""
-        echo -e "${RED}ERROR: Could not verify Supabase project state.${NC}"
-        echo "The CLI returned invalid JSON. Cannot safely proceed."
-        echo ""
-        echo "Raw output:"
-        echo "$VERIFY_EXISTS" | head -10
-        [ -n "$VERIFY_STDERR_CONTENT" ] && echo "Stderr: $VERIFY_STDERR_CONTENT"
-        echo ""
-        echo "Check the project manually at:"
-        echo "  https://supabase.com/dashboard"
-        echo ""
-        echo "Then re-run teardown if the project still exists."
-        echo "Progress saved to: $STATE_FILE"
-        exit 1
-      fi
-
-      EXISTS_COUNT=$(echo "$VERIFY_EXISTS" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
-      if [ "$EXISTS_COUNT" -eq 0 ]; then
-        echo -e "  ${GREEN}✓${NC} Supabase project already gone"
-        SUPABASE_RESULT="Project already deleted"
-        mark_done "supabase_delete"
-      elif $DRY_RUN; then
-        dry "Delete Supabase project: ${SUPABASE_PROJECT_REF}"
-        SUPABASE_RESULT="[DRY RUN] Would delete project"
+        warn "Could not verify Supabase project state — CLI returned invalid JSON"
+        [ -n "$VERIFY_STDERR_CONTENT" ] && echo "    Stderr: $VERIFY_STDERR_CONTENT"
+        echo "    Check manually at: https://supabase.com/dashboard"
+        echo "    Re-run teardown to retry this step."
+        SUPABASE_RESULT="✗ Could not verify project state — check manually"
+        TEARDOWN_HAD_ERRORS=true
+        # Don't mark done — let user re-run to verify
       else
-        echo "  Deleting Supabase project..."
-        curl -s -X DELETE \
-          "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}" \
-          -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" >/dev/null
+        EXISTS_COUNT=$(echo "$VERIFY_EXISTS" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
+        if [ "$EXISTS_COUNT" -eq 0 ]; then
+          echo -e "  ${GREEN}✓${NC} Supabase project already gone"
+          SUPABASE_RESULT="Project already deleted"
+          mark_done "supabase_delete"
+        elif $DRY_RUN; then
+          dry "Delete Supabase project: ${SUPABASE_PROJECT_REF}"
+          SUPABASE_RESULT="[DRY RUN] Would delete project"
+        else
+          echo "  Deleting Supabase project..."
+          curl -s -X DELETE \
+            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" >/dev/null
 
-        sleep 3
+          sleep 3
 
-        # Verify deletion (non-fatal if this check fails)
-        # Separate stderr to avoid JSON contamination in verification
-        VERIFY_POST_STDERR=$(mktemp)
-        VERIFY_RAW=$(supabase projects list --output json 2>"$VERIFY_POST_STDERR") || true
-        rm -f "$VERIFY_POST_STDERR"
-        if echo "$VERIFY_RAW" | jq empty 2>/dev/null; then
-          STATUS=$(echo "$VERIFY_RAW" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
-          if [ "$STATUS" -eq 0 ]; then
-            ok "Supabase project deleted"
-            SUPABASE_RESULT="Data exported + project deleted"
-            mark_done "supabase_delete"
+          # Verify deletion (non-fatal if this check fails)
+          VERIFY_POST_STDERR=$(mktemp)
+          VERIFY_RAW=$(supabase projects list --output json 2>"$VERIFY_POST_STDERR") || true
+          rm -f "$VERIFY_POST_STDERR"
+          if echo "$VERIFY_RAW" | jq empty 2>/dev/null; then
+            STATUS=$(echo "$VERIFY_RAW" | jq -r "[.[] | select(.name==\"$PROJECT_NAME\")] | length")
+            if [ "$STATUS" -eq 0 ]; then
+              ok "Supabase project deleted"
+              SUPABASE_RESULT="Data exported + project deleted"
+              mark_done "supabase_delete"
+            else
+              warn "Supabase project may still be deleting. Check supabase.com/dashboard"
+              SUPABASE_RESULT="Data exported, project deletion pending"
+              # Don't mark done — let user re-run to verify
+            fi
           else
-            warn "Supabase project may still be deleting. Check supabase.com/dashboard"
-            SUPABASE_RESULT="Data exported, project deletion pending"
+            warn "Could not verify deletion (CLI returned non-JSON). Check supabase.com/dashboard"
+            SUPABASE_RESULT="Data exported, deletion verification failed"
+            TEARDOWN_HAD_ERRORS=true
             # Don't mark done — let user re-run to verify
           fi
-        else
-          warn "Could not verify deletion (CLI returned non-JSON). Check supabase.com/dashboard"
-          SUPABASE_RESULT="Data exported, deletion verification failed"
-          # Don't mark done — let user re-run to verify
         fi
       fi
     fi
@@ -769,61 +772,40 @@ if [ "$DO_VERCEL" = true ]; then
 
       # Validate JSON response
       if ! echo "$VERCEL_RESPONSE" | jq empty 2>/dev/null; then
-        echo ""
-        echo -e "${RED}ERROR: Vercel API returned non-JSON response:${NC}"
-        echo "$VERCEL_RESPONSE" | head -10
-        echo "Progress saved to: $STATE_FILE"
-        exit 1
-      fi
-
-      # Check for error response before extracting project ID
-      VERCEL_ERROR_CODE=$(echo "$VERCEL_RESPONSE" | jq -r '.error.code // empty')
-      if [ -n "$VERCEL_ERROR_CODE" ]; then
-        if [ "$VERCEL_ERROR_CODE" = "not_found" ]; then
-          echo "  No Vercel project found for ${PROJECT_NAME} — already removed or never created."
-          echo ""
-          VERCEL_RESULT="No project found — already removed or never created"
-          mark_skipped "vercel_delete"
-          VERCEL_SKIP_DELETION=true
-        else
-          echo ""
-          echo -e "${RED}ERROR: Could not verify Vercel project state.${NC}"
-          echo "API returned error code: ${VERCEL_ERROR_CODE}"
-          echo ""
-          echo "Full response:"
-          echo "$VERCEL_RESPONSE" | jq . 2>/dev/null || echo "$VERCEL_RESPONSE"
-          echo ""
-          echo "Check the project manually at:"
-          echo "  https://vercel.com/dashboard"
-          echo ""
-          echo "If you've verified manually that the project is already deleted,"
-          echo "you can mark this step complete by editing:"
-          echo "  $STATE_FILE"
-          echo "and adding the line: vercel_delete=done"
-          echo ""
-          echo "Then re-run teardown to continue."
-          exit 1
-        fi
+        fail "Vercel API returned non-JSON response"
+        echo "    Check manually at: https://vercel.com/dashboard"
+        VERCEL_RESULT="✗ API error — check manually at vercel.com/dashboard"
+        mark_skipped "vercel_delete"
+        VERCEL_SKIP_DELETION=true
+        TEARDOWN_HAD_ERRORS=true
       else
-        VERCEL_PROJECT_ID=$(echo "$VERCEL_RESPONSE" | jq -r '.id // empty')
-        if [ -z "$VERCEL_PROJECT_ID" ]; then
-          echo ""
-          echo -e "${RED}ERROR: Could not verify Vercel project state.${NC}"
-          echo "API returned unexpected response (no project ID, no error code)."
-          echo ""
-          echo "Response:"
-          echo "$VERCEL_RESPONSE" | jq . 2>/dev/null || echo "$VERCEL_RESPONSE"
-          echo ""
-          echo "Check the project manually at:"
-          echo "  https://vercel.com/dashboard"
-          echo ""
-          echo "If you've verified manually that the project is already deleted,"
-          echo "you can mark this step complete by editing:"
-          echo "  $STATE_FILE"
-          echo "and adding the line: vercel_delete=done"
-          echo ""
-          echo "Then re-run teardown to continue."
-          exit 1
+        # Check for error response before extracting project ID
+        VERCEL_ERROR_CODE=$(echo "$VERCEL_RESPONSE" | jq -r '.error.code // empty')
+        if [ -n "$VERCEL_ERROR_CODE" ]; then
+          if [ "$VERCEL_ERROR_CODE" = "not_found" ]; then
+            echo "  No Vercel project found for ${PROJECT_NAME} — already removed or never created."
+            echo ""
+            VERCEL_RESULT="No project found — already removed or never created"
+            mark_skipped "vercel_delete"
+            VERCEL_SKIP_DELETION=true
+          else
+            fail "Vercel API error: ${VERCEL_ERROR_CODE}"
+            echo "    Check manually at: https://vercel.com/dashboard"
+            VERCEL_RESULT="✗ API error (${VERCEL_ERROR_CODE}) — check manually"
+            mark_skipped "vercel_delete"
+            VERCEL_SKIP_DELETION=true
+            TEARDOWN_HAD_ERRORS=true
+          fi
+        else
+          VERCEL_PROJECT_ID=$(echo "$VERCEL_RESPONSE" | jq -r '.id // empty')
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            fail "Vercel API returned unexpected response — no project ID, no error"
+            echo "    Check manually at: https://vercel.com/dashboard"
+            VERCEL_RESULT="✗ Unexpected API response — check manually"
+            mark_skipped "vercel_delete"
+            VERCEL_SKIP_DELETION=true
+            TEARDOWN_HAD_ERRORS=true
+          fi
         fi
       fi
     fi
@@ -893,22 +875,12 @@ if [ "$DO_GITHUB" = true ]; then
         GITHUB_RESULT="No repo found — already archived or deleted"
         mark_skipped "github_archive"
       else
-        echo ""
-        echo -e "${RED}ERROR: Could not verify GitHub repo state.${NC}"
-        echo "gh repo view failed with exit code $GH_VIEW_EXIT"
-        echo ""
-        [ -n "$GH_VIEW_STDERR_CONTENT" ] && echo "Error: $GH_VIEW_STDERR_CONTENT"
-        echo ""
-        echo "Check the repo manually at:"
-        echo "  https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
-        echo ""
-        echo "If you've verified manually that the repo is already archived/deleted,"
-        echo "you can mark this step complete by editing:"
-        echo "  $STATE_FILE"
-        echo "and adding the line: github_archive=done"
-        echo ""
-        echo "Then re-run teardown to continue."
-        exit 1
+        fail "Could not verify GitHub repo state (exit code $GH_VIEW_EXIT)"
+        [ -n "$GH_VIEW_STDERR_CONTENT" ] && echo "    Error: $GH_VIEW_STDERR_CONTENT"
+        echo "    Check manually at: https://github.com/${GITHUB_ORG}/${PROJECT_NAME}"
+        GITHUB_RESULT="✗ Could not verify — check manually"
+        mark_skipped "github_archive"
+        TEARDOWN_HAD_ERRORS=true
       fi
     elif $DRY_RUN; then
       dry "Archive GitHub repo: ${GITHUB_ORG}/${PROJECT_NAME}"
@@ -1095,4 +1067,8 @@ else
   echo "  through GitHub repo settings."
   echo ""
   echo "All done. Nothing is running and no costs are accruing for this project."
+fi
+
+if $TEARDOWN_HAD_ERRORS; then
+  exit 1
 fi
