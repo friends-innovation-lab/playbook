@@ -1,0 +1,1 @@
+{"id":"team_test123","slug":"test-team","name":"Test Team","membership":{"uid":"usr_abc123","role":"MEMBER","confirmed":true,"teamPermissions":["CreateProject","EnvVariableManager"],"teamRoles":["MEMBER"],"_fixture_note":"SYNTHETIC — role and permissions are test values, not provider-policy evidence. WP0 observed OWNER with no teamPermissions/teamRoles populated."}}
