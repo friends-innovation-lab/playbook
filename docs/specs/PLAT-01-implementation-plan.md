@@ -409,6 +409,63 @@ Same pattern. Independent revert.
 
 ---
 
+## PLAT-01 Merge Strategy
+
+### WP0–WP4: Direct to main
+
+May merge directly to main after normal work-package review. These changes are additive and not yet consumed by provisioning/lifecycle paths.
+
+### WP5B: Gated integration branch
+
+Must be implemented on a short-lived integration branch.
+
+**Reason:** WP5B changes persisted execution state and causes spinup/resume to begin writing or consuming state v2. A defect can affect provisioning behavior for all users.
+
+**Minimum merge gate:**
+- [ ] State v2 schema validated
+- [ ] Legacy/no-state behavior explicitly tested
+- [ ] Resume behavior tested
+- [ ] Malformed-state behavior tested
+- [ ] Rollback/revert path tested
+- [ ] No fabricated historical provider context
+- [ ] Current spinup compatibility verified
+- [ ] Implementation evidence reviewed
+
+### WP7: Gated integration branch
+
+Must be implemented on a short-lived integration branch.
+
+**Reason:** WP7 switches provisioning consumers from legacy validation functions to the new provider resolvers/capability checks. This is the first point where a resolver defect can directly break spinup/resume/teardown.
+
+**Minimum merge gate:**
+- [ ] Spinup happy path passes
+- [ ] Resume happy path passes
+- [ ] Teardown happy path passes
+- [ ] Provider failure classifications exercised
+- [ ] Scope safety exercised
+- [ ] Capability-specific checks exercised
+- [ ] No fallback to name-based discovery
+- [ ] No partial state/context survives failure
+- [ ] Rollback to prior consumer path proven
+- [ ] Healthy-path provider smoke checks pass
+- [ ] Spinup interrupted mid-provision leaves resources teardown can remove
+- [ ] Teardown against a partially-provisioned project succeeds
+- [ ] Rollback of WP7 does not orphan resources created while it was live
+
+### General rule
+
+Any later work package that changes provisioning behavior, persisted state format, resume semantics, teardown semantics, provider mutation scope, or consumer wiring must use the same gated integration-branch pattern unless architecture review explicitly approves direct-to-main.
+
+### Branch lifecycle
+
+The integration branch is short-lived: create from current main at the start of the risky WP, implement and verify, satisfy the documented release gate, merge to main, delete the branch. Do not accumulate unrelated work on the branch.
+
+### Merge evidence
+
+Before merge to main, produce: branch name, commit list, exact release-gate checklist with pass/fail, test/smoke results, rollback procedure, confirmation unrelated files are excluded, final architecture approval.
+
+---
+
 ## 10. Evidence proving current spinup/teardown behavior did not change
 
 ### Test 1: Compatibility wrapper output comparison
