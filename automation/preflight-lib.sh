@@ -156,7 +156,7 @@ _provider_vercel_api() {
     curl -s -w "\n%{http_code}" -X "$method" \
         "https://api.vercel.com${path}" \
         -H "Authorization: Bearer ${VERCEL_TOKEN:-}" \
-        "$@"
+        ${@+"$@"}
 }
 
 _provider_vercel_cli() {
@@ -170,7 +170,7 @@ _provider_supabase_api() {
     curl -s -w "\n%{http_code}" -X "$method" \
         "https://api.supabase.com${path}" \
         -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN:-}" \
-        "$@"
+        ${@+"$@"}
 }
 
 # Helper: split a curl -w "\n%{http_code}" response into body + code.
@@ -315,17 +315,13 @@ resolve_provider_context() {
     clear_preflight_error
     clear_provider_context "$provider"
 
-    local provider_lower
-    provider_lower=$(echo "$provider" | tr '[:upper:]' '[:lower:]')
-
     case "$provider" in
-        GITHUB|VERCEL|SUPABASE)
-            # Provider-specific resolvers are implemented in WP2-WP4.
-            # Until then, this function fails clearly without assigning
-            # a false operational diagnostic code. No diagnostic code is
-            # set — this is a developer-facing scaffold condition, not an
-            # operational failure. Callers should check the return code.
-            echo "resolve_provider_context: resolver for ${provider} is not yet implemented (requires WP2-WP4)" >&2
+        VERCEL)
+            resolve_vercel_context
+            return $?
+            ;;
+        GITHUB|SUPABASE)
+            echo "resolve_provider_context: resolver for ${provider} is not yet implemented (requires WP3-WP4)" >&2
             return 1
             ;;
         *)
@@ -333,4 +329,407 @@ resolve_provider_context() {
             return 1
             ;;
     esac
+}
+
+# ── Vercel resolver (PLAT-01/WP2) ─────────────────────────────────────────
+#
+# API calls:
+#   GET /v2/user              — credential validation + actor identity
+#   GET /v2/teams/{teamId}    — canonical scope + membership + permission
+#
+# Documented RBAC basis: https://vercel.com/docs/rbac/access-roles
+# API reference: https://vercel.com/docs/rest-api/teams/get-a-team
+#
+# KNOWN GAP: resolve_vercel_context validates project_create only.
+# Spinup additionally requires env_manage, domain_manage, and
+# deployment_create. Until WP7 wires per-capability checks into
+# consumers, a passing Vercel preflight does not guarantee a spinup will
+# complete. Documented, not fixed, in WP2.
+
+# ── Normalized membership evidence ────────────────────────────────────────
+# Populated by _normalize_vercel_membership. Read by validate_vercel_permission.
+
+_VERCEL_MEMBERSHIP_ROLE=""
+_VERCEL_MEMBERSHIP_PERMISSIONS=""   # comma-separated, e.g. "CreateProject,EnvVariableManager"
+_VERCEL_MEMBERSHIP_ROLES=""         # comma-separated
+
+_clear_vercel_membership() {
+    _VERCEL_MEMBERSHIP_ROLE=""
+    _VERCEL_MEMBERSHIP_PERMISSIONS=""
+    _VERCEL_MEMBERSHIP_ROLES=""
+}
+
+_normalize_vercel_membership() {
+    local membership_json="$1"
+    _clear_vercel_membership
+    _VERCEL_MEMBERSHIP_ROLE=$(echo "$membership_json" | jq -r '.role // empty' 2>/dev/null)
+    _VERCEL_MEMBERSHIP_PERMISSIONS=$(echo "$membership_json" | jq -r \
+        '[.teamPermissions[]?] | join(",")' 2>/dev/null)
+    _VERCEL_MEMBERSHIP_ROLES=$(echo "$membership_json" | jq -r \
+        '[.teamRoles[]?] | join(",")' 2>/dev/null)
+}
+
+_has_vercel_permission() {
+    local perm="$1"
+    [[ -n "$_VERCEL_MEMBERSHIP_PERMISSIONS" ]] && \
+        echo ",$_VERCEL_MEMBERSHIP_PERMISSIONS," | grep -q ",$perm,"
+}
+
+# ── validate_vercel_credential ────────────────────────────────────────────
+# Calls GET /v2/user via seam. On success sets _VERCEL_ACTOR_ID and
+# _VERCEL_ACTOR_NAME. On failure sets diagnostic.
+
+_VERCEL_ACTOR_ID=""
+_VERCEL_ACTOR_NAME=""
+
+validate_vercel_credential() {
+    _VERCEL_ACTOR_ID=""
+    _VERCEL_ACTOR_NAME=""
+
+    # Step 1: credential present
+    if [[ -z "${VERCEL_TOKEN:-}" ]]; then
+        set_preflight_error "credential_missing" "vercel" \
+            "VERCEL_TOKEN is not set"
+        return 1
+    fi
+
+    # Step 2: credential valid + Step 3: actor resolved
+    local raw_response
+    raw_response=$(_provider_vercel_api GET /v2/user 2>/dev/null) || {
+        set_preflight_error "provider_unavailable" "vercel" \
+            "Transport failure calling GET /v2/user"
+        return 1
+    }
+
+    _split_provider_response "$raw_response"
+
+    # Check HTTP status
+    case "$_RESP_CODE" in
+        200)
+            # Validate JSON
+            if ! echo "$_RESP_BODY" | jq empty 2>/dev/null; then
+                set_preflight_error "response_invalid" "vercel" \
+                    "GET /v2/user returned HTTP 200 but body is not valid JSON"
+                return 1
+            fi
+
+            local actor_id actor_name
+            actor_id=$(echo "$_RESP_BODY" | jq -r '.user.id // empty' 2>/dev/null)
+            actor_name=$(echo "$_RESP_BODY" | jq -r '.user.username // empty' 2>/dev/null)
+
+            if [[ -z "$actor_id" ]]; then
+                set_preflight_error "actor_unresolved" "vercel" \
+                    "GET /v2/user returned 200 but user.id is null or absent"
+                return 1
+            fi
+
+            _VERCEL_ACTOR_ID="$actor_id"
+            _VERCEL_ACTOR_NAME="$actor_name"
+            return 0
+            ;;
+        401)
+            set_preflight_error "credential_invalid" "vercel" \
+                "GET /v2/user returned 401 (documented: request is not authorized)"
+            return 1
+            ;;
+        403)
+            # Check for invalidToken field (observed in WP0)
+            local invalid_token
+            invalid_token=$(echo "$_RESP_BODY" | jq -r '.error.invalidToken // empty' 2>/dev/null)
+            if [[ "$invalid_token" == "true" ]]; then
+                set_preflight_error "credential_invalid" "vercel" \
+                    "GET /v2/user returned 403 with invalidToken=true (observed WP0 token-rejection)"
+                return 1
+            fi
+            # Bare 403 without invalidToken: classified as credential_invalid
+            # because /v2/user resolves the authenticated actor — a 403 here
+            # means the credential cannot establish actor identity.
+            # ASSUMPTION: no documented non-credential 403 case for /v2/user.
+            # If Vercel introduces one, this mapping must be revisited.
+            set_preflight_error "credential_invalid" "vercel" \
+                "GET /v2/user returned 403 without invalidToken (classified as credential failure at actor-resolution stage; invalidToken field absent — this is an architectural assumption, not documented Vercel behavior)"
+            return 1
+            ;;
+        5[0-9][0-9])
+            set_preflight_error "provider_unavailable" "vercel" \
+                "GET /v2/user returned HTTP ${_RESP_CODE}"
+            return 1
+            ;;
+        *)
+            set_preflight_error "response_invalid" "vercel" \
+                "GET /v2/user returned unexpected HTTP ${_RESP_CODE}"
+            return 1
+            ;;
+    esac
+}
+
+# ── validate_vercel_permission ────────────────────────────────────────────
+# Capability-specific permission validation against normalized membership.
+#
+# Usage: validate_vercel_permission <capability>
+# Reads: _VERCEL_MEMBERSHIP_ROLE, _VERCEL_MEMBERSHIP_PERMISSIONS
+#
+# Supported capabilities:
+#   project_create, project_delete, env_manage, domain_manage, deployment_create
+#
+# Returns 0 on success, 1 on failure with diagnostic set.
+# For project_delete (UNVERIFIED policy): returns 1, no diagnostic code,
+# stderr message. Callers distinguish unverified-policy (empty error code +
+# non-zero return) from permission-denied (permission_insufficient).
+
+validate_vercel_permission() {
+    local capability="$1"
+    local role="$_VERCEL_MEMBERSHIP_ROLE"
+
+    case "$capability" in
+        project_create)
+            # Documented: Owner and Member include Create Project.
+            # Developer requires explicit CreateProject extended permission.
+            # Source: https://vercel.com/docs/rbac/access-roles (Permission groups)
+            case "$role" in
+                OWNER)
+                    return 0 ;;
+                MEMBER)
+                    return 0 ;;
+                DEVELOPER)
+                    if [[ -z "$_VERCEL_MEMBERSHIP_PERMISSIONS" ]]; then
+                        set_preflight_error "permission_insufficient" "vercel" \
+                            "Developer role requires explicit CreateProject extended permission but teamPermissions was not returned by the API — cannot infer capability from absence"
+                        return 1
+                    fi
+                    if _has_vercel_permission "CreateProject"; then
+                        return 0
+                    fi
+                    set_preflight_error "permission_insufficient" "vercel" \
+                        "Developer role lacks CreateProject extended permission (documented requirement: https://vercel.com/docs/rbac/access-roles)"
+                    return 1
+                    ;;
+                *)
+                    set_preflight_error "permission_insufficient" "vercel" \
+                        "Role '${role}' is not documented as having project creation capability"
+                    return 1
+                    ;;
+            esac
+            ;;
+
+        project_delete)
+            # UNVERIFIED: No Vercel documentation establishes which roles
+            # can delete projects. Not in the permission groups table.
+            # Do not fabricate a permission rule. Do not classify
+            # documentation silence as permission_insufficient.
+            # Clear any prior diagnostic so stale state doesn't survive.
+            clear_preflight_error
+            echo "validate_vercel_permission: project_delete policy is not established from Vercel documentation — do not rely on this validation until resolved" >&2
+            return 1
+            ;;
+
+        env_manage)
+            # Documented: Owner unrestricted. Member includes EnvVariableManager.
+            # Developer: "restricted from altering production environment variables"
+            # Source: https://vercel.com/docs/rbac/access-roles
+            case "$role" in
+                OWNER)
+                    return 0 ;;
+                MEMBER)
+                    return 0 ;;
+                DEVELOPER)
+                    # Documented restriction: Developer cannot alter production
+                    # env vars. Lab spinup sets env vars for all targets including
+                    # production. This is a documented limitation.
+                    set_preflight_error "permission_insufficient" "vercel" \
+                        "Developer role is documented as restricted from altering production environment variables (source: https://vercel.com/docs/rbac/access-roles). Lab spinup requires all-target env var management."
+                    return 1
+                    ;;
+                *)
+                    set_preflight_error "permission_insufficient" "vercel" \
+                        "Role '${role}' is not documented as having environment variable management capability"
+                    return 1
+                    ;;
+            esac
+            ;;
+
+        domain_manage)
+            # Documented: Owner unrestricted. Member: "manage project-specific domains."
+            # Developer: role docs say "Manage project domains" but there is
+            # no permission group for domain management (unlike CreateProject
+            # or FullProductionDeployment). The prose-only evidence is the
+            # same class as the env_manage restriction prose. Fail closed for
+            # Developer until a permission group or clearer documentation
+            # establishes this capability.
+            # Source: https://vercel.com/docs/rbac/access-roles
+            case "$role" in
+                OWNER|MEMBER)
+                    return 0 ;;
+                DEVELOPER)
+                    set_preflight_error "permission_insufficient" "vercel" \
+                        "Developer domain management rests on role-description prose only — no permission group exists. Failing closed until explicit documentation or permission group establishes this capability."
+                    return 1
+                    ;;
+                *)
+                    set_preflight_error "permission_insufficient" "vercel" \
+                        "Role '${role}' is not documented as having domain management capability"
+                    return 1
+                    ;;
+            esac
+            ;;
+
+        deployment_create)
+            # Documented: Owner and Member include Full Production Deployment.
+            # Developer requires FullProductionDeployment extended permission
+            # for API/CLI production deployment. Git-based production deploy
+            # (merge to main) is documented as available to Developer.
+            # Lab spinup triggers API deployment — requires the extended permission.
+            # Source: https://vercel.com/docs/rbac/access-roles (Permission groups)
+            case "$role" in
+                OWNER)
+                    return 0 ;;
+                MEMBER)
+                    return 0 ;;
+                DEVELOPER)
+                    if [[ -z "$_VERCEL_MEMBERSHIP_PERMISSIONS" ]]; then
+                        set_preflight_error "permission_insufficient" "vercel" \
+                            "Developer role requires explicit FullProductionDeployment extended permission for API-triggered production deployment but teamPermissions was not returned by the API"
+                        return 1
+                    fi
+                    if _has_vercel_permission "FullProductionDeployment"; then
+                        return 0
+                    fi
+                    set_preflight_error "permission_insufficient" "vercel" \
+                        "Developer role lacks FullProductionDeployment extended permission (required for API/CLI production deployment; documented: https://vercel.com/docs/rbac/access-roles)"
+                    return 1
+                    ;;
+                *)
+                    set_preflight_error "permission_insufficient" "vercel" \
+                        "Role '${role}' is not documented as having deployment creation capability"
+                    return 1
+                    ;;
+            esac
+            ;;
+
+        *)
+            echo "validate_vercel_permission: unknown capability '${capability}'" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ── resolve_vercel_context ────────────────────────────────────────────────
+# Full Vercel resolver: credential → actor → scope config → canonical team
+# → identity verification → access → baseline permission → context.
+#
+# Baseline capability: project_create
+# This does NOT validate env_manage, domain_manage, or deployment_create.
+# See KNOWN GAP at top of Vercel resolver section.
+
+resolve_vercel_context() {
+    clear_preflight_error
+    clear_provider_context "VERCEL"
+    _clear_vercel_membership
+
+    # Step 1-3: Credential + actor
+    validate_vercel_credential || return 1
+
+    # Step 4: Canonical scope config present
+    if [[ -z "${LAB_VERCEL_TEAM_ID:-}" || -z "${LAB_VERCEL_TEAM_SLUG:-}" ]]; then
+        set_preflight_error "scope_config_missing" "vercel" \
+            "LAB_VERCEL_TEAM_ID or LAB_VERCEL_TEAM_SLUG not set in provider-scopes.sh"
+        return 1
+    fi
+
+    # Step 5: Canonical scope retrieved by ID
+    local raw_response
+    raw_response=$(_provider_vercel_api GET "/v2/teams/${LAB_VERCEL_TEAM_ID}" 2>/dev/null) || {
+        set_preflight_error "provider_unavailable" "vercel" \
+            "Transport failure calling GET /v2/teams/${LAB_VERCEL_TEAM_ID}"
+        return 1
+    }
+
+    _split_provider_response "$raw_response"
+
+    case "$_RESP_CODE" in
+        200) ;;
+        401)
+            set_preflight_error "credential_invalid" "vercel" \
+                "GET /v2/teams returned 401 (token may have been revoked between calls)"
+            return 1
+            ;;
+        403)
+            set_preflight_error "scope_access_denied" "vercel" \
+                "GET /v2/teams/${LAB_VERCEL_TEAM_ID} returned 403 (documented: not authorized to access the team)"
+            return 1
+            ;;
+        404)
+            set_preflight_error "scope_not_found" "vercel" \
+                "GET /v2/teams/${LAB_VERCEL_TEAM_ID} returned 404 (documented: team was not found)"
+            return 1
+            ;;
+        5[0-9][0-9])
+            set_preflight_error "provider_unavailable" "vercel" \
+                "GET /v2/teams returned HTTP ${_RESP_CODE}"
+            return 1
+            ;;
+        *)
+            set_preflight_error "response_invalid" "vercel" \
+                "GET /v2/teams returned unexpected HTTP ${_RESP_CODE}"
+            return 1
+            ;;
+    esac
+
+    # Validate JSON
+    if ! echo "$_RESP_BODY" | jq empty 2>/dev/null; then
+        set_preflight_error "response_invalid" "vercel" \
+            "GET /v2/teams returned HTTP 200 but body is not valid JSON"
+        return 1
+    fi
+
+    # Step 6: Verify returned slug matches expected
+    local team_id team_slug team_name
+    team_id=$(echo "$_RESP_BODY" | jq -r '.id // empty' 2>/dev/null)
+    team_slug=$(echo "$_RESP_BODY" | jq -r '.slug // empty' 2>/dev/null)
+    team_name=$(echo "$_RESP_BODY" | jq -r '.name // empty' 2>/dev/null)
+
+    if [[ "$team_slug" != "$LAB_VERCEL_TEAM_SLUG" ]]; then
+        set_preflight_error "scope_identity_mismatch" "vercel" \
+            "Canonical ID ${LAB_VERCEL_TEAM_ID} resolved to slug '${team_slug}', expected '${LAB_VERCEL_TEAM_SLUG}'"
+        return 1
+    fi
+
+    # Step 7: Verify actor access (membership present)
+    local membership_json
+    membership_json=$(echo "$_RESP_BODY" | jq '.membership // empty' 2>/dev/null)
+    if [[ -z "$membership_json" || "$membership_json" == "null" ]]; then
+        set_preflight_error "scope_access_denied" "vercel" \
+            "GET /v2/teams returned 200 but membership field is absent — actor is not a team member"
+        return 1
+    fi
+
+    # Normalize membership evidence
+    _normalize_vercel_membership "$membership_json"
+
+    if [[ -z "$_VERCEL_MEMBERSHIP_ROLE" ]]; then
+        set_preflight_error "scope_access_denied" "vercel" \
+            "Membership present but role is empty"
+        return 1
+    fi
+
+    # Step 8: Baseline permission check (project_create only)
+    validate_vercel_permission "project_create" || return 1
+
+    # Step 9: Populate ProviderContext
+    # Build permission evidence string from normalized membership
+    local perm_evidence="role:${_VERCEL_MEMBERSHIP_ROLE}"
+    if [[ -n "$_VERCEL_MEMBERSHIP_PERMISSIONS" ]]; then
+        perm_evidence="${perm_evidence},permissions:${_VERCEL_MEMBERSHIP_PERMISSIONS}"
+    fi
+
+    VERCEL_CTX_PROVIDER="vercel"
+    VERCEL_CTX_ACTOR_ID="$_VERCEL_ACTOR_ID"
+    VERCEL_CTX_ACTOR_NAME="$_VERCEL_ACTOR_NAME"
+    VERCEL_CTX_SCOPE_ID="$team_id"
+    VERCEL_CTX_SCOPE_NAME="$team_name"
+    VERCEL_CTX_SCOPE_SLUG="$team_slug"
+    VERCEL_CTX_PERMISSION="$perm_evidence"
+    VERCEL_CTX_RESOLUTION_SOURCE="api:/v2/teams/${LAB_VERCEL_TEAM_ID}"
+
+    return 0
 }

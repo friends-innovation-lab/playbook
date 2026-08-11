@@ -1,0 +1,1 @@
+{"id":"team_test123","slug":"test-team","name":"Test Team","membership":{"uid":"usr_abc123","role":"MEMBER","confirmed":true,"created":1700000000000,"createdAt":1700000000000,"_fixture_note":"SYNTHETIC — MEMBER role without teamPermissions field, tests documented MEMBER baseline capability"}}

@@ -244,40 +244,23 @@ assert_return "validate github context optional fields absent" "0" "$rc"
 
 clear_provider_context "github"
 
-# 2e. resolve_provider_context — recognized provider, resolver not yet implemented
-# Must: return 1, emit stderr message, NOT set any diagnostic code, leave no partial context.
-clear_preflight_error
-stderr_output=$(resolve_provider_context "vercel" 2>&1 >/dev/null)
-rc=$?
-assert_return "resolve vercel returns 1 (not implemented)" "1" "$rc"
-assert_empty "resolve vercel: no diagnostic code set" "$PREFLIGHT_ERROR_CODE"
-assert_empty "resolve vercel: no diagnostic provider set" "$PREFLIGHT_ERROR_PROVIDER"
-
-# Stderr should contain a clear developer-facing message
-if echo "$stderr_output" | grep -q "not yet implemented"; then
-    _test_pass "resolve vercel: stderr says not yet implemented"
-else
-    _test_fail "resolve vercel: stderr says not yet implemented" "got: ${stderr_output}"
-fi
-
-# Verify no partial context survives
-assert_unset "resolve vercel: no partial CTX_PROVIDER" "VERCEL_CTX_PROVIDER"
-assert_unset "resolve vercel: no partial CTX_ACTOR_ID" "VERCEL_CTX_ACTOR_ID"
-assert_unset "resolve vercel: no partial CTX_SCOPE_ID" "VERCEL_CTX_SCOPE_ID"
-
-# 2f. resolve_provider_context — all three recognized providers
-for test_provider in github vercel supabase; do
+# 2e. resolve_provider_context — not-yet-implemented providers (github, supabase)
+for test_provider in github supabase; do
     clear_preflight_error
-    resolve_provider_context "$test_provider" 2>/dev/null
+    stderr_output=$(resolve_provider_context "$test_provider" 2>&1 >/dev/null)
     rc=$?
-    assert_return "resolve ${test_provider} returns 1" "1" "$rc"
+    assert_return "resolve ${test_provider} returns 1 (not implemented)" "1" "$rc"
     assert_empty "resolve ${test_provider}: no diagnostic code" "$PREFLIGHT_ERROR_CODE"
-    local uc_provider
-    uc_provider=$(echo "$test_provider" | tr '[:lower:]' '[:upper:]')
-    assert_unset "resolve ${test_provider}: no partial CTX_SCOPE_ID" "${uc_provider}_CTX_SCOPE_ID"
+    if echo "$stderr_output" | grep -q "not yet implemented"; then
+        _test_pass "resolve ${test_provider}: stderr says not yet implemented"
+    else
+        _test_fail "resolve ${test_provider}: stderr says not yet implemented" "got: ${stderr_output}"
+    fi
+    uc_prov=$(echo "$test_provider" | tr '[:lower:]' '[:upper:]')
+    assert_unset "resolve ${test_provider}: no partial CTX_SCOPE_ID" "${uc_prov}_CTX_SCOPE_ID"
 done
 
-# 2g. resolve_provider_context — unknown provider
+# 2f. resolve_provider_context — unknown provider
 clear_preflight_error
 stderr_output=$(resolve_provider_context "bogus_provider" 2>&1 >/dev/null)
 rc=$?
@@ -289,18 +272,17 @@ else
     _test_fail "resolve unknown: stderr says unknown provider" "got: ${stderr_output}"
 fi
 
-# 2h. resolve_provider_context clears stale diagnostic state (recognized provider)
-# Set a prior diagnostic to prove resolve clears it
+# 2g. resolve_provider_context clears stale diagnostic state (not-implemented provider)
 set_preflight_error "credential_invalid" "supabase" "stale detail from prior check"
 assert_eq "stale diagnostic pre-check" "credential_invalid" "$PREFLIGHT_ERROR_CODE"
-resolve_provider_context "vercel" 2>/dev/null
+resolve_provider_context "github" 2>/dev/null
 rc=$?
-assert_return "resolve vercel after stale diagnostic returns 1" "1" "$rc"
+assert_return "resolve github after stale diagnostic returns 1" "1" "$rc"
 assert_empty "stale PREFLIGHT_ERROR_CODE cleared" "$PREFLIGHT_ERROR_CODE"
 assert_empty "stale PREFLIGHT_ERROR_PROVIDER cleared" "$PREFLIGHT_ERROR_PROVIDER"
 assert_empty "stale PREFLIGHT_ERROR_DETAIL cleared" "$PREFLIGHT_ERROR_DETAIL"
 
-# 2i. resolve_provider_context clears stale diagnostic state (unknown provider)
+# 2h. resolve_provider_context clears stale diagnostic state (unknown provider)
 set_preflight_error "scope_not_found" "github" "stale detail"
 assert_eq "stale diagnostic pre-check (unknown)" "scope_not_found" "$PREFLIGHT_ERROR_CODE"
 resolve_provider_context "nonexistent" 2>/dev/null
@@ -431,7 +413,429 @@ fi
 echo ""
 
 # ════════════════════════════════════════════════════════════════════════════
-# Section 6: Static safety checks
+# Section 6: Vercel resolver (WP2)
+# ════════════════════════════════════════════════════════════════════════════
+echo "── Vercel resolver ──"
+
+# Helper: configure seam stubs for Vercel resolver tests.
+# Uses global variables because bash 3.2 doesn't have closures.
+_VSTUB_USER_FIXTURE=""
+_VSTUB_USER_HTTP=""
+_VSTUB_TEAM_FIXTURE=""
+_VSTUB_TEAM_HTTP=""
+
+_setup_vercel_stubs() {
+    _VSTUB_USER_FIXTURE="$1"
+    _VSTUB_USER_HTTP="$2"
+    _VSTUB_TEAM_FIXTURE="$3"
+    _VSTUB_TEAM_HTTP="$4"
+
+    _provider_vercel_api() {
+        local method="$1"
+        local path="$2"
+        case "$path" in
+            /v2/user)
+                cat "$_VSTUB_USER_FIXTURE"
+                printf "\n${_VSTUB_USER_HTTP}"
+                ;;
+            /v2/teams/*)
+                cat "$_VSTUB_TEAM_FIXTURE"
+                printf "\n${_VSTUB_TEAM_HTTP}"
+                ;;
+            *)
+                echo '{"error":"unexpected path"}'
+                printf "\n500"
+                ;;
+        esac
+    }
+}
+
+# Save canonical config — tests may unset/override these
+_SAVE_VERCEL_TEAM_ID="${LAB_VERCEL_TEAM_ID:-}"
+_SAVE_VERCEL_TEAM_SLUG="${LAB_VERCEL_TEAM_SLUG:-}"
+
+# Set test slug to match fixture data (all test fixtures use slug "test-team")
+LAB_VERCEL_TEAM_SLUG="test-team"
+
+# -- 6a. credential_missing (VERCEL_TOKEN unset)
+unset VERCEL_TOKEN 2>/dev/null || true
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: credential_missing returns 1" "1" "$rc"
+assert_eq "vercel: credential_missing code" "credential_missing" "$PREFLIGHT_ERROR_CODE"
+assert_unset "vercel: credential_missing no partial CTX" "VERCEL_CTX_PROVIDER"
+
+# Set a dummy token for remaining tests
+export VERCEL_TOKEN="test-token-for-fixture-tests"
+
+# -- 6b. credential_invalid (invalidToken=true)
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/invalid-token.json" "403" \
+    "${FIXTURE_DIR}/vercel/team-valid.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: credential_invalid returns 1" "1" "$rc"
+assert_eq "vercel: credential_invalid code" "credential_invalid" "$PREFLIGHT_ERROR_CODE"
+assert_unset "vercel: credential_invalid no partial CTX" "VERCEL_CTX_PROVIDER"
+
+# -- 6c. credential_invalid (401)
+_provider_vercel_api() {
+    local path="$2"
+    case "$path" in
+        /v2/user) echo '{"error":{"code":"unauthorized"}}'; printf "\n401" ;;
+        *) echo '{}'; printf "\n200" ;;
+    esac
+}
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: 401 returns 1" "1" "$rc"
+assert_eq "vercel: 401 code" "credential_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6d. credential_invalid (bare 403 without invalidToken)
+_provider_vercel_api() {
+    local path="$2"
+    case "$path" in
+        /v2/user) echo '{"error":{"code":"forbidden","message":"Not authorized"}}'; printf "\n403" ;;
+        *) echo '{}'; printf "\n200" ;;
+    esac
+}
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: bare 403 returns 1" "1" "$rc"
+assert_eq "vercel: bare 403 code" "credential_invalid" "$PREFLIGHT_ERROR_CODE"
+# Verify detail preserves the bare-403 assumption
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "architectural assumption"; then
+    _test_pass "vercel: bare 403 detail notes assumption"
+else
+    _test_fail "vercel: bare 403 detail notes assumption" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# -- 6e. provider_unavailable (5xx)
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/server-error.json" "500" \
+    "${FIXTURE_DIR}/vercel/team-valid.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: 5xx returns 1" "1" "$rc"
+assert_eq "vercel: 5xx code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6f. response_invalid (non-JSON from /v2/user)
+_provider_vercel_api() {
+    local path="$2"
+    case "$path" in
+        /v2/user) echo '<html>Bad Gateway</html>'; printf "\n200" ;;
+        *) echo '{}'; printf "\n200" ;;
+    esac
+}
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: non-JSON returns 1" "1" "$rc"
+assert_eq "vercel: non-JSON code" "response_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6g. actor_unresolved (user.id null)
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-no-identity.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-valid.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: actor_unresolved returns 1" "1" "$rc"
+assert_eq "vercel: actor_unresolved code" "actor_unresolved" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6h. scope_config_missing
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-valid.json" "200"
+unset LAB_VERCEL_TEAM_ID 2>/dev/null || true
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: scope_config_missing returns 1" "1" "$rc"
+assert_eq "vercel: scope_config_missing code" "scope_config_missing" "$PREFLIGHT_ERROR_CODE"
+# Restore config (keep test slug, not real slug)
+LAB_VERCEL_TEAM_ID="$_SAVE_VERCEL_TEAM_ID"
+LAB_VERCEL_TEAM_SLUG="test-team"
+
+# -- 6i. scope_not_found (404)
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-not-found.json" "404"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: scope_not_found returns 1" "1" "$rc"
+assert_eq "vercel: scope_not_found code" "scope_not_found" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6j. scope_access_denied (403 on teams)
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-access-denied.json" "403"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: scope_access_denied returns 1" "1" "$rc"
+assert_eq "vercel: scope_access_denied code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6k. scope_access_denied (membership absent)
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-no-membership.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: no membership returns 1" "1" "$rc"
+assert_eq "vercel: no membership code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6l. scope_identity_mismatch (wrong slug)
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-wrong-slug.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: scope_identity_mismatch returns 1" "1" "$rc"
+assert_eq "vercel: scope_identity_mismatch code" "scope_identity_mismatch" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6m. OWNER + project_create => success (happy path)
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-owner-no-permissions.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: OWNER happy path returns 0" "0" "$rc"
+assert_eq "vercel: OWNER CTX_PROVIDER" "vercel" "${VERCEL_CTX_PROVIDER:-}"
+assert_eq "vercel: OWNER CTX_ACTOR_ID" "usr_abc123" "${VERCEL_CTX_ACTOR_ID:-}"
+assert_eq "vercel: OWNER CTX_ACTOR_NAME" "test-user" "${VERCEL_CTX_ACTOR_NAME:-}"
+assert_eq "vercel: OWNER CTX_SCOPE_ID" "team_test123" "${VERCEL_CTX_SCOPE_ID:-}"
+assert_eq "vercel: OWNER CTX_SCOPE_SLUG" "test-team" "${VERCEL_CTX_SCOPE_SLUG:-}"
+assert_not_empty "vercel: OWNER CTX_PERMISSION" "${VERCEL_CTX_PERMISSION:-}"
+assert_not_empty "vercel: OWNER CTX_RESOLUTION_SOURCE" "${VERCEL_CTX_RESOLUTION_SOURCE:-}"
+# Verify CTX_PERMISSION records role evidence, not lifecycle claim
+if echo "${VERCEL_CTX_PERMISSION:-}" | grep -q "role:OWNER"; then
+    _test_pass "vercel: OWNER permission records role evidence"
+else
+    _test_fail "vercel: OWNER permission records role evidence" "got: ${VERCEL_CTX_PERMISSION:-}"
+fi
+
+# -- 6n. MEMBER + project_create => success
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-member-no-permissions.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: MEMBER happy path returns 0" "0" "$rc"
+assert_eq "vercel: MEMBER CTX_PROVIDER" "vercel" "${VERCEL_CTX_PROVIDER:-}"
+if echo "${VERCEL_CTX_PERMISSION:-}" | grep -q "role:MEMBER"; then
+    _test_pass "vercel: MEMBER permission records role evidence"
+else
+    _test_fail "vercel: MEMBER permission records role evidence" "got: ${VERCEL_CTX_PERMISSION:-}"
+fi
+
+# -- 6o. DEVELOPER + CreateProject => success
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-developer-with-create-project.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: DEVELOPER+CreateProject returns 0" "0" "$rc"
+assert_eq "vercel: DEVELOPER+CreateProject CTX_PROVIDER" "vercel" "${VERCEL_CTX_PROVIDER:-}"
+if echo "${VERCEL_CTX_PERMISSION:-}" | grep -q "role:DEVELOPER" && echo "${VERCEL_CTX_PERMISSION:-}" | grep -q "CreateProject"; then
+    _test_pass "vercel: DEVELOPER permission records role+permissions evidence"
+else
+    _test_fail "vercel: DEVELOPER permission records role+permissions evidence" "got: ${VERCEL_CTX_PERMISSION:-}"
+fi
+
+# -- 6p. DEVELOPER without CreateProject => permission_insufficient
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-developer-no-create-project.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: DEVELOPER no CreateProject returns 1" "1" "$rc"
+assert_eq "vercel: DEVELOPER no CreateProject code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+assert_unset "vercel: DEVELOPER no CreateProject no partial CTX" "VERCEL_CTX_PROVIDER"
+
+# -- 6q. DEVELOPER without teamPermissions field => permission_insufficient
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-developer-no-permissions-field.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: DEVELOPER no permissions field returns 1" "1" "$rc"
+assert_eq "vercel: DEVELOPER no permissions field code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6r. VIEWER => permission_insufficient
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-viewer-role.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: VIEWER returns 1" "1" "$rc"
+assert_eq "vercel: VIEWER code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+assert_unset "vercel: VIEWER no partial CTX" "VERCEL_CTX_PROVIDER"
+
+# -- 6s. Capability-specific: DEVELOPER + env_manage => production restriction
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-developer-with-create-project.json" "200"
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-developer-with-create-project.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "env_manage"
+rc=$?
+assert_return "vercel: DEVELOPER+env_manage returns 1 (production restriction)" "1" "$rc"
+assert_eq "vercel: DEVELOPER+env_manage code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "production environment variables"; then
+    _test_pass "vercel: DEVELOPER+env_manage detail cites production restriction"
+else
+    _test_fail "vercel: DEVELOPER+env_manage detail cites production restriction" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# -- 6t. Capability-specific: MEMBER + env_manage => success
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-member-no-permissions.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "env_manage"
+rc=$?
+assert_return "vercel: MEMBER+env_manage returns 0" "0" "$rc"
+
+# -- 6u. Capability-specific: OWNER + domain_manage => success
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-owner-no-permissions.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "domain_manage"
+rc=$?
+assert_return "vercel: OWNER+domain_manage returns 0" "0" "$rc"
+
+# -- 6v. Capability-specific: DEVELOPER + domain_manage => fail closed (prose-only)
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-developer-with-create-project.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "domain_manage"
+rc=$?
+assert_return "vercel: DEVELOPER+domain_manage returns 1 (fail closed)" "1" "$rc"
+assert_eq "vercel: DEVELOPER+domain_manage code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6w. Capability-specific: MEMBER + deployment_create => success
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-member-no-permissions.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "deployment_create"
+rc=$?
+assert_return "vercel: MEMBER+deployment_create returns 0" "0" "$rc"
+
+# -- 6x. Capability-specific: DEVELOPER without FullProductionDeployment => insufficient
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-developer-with-create-project.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "deployment_create"
+rc=$?
+assert_return "vercel: DEVELOPER no FullProdDeploy returns 1" "1" "$rc"
+assert_eq "vercel: DEVELOPER no FullProdDeploy code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6y. project_delete with unresolved policy
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-owner-no-permissions.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "project_delete" 2>/dev/null
+rc=$?
+assert_return "vercel: project_delete returns 1 (unverified policy)" "1" "$rc"
+assert_empty "vercel: project_delete no diagnostic code (not permission_insufficient)" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6z. Successful project_create must NOT imply project_delete success
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-owner-no-permissions.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "project_create"
+rc_create=$?
+clear_preflight_error
+validate_vercel_permission "project_delete" 2>/dev/null
+rc_delete=$?
+assert_return "vercel: project_create succeeds" "0" "$rc_create"
+assert_return "vercel: project_delete still fails despite project_create success" "1" "$rc_delete"
+_test_pass "vercel: project_create does not imply project_delete"
+
+# -- 6aa. No partial context after failure
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-viewer-role.json" "200"
+clear_preflight_error
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: failure leaves no partial CTX (rc)" "1" "$rc"
+assert_unset "vercel: no partial CTX_PROVIDER after failure" "VERCEL_CTX_PROVIDER"
+assert_unset "vercel: no partial CTX_ACTOR_ID after failure" "VERCEL_CTX_ACTOR_ID"
+assert_unset "vercel: no partial CTX_SCOPE_ID after failure" "VERCEL_CTX_SCOPE_ID"
+
+# -- 6bb. Stale diagnostic cleared by resolve_vercel_context
+set_preflight_error "scope_not_found" "supabase" "stale from prior provider"
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-owner-no-permissions.json" "200"
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: stale diagnostic cleared, succeeds" "0" "$rc"
+assert_empty "vercel: stale error code cleared on success" "$PREFLIGHT_ERROR_CODE"
+
+# -- 6cc. Stale normalized membership does not survive failed resolution
+# First: resolve successfully as OWNER to populate membership state
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-owner-no-permissions.json" "200"
+resolve_vercel_context 2>/dev/null
+assert_eq "vercel: stale membership setup: role populated" "OWNER" "$_VERCEL_MEMBERSHIP_ROLE"
+# Now: resolve with membership absent — must clear prior OWNER evidence
+_setup_vercel_stubs \
+    "${FIXTURE_DIR}/vercel/actor-valid.json" "200" \
+    "${FIXTURE_DIR}/vercel/team-no-membership.json" "200"
+resolve_vercel_context 2>/dev/null
+rc=$?
+assert_return "vercel: stale membership: fails" "1" "$rc"
+assert_empty "vercel: stale membership role cleared" "$_VERCEL_MEMBERSHIP_ROLE"
+assert_empty "vercel: stale membership permissions cleared" "$_VERCEL_MEMBERSHIP_PERMISSIONS"
+assert_empty "vercel: stale membership roles cleared" "$_VERCEL_MEMBERSHIP_ROLES"
+assert_unset "vercel: stale membership: no partial CTX_PROVIDER" "VERCEL_CTX_PROVIDER"
+
+# -- 6dd. Stale diagnostic cleared by project_delete (unverified policy)
+# Set a prior operational diagnostic
+set_preflight_error "permission_insufficient" "vercel" "stale from prior capability check"
+assert_eq "vercel: project_delete stale pre-check" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+# Call project_delete — must clear stale state
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-owner-no-permissions.json" | jq '.membership')"
+validate_vercel_permission "project_delete" 2>/dev/null
+rc=$?
+assert_return "vercel: project_delete returns 1 (unverified)" "1" "$rc"
+assert_empty "vercel: project_delete clears stale PREFLIGHT_ERROR_CODE" "$PREFLIGHT_ERROR_CODE"
+assert_empty "vercel: project_delete clears stale PREFLIGHT_ERROR_PROVIDER" "$PREFLIGHT_ERROR_PROVIDER"
+assert_empty "vercel: project_delete clears stale PREFLIGHT_ERROR_DETAIL" "$PREFLIGHT_ERROR_DETAIL"
+
+# -- 6ee. domain_manage for DEVELOPER fails closed (prose-only evidence)
+_normalize_vercel_membership "$(cat "${FIXTURE_DIR}/vercel/team-developer-with-create-project.json" | jq '.membership')"
+clear_preflight_error
+validate_vercel_permission "domain_manage"
+rc=$?
+assert_return "vercel: DEVELOPER+domain_manage returns 1 (fail closed)" "1" "$rc"
+assert_eq "vercel: DEVELOPER+domain_manage code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "prose only"; then
+    _test_pass "vercel: DEVELOPER+domain_manage detail cites prose-only evidence"
+else
+    _test_fail "vercel: DEVELOPER+domain_manage detail cites prose-only evidence" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# Restore config
+LAB_VERCEL_TEAM_ID="$_SAVE_VERCEL_TEAM_ID"
+LAB_VERCEL_TEAM_SLUG="$_SAVE_VERCEL_TEAM_SLUG"
+unset VERCEL_TOKEN 2>/dev/null || true
+_reset_provider_stubs
+
+echo ""
+
+# ════════════════════════════════════════════════════════════════════════════
+# Section 7: Static safety checks
 # ════════════════════════════════════════════════════════════════════════════
 echo "── Static safety checks ──"
 
