@@ -145,8 +145,86 @@ fi
 # Tests replace them after sourcing this file. Legacy functions above are
 # exempt — they predate the seam and are unchanged in PLAT-01.
 
+# ── GitHub status-aware provider seam ──────────────────────────────────────
+# Calls gh api --include to capture HTTP status, headers, and body.
+# Normalizes the result into shell variables for resolver consumption.
+# Resolver functions read normalized variables, never re-parse raw output.
+
+_GITHUB_API_STATUS=""
+_GITHUB_API_BODY=""
+_GITHUB_API_HEADERS=""
+_GITHUB_API_EXIT=""
+_GITHUB_API_LINK=""
+_GITHUB_API_RATELIMIT_REMAINING=""
+_GITHUB_API_RATELIMIT_RESET=""
+_GITHUB_API_RETRY_AFTER=""
+
 _provider_github_api() {
-    gh api "$@"
+    # Clear all prior state
+    _GITHUB_API_STATUS=""
+    _GITHUB_API_BODY=""
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=""
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+
+    local raw_stdout raw_stderr
+    raw_stderr=$(mktemp 2>/dev/null || echo "/tmp/_gh_api_err_$$")
+    raw_stdout=$(gh api --include "$@" 2>"$raw_stderr")
+    _GITHUB_API_EXIT=$?
+    rm -f "$raw_stderr"
+
+    # Parse status line: HTTP/<version> <code> <reason>
+    local first_line
+    first_line=$(echo "$raw_stdout" | head -1)
+    _GITHUB_API_STATUS=$(echo "$first_line" | sed -n 's|^HTTP/[^ ]* \([0-9][0-9]*\).*|\1|p')
+
+    if [[ -z "$_GITHUB_API_STATUS" ]]; then
+        # No HTTP status parseable — transport/CLI failure
+        return 1
+    fi
+
+    # Split headers and body on blank line
+    # Headers: everything between status line and first blank line
+    # Body: everything after the first blank line
+    local in_headers=true
+    local headers_block=""
+    local body_block=""
+
+    while IFS= read -r line; do
+        if $in_headers; then
+            if [[ -z "$line" || "$line" == $'\r' ]]; then
+                in_headers=false
+            else
+                headers_block="${headers_block}${line}
+"
+            fi
+        else
+            body_block="${body_block}${line}
+"
+        fi
+    done <<< "$(echo "$raw_stdout" | tail -n +2)"
+
+    _GITHUB_API_HEADERS="$headers_block"
+    # Trim trailing newline from body
+    _GITHUB_API_BODY="${body_block%
+}"
+
+    # Extract normalized header fields (case-insensitive grep)
+    _GITHUB_API_LINK=$(echo "$_GITHUB_API_HEADERS" | grep -i '^Link:' | sed 's/^[Ll]ink: *//' | head -1)
+    _GITHUB_API_RATELIMIT_REMAINING=$(echo "$_GITHUB_API_HEADERS" | grep -i '^X-RateLimit-Remaining:' | sed 's/^[^:]*: *//' | tr -d '[:space:]' | head -1)
+    _GITHUB_API_RATELIMIT_RESET=$(echo "$_GITHUB_API_HEADERS" | grep -i '^X-RateLimit-Reset:' | sed 's/^[^:]*: *//' | tr -d '[:space:]' | head -1)
+    _GITHUB_API_RETRY_AFTER=$(echo "$_GITHUB_API_HEADERS" | grep -i '^Retry-After:' | sed 's/^[^:]*: *//' | tr -d '[:space:]' | head -1)
+
+    return 0
+}
+
+# GitHub auth-status seam — overridable for tests
+_provider_github_auth_status() {
+    gh auth status --active --hostname github.com >/dev/null 2>&1
+    return $?
 }
 
 _provider_vercel_api() {
@@ -325,8 +403,8 @@ resolve_provider_context() {
             return $?
             ;;
         GITHUB)
-            echo "resolve_provider_context: resolver for ${provider} is not yet implemented (requires WP4)" >&2
-            return 1
+            resolve_github_context
+            return $?
             ;;
         *)
             echo "resolve_provider_context: unknown provider '${provider}'" >&2
@@ -1135,6 +1213,466 @@ resolve_supabase_context() {
     SUPABASE_CTX_SCOPE_SLUG="$org_slug"
     SUPABASE_CTX_PERMISSION="org_roles:${_SUPABASE_ORG_ROLES}"
     SUPABASE_CTX_RESOLUTION_SOURCE="api:/v1/organizations+/v2/organizations/${org_slug}/members"
+
+    return 0
+}
+
+# ── GitHub resolver (PLAT-01/WP4) ─────────────────────────────────────────
+#
+# API calls (all via _provider_github_api status-aware seam):
+#   GET /user                          — credential + actor identity
+#   GET /user/orgs?per_page=100        — canonical org enumeration (paginated)
+#   GET /user/memberships/orgs/{org}   — membership role + state
+#   GET /orgs/{org}                    — org settings for repo-creation policy
+#
+# Documented RBAC: https://docs.github.com/en/organizations/managing-organization-settings/restricting-repository-creation-in-your-organization
+# Enterprise policy: https://docs.github.com/en/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-repository-management-policies-in-your-enterprise
+#
+# repo_create classification: PARTIALLY EVALUABLE
+# Observable: actor role, org-level creation settings
+# Not observable: enterprise/repository policy restrictions
+# policy_completeness is always "partial"
+#
+# KNOWN GAP: resolve_github_context validates repo_create baseline only.
+# Spinup additionally requires branch protection, secrets, issue creation.
+# Teardown requires repo archival. Until WP7, a passing preflight does not
+# guarantee spinup/teardown completion.
+
+# ── Rate-limit detection ──────────────────────────────────────────────────
+
+_is_github_rate_limited() {
+    if [[ "$_GITHUB_API_STATUS" == "429" ]]; then
+        return 0
+    fi
+    if [[ "$_GITHUB_API_STATUS" == "403" ]]; then
+        if [[ "$_GITHUB_API_RATELIMIT_REMAINING" == "0" ]]; then
+            return 0
+        fi
+        if [[ -n "$_GITHUB_API_RETRY_AFTER" ]]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# ── Normalized GitHub membership ──────────────────────────────────────────
+
+_GITHUB_MEMBERSHIP_ROLE=""
+_GITHUB_MEMBERSHIP_STATE=""
+_GITHUB_ORG_REPO_CREATION=""
+_GITHUB_ORG_MEMBERS_CAN_CREATE=""
+
+_clear_github_membership() {
+    _GITHUB_MEMBERSHIP_ROLE=""
+    _GITHUB_MEMBERSHIP_STATE=""
+    _GITHUB_ORG_REPO_CREATION=""
+    _GITHUB_ORG_MEMBERS_CAN_CREATE=""
+}
+
+_GITHUB_ACTOR_ID=""
+_GITHUB_ACTOR_NAME=""
+
+# ── validate_github_credential ────────────────────────────────────────────
+
+validate_github_credential() {
+    _GITHUB_ACTOR_ID=""
+    _GITHUB_ACTOR_NAME=""
+
+    # Step 1: credential present — use auth-status seam
+    _provider_github_auth_status
+    if [[ $? -ne 0 ]]; then
+        set_preflight_error "credential_missing" "github" \
+            "No active authenticated GitHub account for github.com. Run: gh auth login"
+        return 1
+    fi
+
+    # Step 2-3: credential valid + actor resolved
+    _provider_github_api /user
+    if [[ $? -ne 0 ]]; then
+        set_preflight_error "provider_unavailable" "github" \
+            "Transport failure calling GET /user — no HTTP response received"
+        return 1
+    fi
+
+    # Rate-limit check first
+    if _is_github_rate_limited; then
+        set_preflight_error "provider_unavailable" "github" \
+            "Rate limited on GET /user (HTTP ${_GITHUB_API_STATUS}, X-RateLimit-Remaining: ${_GITHUB_API_RATELIMIT_REMAINING:-?})"
+        return 1
+    fi
+
+    case "$_GITHUB_API_STATUS" in
+        200)
+            if ! echo "$_GITHUB_API_BODY" | jq empty 2>/dev/null; then
+                set_preflight_error "response_invalid" "github" \
+                    "GET /user returned HTTP 200 but body is not valid JSON"
+                return 1
+            fi
+
+            local actor_id actor_name
+            actor_id=$(echo "$_GITHUB_API_BODY" | jq -r '.id // empty' 2>/dev/null)
+            actor_name=$(echo "$_GITHUB_API_BODY" | jq -r '.login // empty' 2>/dev/null)
+
+            if [[ -z "$actor_id" ]]; then
+                set_preflight_error "actor_unresolved" "github" \
+                    "GET /user returned 200 but id is null or absent"
+                return 1
+            fi
+
+            _GITHUB_ACTOR_ID="$actor_id"
+            _GITHUB_ACTOR_NAME="$actor_name"
+            return 0
+            ;;
+        401)
+            set_preflight_error "credential_invalid" "github" \
+                "GET /user returned 401 — auth status passed but API rejected credentials"
+            return 1
+            ;;
+        403)
+            # Non-rate-limited 403 after auth-status success
+            set_preflight_error "credential_invalid" "github" \
+                "GET /user returned 403 without rate-limit evidence after auth-status success"
+            return 1
+            ;;
+        5[0-9][0-9])
+            set_preflight_error "provider_unavailable" "github" \
+                "GET /user returned HTTP ${_GITHUB_API_STATUS}"
+            return 1
+            ;;
+        *)
+            set_preflight_error "response_invalid" "github" \
+                "GET /user returned unexpected HTTP ${_GITHUB_API_STATUS}"
+            return 1
+            ;;
+    esac
+}
+
+# ── validate_github_permission ────────────────────────────────────────────
+# Capability-specific. Reads _GITHUB_MEMBERSHIP_ROLE and org settings.
+#
+# repo_create is PARTIALLY EVALUABLE — observable baseline only.
+# Enterprise policy may still restrict creation.
+
+validate_github_permission() {
+    local capability="$1"
+    local role="$_GITHUB_MEMBERSHIP_ROLE"
+
+    case "$capability" in
+        repo_create)
+            case "$role" in
+                admin)
+                    # DOCUMENTED: org owners/admins can always create
+                    return 0
+                    ;;
+                member)
+                    # Evaluate org-level settings
+                    # Both fields are optional/nullable in GitHub schema
+                    if [[ "$_GITHUB_ORG_MEMBERS_CAN_CREATE" == "true" ]]; then
+                        return 0
+                    fi
+                    if [[ "$_GITHUB_ORG_MEMBERS_CAN_CREATE" == "false" ]]; then
+                        set_preflight_error "permission_insufficient" "github" \
+                            "Organization setting members_can_create_repositories is false (documented: org restricts member repo creation)"
+                        return 1
+                    fi
+                    # Primary field absent — check type field
+                    if [[ "$_GITHUB_ORG_REPO_CREATION" == "none" ]]; then
+                        set_preflight_error "permission_insufficient" "github" \
+                            "Organization setting members_allowed_repository_creation_type is 'none' (documented: org disallows member repo creation)"
+                        return 1
+                    fi
+                    if [[ "$_GITHUB_ORG_REPO_CREATION" == "all" || "$_GITHUB_ORG_REPO_CREATION" == "private" ]]; then
+                        return 0
+                    fi
+                    # Both fields absent/null — fail closed
+                    set_preflight_error "permission_insufficient" "github" \
+                        "Organization repository-creation policy fields absent from API response. These fields are optional in GitHub's schema. Cannot establish baseline creation permission without observable evidence."
+                    return 1
+                    ;;
+                billing_manager)
+                    set_preflight_error "permission_insufficient" "github" \
+                        "billing_manager role cannot create repositories (documented: billing only)"
+                    return 1
+                    ;;
+                *)
+                    set_preflight_error "permission_insufficient" "github" \
+                        "Role '${role}' is not recognized for repository creation"
+                    return 1
+                    ;;
+            esac
+            ;;
+
+        repo_archive|repo_settings_manage)
+            # UNVERIFIED policy
+            clear_preflight_error
+            echo "validate_github_permission: ${capability} policy is not established from GitHub documentation — do not rely on this validation until resolved" >&2
+            return 1
+            ;;
+
+        *)
+            echo "validate_github_permission: unknown capability '${capability}'" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ── resolve_github_context ────────────────────────────────────────────────
+
+resolve_github_context() {
+    clear_preflight_error
+    clear_provider_context "GITHUB"
+    _clear_github_membership
+    _GITHUB_ACTOR_ID=""
+    _GITHUB_ACTOR_NAME=""
+
+    # Step 1-3: Credential + actor
+    validate_github_credential || return 1
+
+    # Step 4: Canonical scope config present
+    if [[ -z "${LAB_GITHUB_ORG_ID:-}" || -z "${LAB_GITHUB_ORG:-}" ]]; then
+        set_preflight_error "scope_config_missing" "github" \
+            "LAB_GITHUB_ORG_ID or LAB_GITHUB_ORG not set in provider-scopes.sh"
+        return 1
+    fi
+
+    # Step 5: Enumerate accessible orgs, exact-match canonical ID
+    # Explicit page iteration through status-aware seam
+    local org_page_url="/user/orgs?per_page=100"
+    local found_org_json=""
+    local enumeration_complete=false
+
+    while [[ -n "$org_page_url" ]]; do
+        _provider_github_api "$org_page_url"
+        if [[ $? -ne 0 ]]; then
+            set_preflight_error "provider_unavailable" "github" \
+                "Transport failure enumerating organizations at ${org_page_url}"
+            return 1
+        fi
+
+        # Rate-limit check
+        if _is_github_rate_limited; then
+            set_preflight_error "provider_unavailable" "github" \
+                "Rate limited enumerating organizations (HTTP ${_GITHUB_API_STATUS}, X-RateLimit-Remaining: ${_GITHUB_API_RATELIMIT_REMAINING:-?})"
+            return 1
+        fi
+
+        case "$_GITHUB_API_STATUS" in
+            200) ;;
+            401)
+                set_preflight_error "credential_invalid" "github" \
+                    "GET ${org_page_url} returned 401"
+                return 1
+                ;;
+            403)
+                # Non-rate-limited 403 after successful /user auth
+                set_preflight_error "scope_access_denied" "github" \
+                    "Authenticated GitHub actor could not enumerate accessible organizations. The credential may lack the organization authorization or token scope required for this operation."
+                return 1
+                ;;
+            5[0-9][0-9])
+                set_preflight_error "provider_unavailable" "github" \
+                    "GET ${org_page_url} returned HTTP ${_GITHUB_API_STATUS}"
+                return 1
+                ;;
+            *)
+                set_preflight_error "response_invalid" "github" \
+                    "GET ${org_page_url} returned unexpected HTTP ${_GITHUB_API_STATUS}"
+                return 1
+                ;;
+        esac
+
+        # Validate JSON array
+        if ! echo "$_GITHUB_API_BODY" | jq -e 'type == "array"' &>/dev/null; then
+            set_preflight_error "response_invalid" "github" \
+                "GET ${org_page_url} returned HTTP 200 but body is not a JSON array"
+            return 1
+        fi
+
+        # Search for canonical org ID
+        local match
+        match=$(echo "$_GITHUB_API_BODY" | jq -c \
+            ".[] | select(.id==${LAB_GITHUB_ORG_ID})" 2>/dev/null)
+        if [[ -n "$match" ]]; then
+            found_org_json="$match"
+            break
+        fi
+
+        # Check for next page via Link header
+        local next_url=""
+        if [[ -n "$_GITHUB_API_LINK" ]]; then
+            next_url=$(echo "$_GITHUB_API_LINK" | tr ',' '\n' | grep 'rel="next"' | sed 's/.*<\(.*\)>.*/\1/' | head -1)
+        fi
+
+        if [[ -z "$next_url" ]]; then
+            enumeration_complete=true
+            break
+        fi
+
+        org_page_url="$next_url"
+    done
+
+    if [[ -z "$found_org_json" ]]; then
+        if $enumeration_complete; then
+            set_preflight_error "scope_not_found" "github" \
+                "Canonical GitHub organization ID ${LAB_GITHUB_ORG_ID} was not found in the authenticated actor's complete accessible-organization enumeration. This may mean the organization no longer exists or the actor no longer has visibility/access."
+            return 1
+        fi
+        set_preflight_error "response_invalid" "github" \
+            "Organization enumeration ended without finding canonical ID and without completing"
+        return 1
+    fi
+
+    # Check for duplicate canonical ID matches
+    # (would have been caught on the page where the first match was found)
+    local match_count
+    match_count=$(echo "$_GITHUB_API_BODY" | jq \
+        "[.[] | select(.id==${LAB_GITHUB_ORG_ID})] | length" 2>/dev/null)
+    if [[ "$match_count" -gt 1 ]]; then
+        set_preflight_error "response_invalid" "github" \
+            "Canonical org ID ${LAB_GITHUB_ORG_ID} matched ${match_count} entries on a single page"
+        return 1
+    fi
+
+    # Step 6: Verify returned login matches expected
+    local org_id org_login org_name
+    org_id=$(echo "$found_org_json" | jq -r '.id' 2>/dev/null)
+    org_login=$(echo "$found_org_json" | jq -r '.login // empty' 2>/dev/null)
+    org_name=$(echo "$found_org_json" | jq -r '.name // empty' 2>/dev/null)
+
+    if [[ "$org_login" != "$LAB_GITHUB_ORG" ]]; then
+        set_preflight_error "scope_identity_mismatch" "github" \
+            "Canonical ID ${LAB_GITHUB_ORG_ID} resolved to login '${org_login}', expected '${LAB_GITHUB_ORG}'"
+        return 1
+    fi
+
+    # Step 7: Verify actor membership
+    _provider_github_api "/user/memberships/orgs/${LAB_GITHUB_ORG}"
+    if [[ $? -ne 0 ]]; then
+        set_preflight_error "provider_unavailable" "github" \
+            "Transport failure checking membership for ${LAB_GITHUB_ORG}"
+        return 1
+    fi
+
+    if _is_github_rate_limited; then
+        set_preflight_error "provider_unavailable" "github" \
+            "Rate limited checking membership (HTTP ${_GITHUB_API_STATUS})"
+        return 1
+    fi
+
+    case "$_GITHUB_API_STATUS" in
+        200) ;;
+        403)
+            set_preflight_error "scope_access_denied" "github" \
+                "GET /user/memberships/orgs/${LAB_GITHUB_ORG} returned 403 (documented: GitHub App blocked by org)"
+            return 1
+            ;;
+        404)
+            set_preflight_error "scope_access_denied" "github" \
+                "GET /user/memberships/orgs/${LAB_GITHUB_ORG} returned 404 (documented: actor not affiliated with the organization. GitHub returns 404 for both non-affiliation and nonexistent orgs at this endpoint.)"
+            return 1
+            ;;
+        5[0-9][0-9])
+            set_preflight_error "provider_unavailable" "github" \
+                "GET /user/memberships/orgs/${LAB_GITHUB_ORG} returned HTTP ${_GITHUB_API_STATUS}"
+            return 1
+            ;;
+        *)
+            set_preflight_error "response_invalid" "github" \
+                "GET /user/memberships/orgs/${LAB_GITHUB_ORG} returned unexpected HTTP ${_GITHUB_API_STATUS}"
+            return 1
+            ;;
+    esac
+
+    if ! echo "$_GITHUB_API_BODY" | jq empty 2>/dev/null; then
+        set_preflight_error "response_invalid" "github" \
+            "Membership response is not valid JSON"
+        return 1
+    fi
+
+    _GITHUB_MEMBERSHIP_ROLE=$(echo "$_GITHUB_API_BODY" | jq -r '.role // empty' 2>/dev/null)
+    _GITHUB_MEMBERSHIP_STATE=$(echo "$_GITHUB_API_BODY" | jq -r '.state // empty' 2>/dev/null)
+
+    if [[ "$_GITHUB_MEMBERSHIP_STATE" != "active" ]]; then
+        set_preflight_error "scope_access_denied" "github" \
+            "Membership state is '${_GITHUB_MEMBERSHIP_STATE}' — accept the organization invitation first"
+        return 1
+    fi
+
+    # Step 8: Retrieve org settings for repo-creation policy
+    _provider_github_api "/orgs/${LAB_GITHUB_ORG}"
+    if [[ $? -ne 0 ]]; then
+        set_preflight_error "provider_unavailable" "github" \
+            "Transport failure retrieving org settings for ${LAB_GITHUB_ORG}"
+        return 1
+    fi
+
+    if _is_github_rate_limited; then
+        set_preflight_error "provider_unavailable" "github" \
+            "Rate limited retrieving org settings (HTTP ${_GITHUB_API_STATUS})"
+        return 1
+    fi
+
+    case "$_GITHUB_API_STATUS" in
+        200) ;;
+        404|403)
+            # Post-enumeration inconsistency — org was accessible during
+            # enumeration but not accessible for settings retrieval.
+            set_preflight_error "provider_unavailable" "github" \
+                "Organization was accessible during enumeration but GET /orgs/${LAB_GITHUB_ORG} returned HTTP ${_GITHUB_API_STATUS}. Resolution became inconsistent between calls."
+            return 1
+            ;;
+        5[0-9][0-9])
+            set_preflight_error "provider_unavailable" "github" \
+                "GET /orgs/${LAB_GITHUB_ORG} returned HTTP ${_GITHUB_API_STATUS}"
+            return 1
+            ;;
+        *)
+            set_preflight_error "response_invalid" "github" \
+                "GET /orgs/${LAB_GITHUB_ORG} returned unexpected HTTP ${_GITHUB_API_STATUS}"
+            return 1
+            ;;
+    esac
+
+    if ! echo "$_GITHUB_API_BODY" | jq empty 2>/dev/null; then
+        set_preflight_error "response_invalid" "github" \
+            "Org settings response is not valid JSON"
+        return 1
+    fi
+
+    _GITHUB_ORG_MEMBERS_CAN_CREATE=$(echo "$_GITHUB_API_BODY" | jq -r \
+        '.members_can_create_repositories // empty' 2>/dev/null)
+    _GITHUB_ORG_REPO_CREATION=$(echo "$_GITHUB_API_BODY" | jq -r \
+        '.members_allowed_repository_creation_type // empty' 2>/dev/null)
+
+    # Step 8b: Baseline permission check (repo_create only, PARTIALLY EVALUABLE)
+    validate_github_permission "repo_create" || return 1
+
+    # Step 9: Populate ProviderContext
+    # org.name is mutable (WP0 evidence: changed from "Treehouse Innovation Lab"
+    # to "Friends Innovation Lab"). Record as informational metadata.
+    # REPRESENTATION FALLBACK: if org.name is null, use org.login
+    local scope_name="${org_name}"
+    if [[ -z "$scope_name" ]]; then
+        scope_name="$org_login"
+    fi
+
+    local repo_create_baseline="denied"
+    if [[ "$_GITHUB_MEMBERSHIP_ROLE" == "admin" ]]; then
+        repo_create_baseline="allowed"
+    elif [[ "$_GITHUB_ORG_MEMBERS_CAN_CREATE" == "true" ]] || \
+         [[ "$_GITHUB_ORG_REPO_CREATION" == "all" ]] || \
+         [[ "$_GITHUB_ORG_REPO_CREATION" == "private" ]]; then
+        repo_create_baseline="allowed"
+    fi
+
+    GITHUB_CTX_PROVIDER="github"
+    GITHUB_CTX_ACTOR_ID="$_GITHUB_ACTOR_ID"
+    GITHUB_CTX_ACTOR_NAME="$_GITHUB_ACTOR_NAME"
+    GITHUB_CTX_SCOPE_ID="$org_id"
+    GITHUB_CTX_SCOPE_NAME="$scope_name"
+    GITHUB_CTX_SCOPE_SLUG="$org_login"
+    GITHUB_CTX_PERMISSION="role:${_GITHUB_MEMBERSHIP_ROLE},repo_create_baseline:${repo_create_baseline},policy_completeness:partial"
+    GITHUB_CTX_RESOLUTION_SOURCE="api:/user/orgs+/user/memberships/orgs/${LAB_GITHUB_ORG}+/orgs/${LAB_GITHUB_ORG}"
 
     return 0
 }

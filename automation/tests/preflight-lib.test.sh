@@ -244,21 +244,8 @@ assert_return "validate github context optional fields absent" "0" "$rc"
 
 clear_provider_context "github"
 
-# 2e. resolve_provider_context — not-yet-implemented providers (github only)
-for test_provider in github; do
-    clear_preflight_error
-    stderr_output=$(resolve_provider_context "$test_provider" 2>&1 >/dev/null)
-    rc=$?
-    assert_return "resolve ${test_provider} returns 1 (not implemented)" "1" "$rc"
-    assert_empty "resolve ${test_provider}: no diagnostic code" "$PREFLIGHT_ERROR_CODE"
-    if echo "$stderr_output" | grep -q "not yet implemented"; then
-        _test_pass "resolve ${test_provider}: stderr says not yet implemented"
-    else
-        _test_fail "resolve ${test_provider}: stderr says not yet implemented" "got: ${stderr_output}"
-    fi
-    uc_prov=$(echo "$test_provider" | tr '[:lower:]' '[:upper:]')
-    assert_unset "resolve ${test_provider}: no partial CTX_SCOPE_ID" "${uc_prov}_CTX_SCOPE_ID"
-done
+# 2e. All three providers now have resolvers (WP2-WP4).
+# Not-implemented tests removed. Provider-specific tests are in Sections 6-8.
 
 # 2f. resolve_provider_context — unknown provider
 clear_preflight_error
@@ -272,15 +259,18 @@ else
     _test_fail "resolve unknown: stderr says unknown provider" "got: ${stderr_output}"
 fi
 
-# 2g. resolve_provider_context clears stale diagnostic state (not-implemented provider)
+# 2g. resolve_provider_context clears stale diagnostic state (via github resolver)
+# Mock github auth to fail — the point is that stale error from supabase is cleared
+_provider_github_auth_status() { return 1; }
 set_preflight_error "credential_invalid" "supabase" "stale detail from prior check"
 assert_eq "stale diagnostic pre-check" "credential_invalid" "$PREFLIGHT_ERROR_CODE"
 resolve_provider_context "github" 2>/dev/null
 rc=$?
 assert_return "resolve github after stale diagnostic returns 1" "1" "$rc"
-assert_empty "stale PREFLIGHT_ERROR_CODE cleared" "$PREFLIGHT_ERROR_CODE"
-assert_empty "stale PREFLIGHT_ERROR_PROVIDER cleared" "$PREFLIGHT_ERROR_PROVIDER"
-assert_empty "stale PREFLIGHT_ERROR_DETAIL cleared" "$PREFLIGHT_ERROR_DETAIL"
+# Error should now be github's credential_missing, not supabase's stale state
+assert_eq "stale replaced by github error" "credential_missing" "$PREFLIGHT_ERROR_CODE"
+assert_eq "stale provider replaced" "github" "$PREFLIGHT_ERROR_PROVIDER"
+_reset_provider_stubs
 
 # 2h. resolve_provider_context clears stale diagnostic state (unknown provider)
 set_preflight_error "scope_not_found" "github" "stale detail"
@@ -1350,7 +1340,489 @@ _reset_provider_stubs
 echo ""
 
 # ════════════════════════════════════════════════════════════════════════════
-# Section 8: Static safety checks
+# Section 8: GitHub resolver (WP4)
+# ════════════════════════════════════════════════════════════════════════════
+echo "── GitHub resolver ──"
+
+_SAVE_GH_ORG_ID="${LAB_GITHUB_ORG_ID:-}"
+_SAVE_GH_ORG="${LAB_GITHUB_ORG:-}"
+LAB_GITHUB_ORG_ID="254572218"
+LAB_GITHUB_ORG="friends-innovation-lab"
+
+# GitHub seam stub: simulates gh api --include response
+# Uses globals for per-endpoint fixtures
+_GHSTUB_AUTH_RC=0
+_GHSTUB_USER_STATUS="200"
+_GHSTUB_USER_BODY=""
+_GHSTUB_USER_HEADERS=""
+_GHSTUB_ORGS_STATUS="200"
+_GHSTUB_ORGS_BODY=""
+_GHSTUB_ORGS_HEADERS=""
+_GHSTUB_ORGS_P2_STATUS=""
+_GHSTUB_ORGS_P2_BODY=""
+_GHSTUB_ORGS_P2_HEADERS=""
+_GHSTUB_MEMBERSHIP_STATUS="200"
+_GHSTUB_MEMBERSHIP_BODY=""
+_GHSTUB_MEMBERSHIP_HEADERS=""
+_GHSTUB_ORGSETTINGS_STATUS="200"
+_GHSTUB_ORGSETTINGS_BODY=""
+_GHSTUB_ORGSETTINGS_HEADERS=""
+
+_setup_github_stubs() {
+    _provider_github_auth_status() { return $_GHSTUB_AUTH_RC; }
+    _provider_github_api() {
+        local endpoint="$1"
+        local status="" body="" hdrs=""
+        case "$endpoint" in
+            /user)
+                status="$_GHSTUB_USER_STATUS"; body="$_GHSTUB_USER_BODY"; hdrs="$_GHSTUB_USER_HEADERS" ;;
+            /user/orgs*page=2*|/user/orgs*page%3D2*)
+                if [[ -n "$_GHSTUB_ORGS_P2_STATUS" ]]; then
+                    status="$_GHSTUB_ORGS_P2_STATUS"; body="$_GHSTUB_ORGS_P2_BODY"; hdrs="$_GHSTUB_ORGS_P2_HEADERS"
+                else
+                    return 1  # transport failure
+                fi ;;
+            /user/orgs*)
+                status="$_GHSTUB_ORGS_STATUS"; body="$_GHSTUB_ORGS_BODY"; hdrs="$_GHSTUB_ORGS_HEADERS" ;;
+            /user/memberships/orgs/*)
+                status="$_GHSTUB_MEMBERSHIP_STATUS"; body="$_GHSTUB_MEMBERSHIP_BODY"; hdrs="$_GHSTUB_MEMBERSHIP_HEADERS" ;;
+            /orgs/*)
+                status="$_GHSTUB_ORGSETTINGS_STATUS"; body="$_GHSTUB_ORGSETTINGS_BODY"; hdrs="$_GHSTUB_ORGSETTINGS_HEADERS" ;;
+            *)
+                status="500"; body='{"error":"unexpected"}'; hdrs="" ;;
+        esac
+
+        _GITHUB_API_STATUS="$status"
+        _GITHUB_API_BODY="$body"
+        _GITHUB_API_HEADERS="$hdrs"
+        _GITHUB_API_EXIT=0
+        _GITHUB_API_LINK=$(echo "$hdrs" | grep -i '^Link:' | sed 's/^[Ll]ink: *//' | head -1)
+        _GITHUB_API_RATELIMIT_REMAINING=$(echo "$hdrs" | grep -i '^X-RateLimit-Remaining:' | sed 's/^[^:]*: *//' | tr -d '[:space:]' | head -1)
+        _GITHUB_API_RATELIMIT_RESET=$(echo "$hdrs" | grep -i '^X-RateLimit-Reset:' | sed 's/^[^:]*: *//' | tr -d '[:space:]' | head -1)
+        _GITHUB_API_RETRY_AFTER=$(echo "$hdrs" | grep -i '^Retry-After:' | sed 's/^[^:]*: *//' | tr -d '[:space:]' | head -1)
+        return 0
+    }
+}
+
+_gh_happy_path() {
+    _GHSTUB_AUTH_RC=0
+    _GHSTUB_USER_STATUS="200"
+    _GHSTUB_USER_BODY='{"id":12345,"login":"test-user"}'
+    _GHSTUB_USER_HEADERS=""
+    _GHSTUB_ORGS_STATUS="200"
+    _GHSTUB_ORGS_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-page1.json")
+    _GHSTUB_ORGS_HEADERS=""
+    _GHSTUB_ORGS_P2_STATUS=""
+    _GHSTUB_MEMBERSHIP_STATUS="200"
+    _GHSTUB_MEMBERSHIP_BODY=$(cat "${FIXTURE_DIR}/github/membership-admin-active.json")
+    _GHSTUB_MEMBERSHIP_HEADERS=""
+    _GHSTUB_ORGSETTINGS_STATUS="200"
+    _GHSTUB_ORGSETTINGS_BODY=$(cat "${FIXTURE_DIR}/github/org-settings-members-allowed.json")
+    _GHSTUB_ORGSETTINGS_HEADERS=""
+    _setup_github_stubs
+}
+
+# -- 8a. credential_missing (no active auth)
+_GHSTUB_AUTH_RC=1
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: credential_missing returns 1" "1" "$rc"
+assert_eq "github: credential_missing code" "credential_missing" "$PREFLIGHT_ERROR_CODE"
+assert_unset "github: credential_missing no CTX" "GITHUB_CTX_PROVIDER"
+
+# -- 8b. credential_invalid (/user 401 after auth success)
+_gh_happy_path
+_GHSTUB_USER_STATUS="401"
+_GHSTUB_USER_BODY='{"message":"Bad credentials"}'
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: credential_invalid returns 1" "1" "$rc"
+assert_eq "github: credential_invalid code" "credential_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8c. actor_unresolved (null id)
+_gh_happy_path
+_GHSTUB_USER_BODY='{"id":null,"login":null}'
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: actor_unresolved returns 1" "1" "$rc"
+assert_eq "github: actor_unresolved code" "actor_unresolved" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8d. scope_config_missing
+_gh_happy_path
+unset LAB_GITHUB_ORG_ID 2>/dev/null || true
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: scope_config_missing returns 1" "1" "$rc"
+assert_eq "github: scope_config_missing code" "scope_config_missing" "$PREFLIGHT_ERROR_CODE"
+LAB_GITHUB_ORG_ID="254572218"
+
+# -- 8e. scope_not_found (canonical ID absent, complete enum)
+_gh_happy_path
+_GHSTUB_ORGS_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-empty.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: scope_not_found returns 1" "1" "$rc"
+assert_eq "github: scope_not_found code" "scope_not_found" "$PREFLIGHT_ERROR_CODE"
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "complete accessible-organization enumeration"; then
+    _test_pass "github: scope_not_found detail notes complete enumeration"
+else
+    _test_fail "github: scope_not_found detail notes complete enumeration" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# -- 8f. scope_identity_mismatch (wrong login)
+_gh_happy_path
+_GHSTUB_ORGS_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-login-mismatch.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: scope_identity_mismatch returns 1" "1" "$rc"
+assert_eq "github: scope_identity_mismatch code" "scope_identity_mismatch" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8g. response_invalid (duplicate canonical ID)
+_gh_happy_path
+_GHSTUB_ORGS_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-duplicate-id.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: duplicate ID returns 1" "1" "$rc"
+assert_eq "github: duplicate ID code" "response_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8h. Pagination: org found on page 2
+_gh_happy_path
+_GHSTUB_ORGS_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-page1-no-match.json")
+_GHSTUB_ORGS_HEADERS='Link: </user/orgs?per_page=100&page=2>; rel="next"'
+_GHSTUB_ORGS_P2_STATUS="200"
+_GHSTUB_ORGS_P2_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-page2-match.json")
+_GHSTUB_ORGS_P2_HEADERS=""
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: pagination page 2 returns 0" "0" "$rc"
+assert_eq "github: pagination CTX_PROVIDER" "github" "${GITHUB_CTX_PROVIDER:-}"
+
+# -- 8i. Pagination: page 2 transport failure
+_gh_happy_path
+_GHSTUB_ORGS_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-page1-no-match.json")
+_GHSTUB_ORGS_HEADERS='Link: </user/orgs?per_page=100&page=2>; rel="next"'
+_GHSTUB_ORGS_P2_STATUS=""
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: page 2 transport failure returns 1" "1" "$rc"
+assert_eq "github: page 2 transport failure code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8j. Rate limit: 429 on /user/orgs
+_gh_happy_path
+_GHSTUB_ORGS_STATUS="429"
+_GHSTUB_ORGS_BODY='{"message":"rate limit exceeded"}'
+_GHSTUB_ORGS_HEADERS="Retry-After: 60"
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: 429 rate limit returns 1" "1" "$rc"
+assert_eq "github: 429 rate limit code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8k. Rate limit: 403 + remaining=0
+_gh_happy_path
+_GHSTUB_ORGS_STATUS="403"
+_GHSTUB_ORGS_BODY='{"message":"API rate limit exceeded"}'
+_GHSTUB_ORGS_HEADERS="X-RateLimit-Remaining: 0"
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: 403+remaining=0 returns 1" "1" "$rc"
+assert_eq "github: 403+remaining=0 code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8l. 403 without rate-limit evidence on /user/orgs -> scope_access_denied
+_gh_happy_path
+_GHSTUB_ORGS_STATUS="403"
+_GHSTUB_ORGS_BODY='{"message":"Forbidden"}'
+_GHSTUB_ORGS_HEADERS="X-RateLimit-Remaining: 4999"
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: bare 403 orgs returns 1" "1" "$rc"
+assert_eq "github: bare 403 orgs code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "organization authorization"; then
+    _test_pass "github: bare 403 detail notes scope/token issue"
+else
+    _test_fail "github: bare 403 detail notes scope/token issue" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# -- 8m. Membership: 404 -> scope_access_denied
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_STATUS="404"
+_GHSTUB_MEMBERSHIP_BODY='{"message":"Not Found"}'
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: membership 404 returns 1" "1" "$rc"
+assert_eq "github: membership 404 code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8n. Membership: pending -> scope_access_denied
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_BODY=$(cat "${FIXTURE_DIR}/github/membership-member-pending.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: pending membership returns 1" "1" "$rc"
+assert_eq "github: pending membership code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8o. Membership: 403 + rate-limit -> provider_unavailable
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_STATUS="403"
+_GHSTUB_MEMBERSHIP_BODY='{"message":"rate limit"}'
+_GHSTUB_MEMBERSHIP_HEADERS="X-RateLimit-Remaining: 0"
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: membership 403+ratelimit returns 1" "1" "$rc"
+assert_eq "github: membership 403+ratelimit code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8p. Membership: 403 without rate-limit -> scope_access_denied
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_STATUS="403"
+_GHSTUB_MEMBERSHIP_BODY='{"message":"Forbidden"}'
+_GHSTUB_MEMBERSHIP_HEADERS="X-RateLimit-Remaining: 4999"
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: membership bare 403 returns 1" "1" "$rc"
+assert_eq "github: membership bare 403 code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8q. Admin happy path + policy_completeness:partial
+_gh_happy_path
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: admin happy path returns 0" "0" "$rc"
+assert_eq "github: admin CTX_PROVIDER" "github" "${GITHUB_CTX_PROVIDER:-}"
+assert_eq "github: admin CTX_ACTOR_ID" "12345" "${GITHUB_CTX_ACTOR_ID:-}"
+assert_eq "github: admin CTX_SCOPE_ID" "254572218" "${GITHUB_CTX_SCOPE_ID:-}"
+assert_eq "github: admin CTX_SCOPE_SLUG" "friends-innovation-lab" "${GITHUB_CTX_SCOPE_SLUG:-}"
+if echo "${GITHUB_CTX_PERMISSION:-}" | grep -q "policy_completeness:partial"; then
+    _test_pass "github: admin CTX_PERMISSION has policy_completeness:partial"
+else
+    _test_fail "github: admin CTX_PERMISSION has policy_completeness:partial" "got: ${GITHUB_CTX_PERMISSION:-}"
+fi
+
+# -- 8r. Member + org allows creation -> success
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_BODY=$(cat "${FIXTURE_DIR}/github/membership-member-active.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: member+allowed returns 0" "0" "$rc"
+assert_eq "github: member+allowed CTX_PROVIDER" "github" "${GITHUB_CTX_PROVIDER:-}"
+if echo "${GITHUB_CTX_PERMISSION:-}" | grep -q "repo_create_baseline:allowed"; then
+    _test_pass "github: member+allowed baseline:allowed"
+else
+    _test_fail "github: member+allowed baseline:allowed" "got: ${GITHUB_CTX_PERMISSION:-}"
+fi
+
+# -- 8s. Member + org denies creation -> permission_insufficient
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_BODY=$(cat "${FIXTURE_DIR}/github/membership-member-active.json")
+_GHSTUB_ORGSETTINGS_BODY=$(cat "${FIXTURE_DIR}/github/org-settings-members-denied.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: member+denied returns 1" "1" "$rc"
+assert_eq "github: member+denied code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+assert_unset "github: member+denied no CTX" "GITHUB_CTX_PROVIDER"
+
+# -- 8t. Member + both policy fields absent -> fail closed
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_BODY=$(cat "${FIXTURE_DIR}/github/membership-member-active.json")
+_GHSTUB_ORGSETTINGS_BODY=$(cat "${FIXTURE_DIR}/github/org-settings-fields-absent.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: member+fields absent returns 1" "1" "$rc"
+assert_eq "github: member+fields absent code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "policy fields absent"; then
+    _test_pass "github: fields absent detail cites absent fields"
+else
+    _test_fail "github: fields absent detail cites absent fields" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# -- 8u. Member + primary true, type absent -> success
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_BODY=$(cat "${FIXTURE_DIR}/github/membership-member-active.json")
+_GHSTUB_ORGSETTINGS_BODY=$(cat "${FIXTURE_DIR}/github/org-settings-primary-true-type-absent.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: member+primary true returns 0" "0" "$rc"
+
+# -- 8v. Billing manager -> permission_insufficient
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_BODY=$(cat "${FIXTURE_DIR}/github/membership-billing-active.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: billing manager returns 1" "1" "$rc"
+assert_eq "github: billing manager code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8w. repo_archive -> UNVERIFIED (no diagnostic code)
+_clear_github_membership
+_GITHUB_MEMBERSHIP_ROLE="admin"
+clear_preflight_error
+validate_github_permission "repo_archive" 2>/dev/null
+rc=$?
+assert_return "github: repo_archive returns 1 (unverified)" "1" "$rc"
+assert_empty "github: repo_archive no diagnostic code" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8x. Mutable display name: changed org.name -> success
+# The enumeration response carries the current display name
+_gh_happy_path
+_GHSTUB_ORGS_BODY='[{"id":254572218,"login":"friends-innovation-lab","name":"Totally Different Display Name"}]'
+_GHSTUB_ORGSETTINGS_BODY=$(cat "${FIXTURE_DIR}/github/org-settings-name-changed.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: changed name returns 0" "0" "$rc"
+assert_eq "github: changed name CTX_SCOPE_NAME" "Totally Different Display Name" "${GITHUB_CTX_SCOPE_NAME:-}"
+assert_eq "github: changed name CTX_SCOPE_SLUG" "friends-innovation-lab" "${GITHUB_CTX_SCOPE_SLUG:-}"
+
+# -- 8y. org.name null -> success, SCOPE_NAME = login (REPRESENTATION FALLBACK)
+_gh_happy_path
+_GHSTUB_ORGSETTINGS_BODY=$(cat "${FIXTURE_DIR}/github/org-settings-name-null.json")
+_GHSTUB_ORGS_BODY='[{"id":254572218,"login":"friends-innovation-lab","name":null}]'
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: null name returns 0" "0" "$rc"
+assert_eq "github: null name CTX_SCOPE_NAME" "friends-innovation-lab" "${GITHUB_CTX_SCOPE_NAME:-}"
+
+# -- 8z. Org settings 404 post-enumeration -> provider_unavailable
+_gh_happy_path
+_GHSTUB_ORGSETTINGS_STATUS="404"
+_GHSTUB_ORGSETTINGS_BODY='{"message":"Not Found"}'
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: org settings 404 returns 1" "1" "$rc"
+assert_eq "github: org settings 404 code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "inconsistent between calls"; then
+    _test_pass "github: org settings 404 detail notes inconsistency"
+else
+    _test_fail "github: org settings 404 detail notes inconsistency" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# -- 8aa. Org settings 403 + rate-limit -> provider_unavailable
+_gh_happy_path
+_GHSTUB_ORGSETTINGS_STATUS="403"
+_GHSTUB_ORGSETTINGS_BODY='{"message":"rate limit"}'
+_GHSTUB_ORGSETTINGS_HEADERS="X-RateLimit-Remaining: 0"
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: org settings 403+ratelimit returns 1" "1" "$rc"
+assert_eq "github: org settings 403+ratelimit code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8bb. No partial context after failure
+_gh_happy_path
+_GHSTUB_MEMBERSHIP_BODY=$(cat "${FIXTURE_DIR}/github/membership-billing-active.json")
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+assert_unset "github: no partial CTX_PROVIDER" "GITHUB_CTX_PROVIDER"
+assert_unset "github: no partial CTX_ACTOR_ID" "GITHUB_CTX_ACTOR_ID"
+assert_unset "github: no partial CTX_SCOPE_ID" "GITHUB_CTX_SCOPE_ID"
+
+# -- 8cc. Stale membership from prior run does not survive failure
+_gh_happy_path
+_setup_github_stubs
+resolve_github_context 2>/dev/null
+assert_eq "github: stale setup: role populated" "admin" "$_GITHUB_MEMBERSHIP_ROLE"
+# Now fail with a credential_missing to ensure full cleanup
+_GHSTUB_AUTH_RC=1
+_setup_github_stubs
+resolve_github_context 2>/dev/null
+assert_empty "github: stale role cleared by credential_missing" "$_GITHUB_MEMBERSHIP_ROLE"
+assert_empty "github: stale state cleared" "$_GITHUB_MEMBERSHIP_STATE"
+assert_empty "github: stale repo_creation cleared" "$_GITHUB_ORG_REPO_CREATION"
+assert_unset "github: stale CTX_PROVIDER cleared" "GITHUB_CTX_PROVIDER"
+assert_unset "github: stale CTX_ACTOR_ID cleared" "GITHUB_CTX_ACTOR_ID"
+_reset_provider_stubs
+
+# -- 8dd. Stale diagnostic cleared on success
+set_preflight_error "scope_not_found" "supabase" "stale"
+_gh_happy_path
+_setup_github_stubs
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: stale cleared on success" "0" "$rc"
+assert_empty "github: stale error code cleared" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8ee. Page 2 rate-limit (429) -> provider_unavailable
+_gh_happy_path
+_GHSTUB_ORGS_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-page1-no-match.json")
+_GHSTUB_ORGS_HEADERS='Link: </user/orgs?per_page=100&page=2>; rel="next"'
+_GHSTUB_ORGS_P2_STATUS="429"
+_GHSTUB_ORGS_P2_BODY='{"message":"rate limit"}'
+_GHSTUB_ORGS_P2_HEADERS="Retry-After: 60"
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: page 2 rate limit returns 1" "1" "$rc"
+assert_eq "github: page 2 rate limit code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+
+# -- 8ff. Page 2 malformed -> response_invalid
+_gh_happy_path
+_GHSTUB_ORGS_BODY=$(cat "${FIXTURE_DIR}/github/user-orgs-page1-no-match.json")
+_GHSTUB_ORGS_HEADERS='Link: </user/orgs?per_page=100&page=2>; rel="next"'
+_GHSTUB_ORGS_P2_STATUS="200"
+_GHSTUB_ORGS_P2_BODY="NOT JSON"
+_GHSTUB_ORGS_P2_HEADERS=""
+_setup_github_stubs
+clear_preflight_error
+resolve_github_context 2>/dev/null
+rc=$?
+assert_return "github: page 2 malformed returns 1" "1" "$rc"
+assert_eq "github: page 2 malformed code" "response_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# Restore
+LAB_GITHUB_ORG_ID="$_SAVE_GH_ORG_ID"
+LAB_GITHUB_ORG="$_SAVE_GH_ORG"
+_reset_provider_stubs
+
+echo ""
+
+# ════════════════════════════════════════════════════════════════════════════
+# Section 9: Static safety checks
 # ════════════════════════════════════════════════════════════════════════════
 echo "── Static safety checks ──"
 
@@ -1373,6 +1845,7 @@ echo "── Static safety checks ──"
 # Functions allowed to contain raw provider calls
 ALLOWED_RAW=(
     _provider_github_api
+    _provider_github_auth_status
     _provider_vercel_api
     _provider_vercel_cli
     _provider_supabase_api
