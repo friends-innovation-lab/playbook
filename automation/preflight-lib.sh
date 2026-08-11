@@ -28,15 +28,17 @@ validate_vercel_token() {
         return 1
     }
 
+    # Vercel /v2/user returns { user: { username: "..." } }.
+    # Try .user.username first (current API), fall back to .username (legacy).
     local username
-    username=$(echo "$response" | jq -r '.username // empty' 2>/dev/null)
+    username=$(echo "$response" | jq -r '.user.username // .username // empty' 2>/dev/null)
     if [[ -n "$username" ]]; then
         VERCEL_VALIDATE_USER="$username"
         return 0
     fi
 
     local invalid
-    invalid=$(echo "$response" | jq -r '.invalidToken // empty' 2>/dev/null)
+    invalid=$(echo "$response" | jq -r '.error.invalidToken // .invalidToken // empty' 2>/dev/null)
     if [[ "$invalid" == "true" ]]; then
         VERCEL_VALIDATE_ERROR="invalid_token"
     else
