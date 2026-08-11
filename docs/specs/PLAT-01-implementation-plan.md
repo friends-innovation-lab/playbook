@@ -399,8 +399,11 @@ Same pattern. Independent revert.
 **Files changed:**
 - `automation/preflight-lib.sh` (modified: existing public functions become thin wrappers)
 - `automation/tests/SMOKE-TESTS.md` (new)
+- `automation/tests/preflight-lib.test.sh` (modified: update static-check allowed list)
 
 **Rollback:** `git revert <WP5-commit>`. Restores original implementation inside public functions. New resolver code (from WP2-4) still exists but is now uncalled.
+
+**WP5 prerequisite — static-check allowed-list update:** The WP1 static seam check exempts four legacy functions from raw-provider-call enforcement: `validate_vercel_token`, `print_vercel_token_help`, `validate_github_api`, `validate_supabase_token`. When WP5 migrates these to the seam (making them thin wrappers that delegate to resolver functions), they must be removed from the `ALLOWED_RAW` array in `preflight-lib.test.sh`. Leaving them in would silently exempt functions that no longer need the exemption.
 
 **This is the riskiest revert.** If WP5 is reverted but WP2-4 remain, the resolvers exist but are unused. Compatibility wrappers revert to original `curl`-based validation. This is the correct state — the spec's main compatibility guarantee.
 
