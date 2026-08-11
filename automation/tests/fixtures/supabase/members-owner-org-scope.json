@@ -1,0 +1,1 @@
+{"data":[{"type":"organization_member","id":"user-123-abc","attributes":{"username":"test-user","primary_email":"test@example.com","mfa_enabled":false,"is_sso_user":false,"roles":[{"name":"owner","scope":"organization","projects":[]}]},"_fixture_note":"SYNTHETIC — org-scoped owner role"}],"links":{"first":null,"prev":null,"next":null,"last":null}}

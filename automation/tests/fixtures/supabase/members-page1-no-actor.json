@@ -1,0 +1,1 @@
+{"data":[{"type":"organization_member","id":"other-user-1","attributes":{"username":"other-1","primary_email":"other1@example.com","mfa_enabled":false,"is_sso_user":false,"roles":[{"name":"developer","scope":"organization","projects":[]}]}}],"links":{"first":null,"prev":null,"next":"/v2/organizations/test-slug/members?page=2","last":null}}

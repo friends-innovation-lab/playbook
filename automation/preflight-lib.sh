@@ -320,8 +320,12 @@ resolve_provider_context() {
             resolve_vercel_context
             return $?
             ;;
-        GITHUB|SUPABASE)
-            echo "resolve_provider_context: resolver for ${provider} is not yet implemented (requires WP3-WP4)" >&2
+        SUPABASE)
+            resolve_supabase_context
+            return $?
+            ;;
+        GITHUB)
+            echo "resolve_provider_context: resolver for ${provider} is not yet implemented (requires WP4)" >&2
             return 1
             ;;
         *)
@@ -730,6 +734,407 @@ resolve_vercel_context() {
     VERCEL_CTX_SCOPE_SLUG="$team_slug"
     VERCEL_CTX_PERMISSION="$perm_evidence"
     VERCEL_CTX_RESOLUTION_SOURCE="api:/v2/teams/${LAB_VERCEL_TEAM_ID}"
+
+    return 0
+}
+
+# ── Supabase resolver (PLAT-01/WP3) ───────────────────────────────────────
+#
+# API calls:
+#   GET /v1/profile                           — credential + actor identity
+#   GET /v1/organizations                     — canonical org by ID + metadata
+#   GET /v2/organizations/{slug}/members      — membership + org-scoped roles
+#
+# Documented RBAC basis: https://supabase.com/docs/guides/platform/access-control
+#
+# KNOWN GAP: resolve_supabase_context validates project_create only.
+# Spinup additionally requires api_keys_read, project_settings_update,
+# and database_manage. Until WP7 wires per-capability checks, a passing
+# Supabase preflight does not guarantee spinup completion.
+#
+# ARCHITECTURAL ASSUMPTION: Multiple organization-scoped roles are
+# evaluated additively — any qualifying role grants the capability.
+# Supabase does not document conflict/precedence semantics for combined
+# role assignments. Fail closed when no org-scoped role qualifies.
+#
+# WP8 scoped project discovery contract:
+#   GET /v1/organizations/{SUPABASE_CTX_SCOPE_SLUG}/projects?search={name}
+#   Verify exact name match. Zero matches -> resource_not_found.
+#   Endpoint is org-scoped; do not fall back to global GET /v1/projects.
+
+# ── Normalized Supabase membership ────────────────────────────────────────
+
+_SUPABASE_ORG_ROLES=""       # comma-separated org-scoped roles
+_SUPABASE_PROJECT_ROLES=""   # comma-separated project-scoped roles (for future use)
+
+_clear_supabase_membership() {
+    _SUPABASE_ORG_ROLES=""
+    _SUPABASE_PROJECT_ROLES=""
+}
+
+_normalize_supabase_membership() {
+    local roles_json="$1"
+    _clear_supabase_membership
+
+    # Separate organization-scoped from project-scoped roles
+    _SUPABASE_ORG_ROLES=$(echo "$roles_json" | jq -r \
+        '[.[] | select(.scope=="organization") | .name] | join(",")' 2>/dev/null)
+    _SUPABASE_PROJECT_ROLES=$(echo "$roles_json" | jq -r \
+        '[.[] | select(.scope!="organization") | .name] | join(",")' 2>/dev/null)
+}
+
+_has_supabase_org_role() {
+    local role="$1"
+    [[ -n "$_SUPABASE_ORG_ROLES" ]] && \
+        echo ",$_SUPABASE_ORG_ROLES," | grep -q ",$role,"
+}
+
+# ── validate_supabase_credential ──────────────────────────────────────────
+
+_SUPABASE_ACTOR_ID=""
+_SUPABASE_ACTOR_NAME=""
+
+validate_supabase_credential() {
+    _SUPABASE_ACTOR_ID=""
+    _SUPABASE_ACTOR_NAME=""
+
+    if [[ -z "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
+        set_preflight_error "credential_missing" "supabase" \
+            "SUPABASE_ACCESS_TOKEN is not set"
+        return 1
+    fi
+
+    local raw_response
+    raw_response=$(_provider_supabase_api GET /v1/profile 2>/dev/null) || {
+        set_preflight_error "provider_unavailable" "supabase" \
+            "Transport failure calling GET /v1/profile"
+        return 1
+    }
+
+    _split_provider_response "$raw_response"
+
+    case "$_RESP_CODE" in
+        200)
+            if ! echo "$_RESP_BODY" | jq empty 2>/dev/null; then
+                set_preflight_error "response_invalid" "supabase" \
+                    "GET /v1/profile returned HTTP 200 but body is not valid JSON"
+                return 1
+            fi
+
+            local actor_id actor_name
+            actor_id=$(echo "$_RESP_BODY" | jq -r '.gotrue_id // empty' 2>/dev/null)
+            actor_name=$(echo "$_RESP_BODY" | jq -r '.username // empty' 2>/dev/null)
+
+            if [[ -z "$actor_id" ]]; then
+                set_preflight_error "actor_unresolved" "supabase" \
+                    "GET /v1/profile returned 200 but gotrue_id is null or absent"
+                return 1
+            fi
+
+            _SUPABASE_ACTOR_ID="$actor_id"
+            _SUPABASE_ACTOR_NAME="$actor_name"
+            return 0
+            ;;
+        401)
+            set_preflight_error "credential_invalid" "supabase" \
+                "GET /v1/profile returned 401 (documented: unauthorized)"
+            return 1
+            ;;
+        403)
+            # ASSUMPTION: 403 at profile endpoint means credential cannot
+            # establish actor identity. No documented non-credential 403 case.
+            set_preflight_error "credential_invalid" "supabase" \
+                "GET /v1/profile returned 403 (classified as credential failure at actor-resolution stage; this is an architectural assumption)"
+            return 1
+            ;;
+        429)
+            set_preflight_error "provider_unavailable" "supabase" \
+                "GET /v1/profile returned 429 (rate limited)"
+            return 1
+            ;;
+        5[0-9][0-9])
+            set_preflight_error "provider_unavailable" "supabase" \
+                "GET /v1/profile returned HTTP ${_RESP_CODE}"
+            return 1
+            ;;
+        *)
+            set_preflight_error "response_invalid" "supabase" \
+                "GET /v1/profile returned unexpected HTTP ${_RESP_CODE}"
+            return 1
+            ;;
+    esac
+}
+
+# ── validate_supabase_permission ──────────────────────────────────────────
+# Capability-specific. Reads _SUPABASE_ORG_ROLES only.
+# Project-scoped roles never authorize organization-wide operations.
+#
+# Documented basis: https://supabase.com/docs/guides/platform/access-control
+#
+# Multi-role semantics: evaluated additively. Any qualifying org-scoped
+# role grants the capability. This is an ARCHITECTURAL ASSUMPTION — Supabase
+# does not document conflict/precedence for combined roles.
+
+validate_supabase_permission() {
+    local capability="$1"
+
+    case "$capability" in
+        project_create|project_delete)
+            # DOCUMENTED: Owner and Administrator can create/delete projects.
+            # Developer and Read-Only cannot.
+            if _has_supabase_org_role "owner" || _has_supabase_org_role "administrator"; then
+                return 0
+            fi
+            set_preflight_error "permission_insufficient" "supabase" \
+                "Capability '${capability}' requires organization-scoped owner or administrator role (documented: https://supabase.com/docs/guides/platform/access-control). Current org roles: ${_SUPABASE_ORG_ROLES:-none}"
+            return 1
+            ;;
+
+        api_keys_read|database_manage)
+            # DOCUMENTED: Owner, Administrator, or Developer.
+            if _has_supabase_org_role "owner" || _has_supabase_org_role "administrator" || \
+               _has_supabase_org_role "developer"; then
+                return 0
+            fi
+            set_preflight_error "permission_insufficient" "supabase" \
+                "Capability '${capability}' requires organization-scoped owner, administrator, or developer role (documented). Current org roles: ${_SUPABASE_ORG_ROLES:-none}"
+            return 1
+            ;;
+
+        project_settings_update)
+            # DOCUMENTED: Owner and Administrator.
+            if _has_supabase_org_role "owner" || _has_supabase_org_role "administrator"; then
+                return 0
+            fi
+            set_preflight_error "permission_insufficient" "supabase" \
+                "Capability '${capability}' requires organization-scoped owner or administrator role (documented). Current org roles: ${_SUPABASE_ORG_ROLES:-none}"
+            return 1
+            ;;
+
+        *)
+            echo "validate_supabase_permission: unknown capability '${capability}'" >&2
+            return 1
+            ;;
+    esac
+}
+
+# ── resolve_supabase_context ──────────────────────────────────────────────
+# Full resolver: credential → actor → scope config → canonical org
+# → identity verification → membership → permission → context.
+#
+# Baseline capability: project_create
+
+resolve_supabase_context() {
+    clear_preflight_error
+    clear_provider_context "SUPABASE"
+    _clear_supabase_membership
+    _SUPABASE_ACTOR_ID=""
+    _SUPABASE_ACTOR_NAME=""
+
+    # Step 1-3: Credential + actor
+    validate_supabase_credential || return 1
+
+    # Step 4: Canonical scope config present
+    if [[ -z "${LAB_SUPABASE_ORG_ID:-}" || -z "${LAB_SUPABASE_ORG_NAME:-}" || -z "${LAB_SUPABASE_ORG_SLUG:-}" ]]; then
+        set_preflight_error "scope_config_missing" "supabase" \
+            "LAB_SUPABASE_ORG_ID, LAB_SUPABASE_ORG_NAME, or LAB_SUPABASE_ORG_SLUG not set in provider-scopes.sh"
+        return 1
+    fi
+
+    # Step 5: Enumerate accessible orgs, exact-match canonical ID
+    local raw_response
+    raw_response=$(_provider_supabase_api GET /v1/organizations 2>/dev/null) || {
+        set_preflight_error "provider_unavailable" "supabase" \
+            "Transport failure calling GET /v1/organizations"
+        return 1
+    }
+
+    _split_provider_response "$raw_response"
+
+    case "$_RESP_CODE" in
+        200) ;;
+        401)
+            set_preflight_error "credential_invalid" "supabase" \
+                "GET /v1/organizations returned 401"
+            return 1
+            ;;
+        403)
+            # ARCHITECTURAL MAPPING: token accepted by /v1/profile but
+            # rejected by /v1/organizations — treat as credential scope issue
+            set_preflight_error "scope_access_denied" "supabase" \
+                "GET /v1/organizations returned 403 (architectural mapping: credential accepted for profile but rejected for org enumeration)"
+            return 1
+            ;;
+        429)
+            set_preflight_error "provider_unavailable" "supabase" \
+                "GET /v1/organizations returned 429 (rate limited)"
+            return 1
+            ;;
+        5[0-9][0-9])
+            set_preflight_error "provider_unavailable" "supabase" \
+                "GET /v1/organizations returned HTTP ${_RESP_CODE}"
+            return 1
+            ;;
+        *)
+            set_preflight_error "response_invalid" "supabase" \
+                "GET /v1/organizations returned unexpected HTTP ${_RESP_CODE}"
+            return 1
+            ;;
+    esac
+
+    # Validate response is a JSON array
+    if ! echo "$_RESP_BODY" | jq -e 'type == "array"' &>/dev/null; then
+        set_preflight_error "response_invalid" "supabase" \
+            "GET /v1/organizations returned HTTP 200 but body is not a JSON array"
+        return 1
+    fi
+
+    # Exact-match canonical ID
+    local match_count
+    match_count=$(echo "$_RESP_BODY" | jq \
+        "[.[] | select(.id==\"${LAB_SUPABASE_ORG_ID}\")] | length" 2>/dev/null)
+
+    if [[ "$match_count" -eq 0 ]]; then
+        set_preflight_error "scope_not_found" "supabase" \
+            "Canonical org ID '${LAB_SUPABASE_ORG_ID}' not found in accessible organizations. Either the org was deleted or access was revoked — verify with an admin."
+        return 1
+    fi
+
+    if [[ "$match_count" -gt 1 ]]; then
+        set_preflight_error "response_invalid" "supabase" \
+            "Canonical org ID '${LAB_SUPABASE_ORG_ID}' matched ${match_count} entries (expected exactly 1)"
+        return 1
+    fi
+
+    # Step 6: Verify returned name and slug
+    local org_id org_name org_slug
+    org_id=$(echo "$_RESP_BODY" | jq -r \
+        ".[] | select(.id==\"${LAB_SUPABASE_ORG_ID}\") | .id" 2>/dev/null)
+    org_name=$(echo "$_RESP_BODY" | jq -r \
+        ".[] | select(.id==\"${LAB_SUPABASE_ORG_ID}\") | .name // empty" 2>/dev/null)
+    org_slug=$(echo "$_RESP_BODY" | jq -r \
+        ".[] | select(.id==\"${LAB_SUPABASE_ORG_ID}\") | .slug // empty" 2>/dev/null)
+
+    if [[ "$org_name" != "$LAB_SUPABASE_ORG_NAME" || "$org_slug" != "$LAB_SUPABASE_ORG_SLUG" ]]; then
+        set_preflight_error "scope_identity_mismatch" "supabase" \
+            "Canonical ID ${LAB_SUPABASE_ORG_ID} resolved to name='${org_name}' slug='${org_slug}', expected name='${LAB_SUPABASE_ORG_NAME}' slug='${LAB_SUPABASE_ORG_SLUG}'"
+        return 1
+    fi
+
+    # Step 7: Resolve actor membership via v2 members endpoint
+    # Uses verified slug from step 6. Paginate until actor found or exhausted.
+    local members_path="/v2/organizations/${org_slug}/members"
+    local actor_roles_json=""
+    local page_url="$members_path"
+    local enumeration_complete=false
+
+    while [[ -n "$page_url" ]]; do
+        local members_raw
+        members_raw=$(_provider_supabase_api GET "$page_url" 2>/dev/null) || {
+            set_preflight_error "provider_unavailable" "supabase" \
+                "Transport failure calling GET ${page_url}"
+            return 1
+        }
+
+        _split_provider_response "$members_raw"
+
+        case "$_RESP_CODE" in
+            200) ;;
+            401)
+                set_preflight_error "credential_invalid" "supabase" \
+                    "GET ${page_url} returned 401"
+                return 1
+                ;;
+            403)
+                set_preflight_error "scope_access_denied" "supabase" \
+                    "GET ${page_url} returned 403 (documented: forbidden)"
+                return 1
+                ;;
+            429)
+                set_preflight_error "provider_unavailable" "supabase" \
+                    "GET ${page_url} returned 429 (rate limited)"
+                return 1
+                ;;
+            5[0-9][0-9])
+                set_preflight_error "provider_unavailable" "supabase" \
+                    "GET ${page_url} returned HTTP ${_RESP_CODE}"
+                return 1
+                ;;
+            *)
+                set_preflight_error "response_invalid" "supabase" \
+                    "GET ${page_url} returned unexpected HTTP ${_RESP_CODE}"
+                return 1
+                ;;
+        esac
+
+        # Validate page structure
+        if ! echo "$_RESP_BODY" | jq -e '.data' &>/dev/null; then
+            set_preflight_error "response_invalid" "supabase" \
+                "GET ${page_url} returned 200 but response lacks .data array"
+            return 1
+        fi
+
+        # Search for actor by gotrue_id
+        actor_roles_json=$(echo "$_RESP_BODY" | jq -c \
+            ".data[] | select(.id==\"${_SUPABASE_ACTOR_ID}\") | .attributes.roles" 2>/dev/null)
+
+        if [[ -n "$actor_roles_json" && "$actor_roles_json" != "null" ]]; then
+            break
+        fi
+
+        # Check pagination: get next page URL
+        local next_url
+        next_url=$(echo "$_RESP_BODY" | jq -r '.links.next // empty' 2>/dev/null)
+
+        if [[ -z "$next_url" ]]; then
+            enumeration_complete=true
+            break
+        fi
+
+        # Validate next URL is structurally reasonable
+        if ! echo "$next_url" | grep -q '/v2/organizations/'; then
+            set_preflight_error "response_invalid" "supabase" \
+                "Pagination links.next has unexpected structure: ${next_url}"
+            return 1
+        fi
+
+        page_url="$next_url"
+    done
+
+    # Actor not found after complete enumeration
+    if [[ -z "$actor_roles_json" || "$actor_roles_json" == "null" ]]; then
+        if $enumeration_complete; then
+            set_preflight_error "scope_access_denied" "supabase" \
+                "Authenticated actor (gotrue_id: ${_SUPABASE_ACTOR_ID}) not found in organization member list after complete enumeration"
+            return 1
+        fi
+        # Should not reach here — incomplete enumeration returns earlier
+        set_preflight_error "response_invalid" "supabase" \
+            "Member enumeration ended without finding actor and without completing"
+        return 1
+    fi
+
+    # Normalize membership: separate org-scoped from project-scoped roles
+    _normalize_supabase_membership "$actor_roles_json"
+
+    if [[ -z "$_SUPABASE_ORG_ROLES" ]]; then
+        set_preflight_error "scope_access_denied" "supabase" \
+            "Actor found in member list but has no organization-scoped roles (project-scoped roles: ${_SUPABASE_PROJECT_ROLES:-none}). Organization-wide capability requires organization-scoped role assignment."
+        return 1
+    fi
+
+    # Step 8: Baseline permission check (project_create only)
+    validate_supabase_permission "project_create" || return 1
+
+    # Step 9: Populate ProviderContext
+    SUPABASE_CTX_PROVIDER="supabase"
+    SUPABASE_CTX_ACTOR_ID="$_SUPABASE_ACTOR_ID"
+    SUPABASE_CTX_ACTOR_NAME="$_SUPABASE_ACTOR_NAME"
+    SUPABASE_CTX_SCOPE_ID="$org_id"
+    SUPABASE_CTX_SCOPE_NAME="$org_name"
+    SUPABASE_CTX_SCOPE_SLUG="$org_slug"
+    SUPABASE_CTX_PERMISSION="org_roles:${_SUPABASE_ORG_ROLES}"
+    SUPABASE_CTX_RESOLUTION_SOURCE="api:/v1/organizations+/v2/organizations/${org_slug}/members"
 
     return 0
 }

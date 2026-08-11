@@ -244,8 +244,8 @@ assert_return "validate github context optional fields absent" "0" "$rc"
 
 clear_provider_context "github"
 
-# 2e. resolve_provider_context — not-yet-implemented providers (github, supabase)
-for test_provider in github supabase; do
+# 2e. resolve_provider_context — not-yet-implemented providers (github only)
+for test_provider in github; do
     clear_preflight_error
     stderr_output=$(resolve_provider_context "$test_provider" 2>&1 >/dev/null)
     rc=$?
@@ -835,7 +835,522 @@ _reset_provider_stubs
 echo ""
 
 # ════════════════════════════════════════════════════════════════════════════
-# Section 7: Static safety checks
+# Section 7: Supabase resolver (WP3)
+# ════════════════════════════════════════════════════════════════════════════
+echo "── Supabase resolver ──"
+
+# Save config
+_SAVE_SB_ORG_ID="${LAB_SUPABASE_ORG_ID:-}"
+_SAVE_SB_ORG_NAME="${LAB_SUPABASE_ORG_NAME:-}"
+_SAVE_SB_ORG_SLUG="${LAB_SUPABASE_ORG_SLUG:-}"
+
+# Set test config to match fixture data
+LAB_SUPABASE_ORG_ID="esiwooovlhcuifbbkodk"
+LAB_SUPABASE_ORG_NAME="Friends Innovation Lab"
+LAB_SUPABASE_ORG_SLUG="esiwooovlhcuifbbkodk"
+
+# Stub helper for Supabase: profile + orgs + members
+_SBSTUB_PROFILE_FIXTURE=""
+_SBSTUB_PROFILE_HTTP=""
+_SBSTUB_ORGS_FIXTURE=""
+_SBSTUB_ORGS_HTTP=""
+_SBSTUB_MEMBERS_FIXTURE=""
+_SBSTUB_MEMBERS_HTTP=""
+_SBSTUB_PAGE2_FIXTURE=""
+_SBSTUB_PAGE2_HTTP=""
+
+_setup_supabase_stubs() {
+    _SBSTUB_PROFILE_FIXTURE="$1"
+    _SBSTUB_PROFILE_HTTP="$2"
+    _SBSTUB_ORGS_FIXTURE="$3"
+    _SBSTUB_ORGS_HTTP="$4"
+    _SBSTUB_MEMBERS_FIXTURE="$5"
+    _SBSTUB_MEMBERS_HTTP="$6"
+    _SBSTUB_PAGE2_FIXTURE="${7:-}"
+    _SBSTUB_PAGE2_HTTP="${8:-}"
+
+    _provider_supabase_api() {
+        local method="$1"
+        local path="$2"
+        case "$path" in
+            /v1/profile)
+                cat "$_SBSTUB_PROFILE_FIXTURE"
+                printf "\n${_SBSTUB_PROFILE_HTTP}"
+                ;;
+            /v1/organizations)
+                cat "$_SBSTUB_ORGS_FIXTURE"
+                printf "\n${_SBSTUB_ORGS_HTTP}"
+                ;;
+            *members*page=2*|*members*page%3D2*)
+                if [[ -n "$_SBSTUB_PAGE2_FIXTURE" ]]; then
+                    cat "$_SBSTUB_PAGE2_FIXTURE"
+                    printf "\n${_SBSTUB_PAGE2_HTTP}"
+                else
+                    echo '{"error":"no page 2 configured"}'
+                    printf "\n500"
+                fi
+                ;;
+            *members*)
+                cat "$_SBSTUB_MEMBERS_FIXTURE"
+                printf "\n${_SBSTUB_MEMBERS_HTTP}"
+                ;;
+            *)
+                echo '{"error":"unexpected path"}'
+                printf "\n500"
+                ;;
+        esac
+    }
+}
+
+# -- 7a. credential_missing
+unset SUPABASE_ACCESS_TOKEN 2>/dev/null || true
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: credential_missing returns 1" "1" "$rc"
+assert_eq "supabase: credential_missing code" "credential_missing" "$PREFLIGHT_ERROR_CODE"
+assert_unset "supabase: credential_missing no CTX" "SUPABASE_CTX_PROVIDER"
+
+export SUPABASE_ACCESS_TOKEN="test-token-for-fixtures"
+
+# -- 7b. credential_invalid (401)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-invalid-token.json" "401" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: credential_invalid returns 1" "1" "$rc"
+assert_eq "supabase: credential_invalid code" "credential_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7c. response_invalid (non-JSON from profile)
+_provider_supabase_api() {
+    local path="$2"
+    case "$path" in
+        /v1/profile) echo '<html>Bad Gateway</html>'; printf "\n200" ;;
+        *) echo '[]'; printf "\n200" ;;
+    esac
+}
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: non-JSON profile returns 1" "1" "$rc"
+assert_eq "supabase: non-JSON profile code" "response_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7d. actor_unresolved (null gotrue_id)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-no-identity.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: actor_unresolved returns 1" "1" "$rc"
+assert_eq "supabase: actor_unresolved code" "actor_unresolved" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7e. scope_config_missing (ORG_ID absent)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+unset LAB_SUPABASE_ORG_ID 2>/dev/null || true
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: scope_config_missing (id) returns 1" "1" "$rc"
+assert_eq "supabase: scope_config_missing (id) code" "scope_config_missing" "$PREFLIGHT_ERROR_CODE"
+LAB_SUPABASE_ORG_ID="esiwooovlhcuifbbkodk"
+
+# -- 7e2. scope_config_missing (ORG_SLUG absent)
+unset LAB_SUPABASE_ORG_SLUG 2>/dev/null || true
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: scope_config_missing (slug) returns 1" "1" "$rc"
+assert_eq "supabase: scope_config_missing (slug) code" "scope_config_missing" "$PREFLIGHT_ERROR_CODE"
+LAB_SUPABASE_ORG_SLUG="esiwooovlhcuifbbkodk"
+
+# -- 7e3. scope_config_missing (ORG_NAME absent)
+unset LAB_SUPABASE_ORG_NAME 2>/dev/null || true
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: scope_config_missing (name) returns 1" "1" "$rc"
+assert_eq "supabase: scope_config_missing (name) code" "scope_config_missing" "$PREFLIGHT_ERROR_CODE"
+LAB_SUPABASE_ORG_NAME="Friends Innovation Lab"
+
+# -- 7f. scope_not_found (canonical ID absent)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organization-missing.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: scope_not_found returns 1" "1" "$rc"
+assert_eq "supabase: scope_not_found code" "scope_not_found" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7g. response_invalid (canonical ID matches >1)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-multiple-match.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: multiple ID match returns 1" "1" "$rc"
+assert_eq "supabase: multiple ID match code" "response_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7h. scope_identity_mismatch (wrong name)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organization-wrong-name.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: scope_identity_mismatch returns 1" "1" "$rc"
+assert_eq "supabase: scope_identity_mismatch code" "scope_identity_mismatch" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7h2. scope_access_denied (/v1/organizations returns 403)
+# ARCHITECTURAL MAPPING: post-authentication 403 on org enumeration
+# means the credential lacks organizations:read scope — NOT credential_invalid
+_provider_supabase_api() {
+    local path="$2"
+    case "$path" in
+        /v1/profile) cat "${FIXTURE_DIR}/supabase/profile-valid.json"; printf "\n200" ;;
+        /v1/organizations) echo '{"message":"Forbidden"}'; printf "\n403" ;;
+        *) echo '{}'; printf "\n200" ;;
+    esac
+}
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: orgs 403 returns 1" "1" "$rc"
+assert_eq "supabase: orgs 403 code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "403"; then
+    _test_pass "supabase: orgs 403 detail references 403"
+else
+    _test_fail "supabase: orgs 403 detail references 403" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# -- 7h3. credential_invalid (/v1/organizations returns 401)
+_provider_supabase_api() {
+    local path="$2"
+    case "$path" in
+        /v1/profile) cat "${FIXTURE_DIR}/supabase/profile-valid.json"; printf "\n200" ;;
+        /v1/organizations) echo '{"message":"Unauthorized"}'; printf "\n401" ;;
+        *) echo '{}'; printf "\n200" ;;
+    esac
+}
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: orgs 401 returns 1" "1" "$rc"
+assert_eq "supabase: orgs 401 code" "credential_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7i. scope_access_denied (actor absent, complete enumeration)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-actor-absent.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: actor absent -> scope_access_denied" "1" "$rc"
+assert_eq "supabase: actor absent code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+if echo "$PREFLIGHT_ERROR_DETAIL" | grep -q "complete enumeration"; then
+    _test_pass "supabase: actor absent detail notes complete enumeration"
+else
+    _test_fail "supabase: actor absent detail notes complete enumeration" "got: ${PREFLIGHT_ERROR_DETAIL}"
+fi
+
+# -- 7j. scope_access_denied (no org-scoped roles, project-scoped owner only)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-project-scope-only.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: project-scoped owner only returns 1" "1" "$rc"
+assert_eq "supabase: project-scoped owner code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7k. scope_access_denied (no roles at all)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-no-roles.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: no roles returns 1" "1" "$rc"
+assert_eq "supabase: no roles code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7l. scope_access_denied (members endpoint 403)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "403"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: members 403 returns 1" "1" "$rc"
+assert_eq "supabase: members 403 code" "scope_access_denied" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7m. org-scoped owner + project_create => success (happy path)
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: owner happy path returns 0" "0" "$rc"
+assert_eq "supabase: owner CTX_PROVIDER" "supabase" "${SUPABASE_CTX_PROVIDER:-}"
+assert_eq "supabase: owner CTX_ACTOR_ID" "user-123-abc" "${SUPABASE_CTX_ACTOR_ID:-}"
+assert_eq "supabase: owner CTX_ACTOR_NAME" "test-user" "${SUPABASE_CTX_ACTOR_NAME:-}"
+assert_eq "supabase: owner CTX_SCOPE_ID" "esiwooovlhcuifbbkodk" "${SUPABASE_CTX_SCOPE_ID:-}"
+assert_eq "supabase: owner CTX_SCOPE_NAME" "Friends Innovation Lab" "${SUPABASE_CTX_SCOPE_NAME:-}"
+assert_not_empty "supabase: owner CTX_PERMISSION" "${SUPABASE_CTX_PERMISSION:-}"
+if echo "${SUPABASE_CTX_PERMISSION:-}" | grep -q "org_roles:owner"; then
+    _test_pass "supabase: owner permission records org_roles evidence"
+else
+    _test_fail "supabase: owner permission records org_roles evidence" "got: ${SUPABASE_CTX_PERMISSION:-}"
+fi
+
+# -- 7n. org-scoped administrator + project_create => success
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-admin-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: admin happy path returns 0" "0" "$rc"
+assert_eq "supabase: admin CTX_PROVIDER" "supabase" "${SUPABASE_CTX_PROVIDER:-}"
+
+# -- 7o. org-scoped developer + project_create => permission_insufficient
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-developer-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: developer project_create returns 1" "1" "$rc"
+assert_eq "supabase: developer project_create code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+assert_unset "supabase: developer no CTX" "SUPABASE_CTX_PROVIDER"
+
+# -- 7p. org-scoped read-only + project_create => permission_insufficient
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-readonly-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: readonly project_create returns 1" "1" "$rc"
+assert_eq "supabase: readonly project_create code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7q. Capability: owner + project_delete => success (DOCUMENTED)
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "project_delete"
+rc=$?
+assert_return "supabase: owner project_delete returns 0" "0" "$rc"
+
+# -- 7r. Capability: developer + project_delete => insufficient (DOCUMENTED)
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-developer-org-scope.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "project_delete"
+rc=$?
+assert_return "supabase: developer project_delete returns 1" "1" "$rc"
+assert_eq "supabase: developer project_delete code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7s. Capability: developer + api_keys_read => success (DOCUMENTED)
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-developer-org-scope.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "api_keys_read"
+rc=$?
+assert_return "supabase: developer api_keys_read returns 0" "0" "$rc"
+
+# -- 7t. Capability: read-only + api_keys_read => insufficient (DOCUMENTED)
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-readonly-org-scope.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "api_keys_read"
+rc=$?
+assert_return "supabase: readonly api_keys_read returns 1" "1" "$rc"
+assert_eq "supabase: readonly api_keys_read code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7u. Capability: developer + database_manage => success (DOCUMENTED)
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-developer-org-scope.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "database_manage"
+rc=$?
+assert_return "supabase: developer database_manage returns 0" "0" "$rc"
+
+# -- 7v. Pagination: actor found on page 2
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-page1-no-actor.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-page2-actor-found.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: pagination actor on page 2 returns 0" "0" "$rc"
+assert_eq "supabase: pagination CTX_PROVIDER" "supabase" "${SUPABASE_CTX_PROVIDER:-}"
+
+# -- 7w. Pagination: page 1 OK, page 2 transport failure => provider_unavailable
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-page1-no-actor.json" "200"
+# Override page 2 to simulate transport failure
+_SBSTUB_PAGE2_FIXTURE=""
+_SBSTUB_PAGE2_HTTP=""
+_provider_supabase_api() {
+    local method="$1"
+    local path="$2"
+    case "$path" in
+        /v1/profile) cat "$_SBSTUB_PROFILE_FIXTURE"; printf "\n${_SBSTUB_PROFILE_HTTP}" ;;
+        /v1/organizations) cat "$_SBSTUB_ORGS_FIXTURE"; printf "\n${_SBSTUB_ORGS_HTTP}" ;;
+        *members*page=2*|*members*page%3D2*) return 1 ;;
+        *members*) cat "$_SBSTUB_MEMBERS_FIXTURE"; printf "\n${_SBSTUB_MEMBERS_HTTP}" ;;
+        *) echo '{}'; printf "\n500" ;;
+    esac
+}
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: page 2 transport failure returns 1" "1" "$rc"
+assert_eq "supabase: page 2 transport failure code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+assert_unset "supabase: page 2 failure no CTX" "SUPABASE_CTX_PROVIDER"
+
+# -- 7x. Pagination: page 1 OK, page 2 returns 429 => provider_unavailable
+_provider_supabase_api() {
+    local method="$1"
+    local path="$2"
+    case "$path" in
+        /v1/profile) cat "$_SBSTUB_PROFILE_FIXTURE"; printf "\n${_SBSTUB_PROFILE_HTTP}" ;;
+        /v1/organizations) cat "$_SBSTUB_ORGS_FIXTURE"; printf "\n${_SBSTUB_ORGS_HTTP}" ;;
+        *members*page=2*|*members*page%3D2*) echo '{"error":"rate limited"}'; printf "\n429" ;;
+        *members*) cat "$_SBSTUB_MEMBERS_FIXTURE"; printf "\n${_SBSTUB_MEMBERS_HTTP}" ;;
+        *) echo '{}'; printf "\n500" ;;
+    esac
+}
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: page 2 rate limited returns 1" "1" "$rc"
+assert_eq "supabase: page 2 rate limited code" "provider_unavailable" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7y. Pagination: page 1 OK, page 2 malformed => response_invalid
+_provider_supabase_api() {
+    local method="$1"
+    local path="$2"
+    case "$path" in
+        /v1/profile) cat "$_SBSTUB_PROFILE_FIXTURE"; printf "\n${_SBSTUB_PROFILE_HTTP}" ;;
+        /v1/organizations) cat "$_SBSTUB_ORGS_FIXTURE"; printf "\n${_SBSTUB_ORGS_HTTP}" ;;
+        *members*page=2*|*members*page%3D2*) echo 'NOT JSON AT ALL'; printf "\n200" ;;
+        *members*) cat "$_SBSTUB_MEMBERS_FIXTURE"; printf "\n${_SBSTUB_MEMBERS_HTTP}" ;;
+        *) echo '{}'; printf "\n500" ;;
+    esac
+}
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: page 2 malformed returns 1" "1" "$rc"
+assert_eq "supabase: page 2 malformed code" "response_invalid" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7z. Multi-role: developer + read-only + api_keys_read => success (additive)
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-multi-role-dev-readonly.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "api_keys_read"
+rc=$?
+assert_return "supabase: dev+readonly api_keys_read returns 0 (additive)" "0" "$rc"
+
+# -- 7aa. Multi-role: developer + read-only + project_create => insufficient
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-multi-role-dev-readonly.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "project_create"
+rc=$?
+assert_return "supabase: dev+readonly project_create returns 1" "1" "$rc"
+assert_eq "supabase: dev+readonly project_create code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7bb. Multi-role: administrator + developer + project_create => success
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-multi-role-admin-dev.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "project_create"
+rc=$?
+assert_return "supabase: admin+dev project_create returns 0" "0" "$rc"
+
+# -- 7cc. Unknown role + project_create => fail closed
+_normalize_supabase_membership "$(cat "${FIXTURE_DIR}/supabase/members-unknown-role.json" | jq '.data[0].attributes.roles')"
+clear_preflight_error
+validate_supabase_permission "project_create"
+rc=$?
+assert_return "supabase: unknown role project_create returns 1 (fail closed)" "1" "$rc"
+assert_eq "supabase: unknown role project_create code" "permission_insufficient" "$PREFLIGHT_ERROR_CODE"
+
+# -- 7dd. No partial context after failure
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-developer-org-scope.json" "200"
+clear_preflight_error
+resolve_supabase_context 2>/dev/null
+assert_unset "supabase: no CTX_PROVIDER after failure" "SUPABASE_CTX_PROVIDER"
+assert_unset "supabase: no CTX_ACTOR_ID after failure" "SUPABASE_CTX_ACTOR_ID"
+assert_unset "supabase: no CTX_SCOPE_ID after failure" "SUPABASE_CTX_SCOPE_ID"
+
+# -- 7ee. Stale membership cleared on failure
+# First succeed to populate
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+resolve_supabase_context 2>/dev/null
+assert_eq "supabase: stale membership setup: org roles populated" "owner" "$_SUPABASE_ORG_ROLES"
+# Now fail with actor absent
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-actor-absent.json" "200"
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: stale membership: subsequent failure returns 1" "1" "$rc"
+assert_empty "supabase: stale org roles cleared" "$_SUPABASE_ORG_ROLES"
+assert_empty "supabase: stale project roles cleared" "$_SUPABASE_PROJECT_ROLES"
+assert_unset "supabase: stale CTX_PROVIDER cleared" "SUPABASE_CTX_PROVIDER"
+assert_unset "supabase: stale CTX_ACTOR_ID cleared" "SUPABASE_CTX_ACTOR_ID"
+assert_unset "supabase: stale CTX_SCOPE_ID cleared" "SUPABASE_CTX_SCOPE_ID"
+assert_unset "supabase: stale CTX_PERMISSION cleared" "SUPABASE_CTX_PERMISSION"
+
+# -- 7ff. Stale diagnostic cleared on success
+set_preflight_error "scope_not_found" "github" "stale from prior provider"
+_setup_supabase_stubs \
+    "${FIXTURE_DIR}/supabase/profile-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/organizations-valid.json" "200" \
+    "${FIXTURE_DIR}/supabase/members-owner-org-scope.json" "200"
+resolve_supabase_context 2>/dev/null
+rc=$?
+assert_return "supabase: stale diagnostic cleared on success" "0" "$rc"
+assert_empty "supabase: stale error code cleared" "$PREFLIGHT_ERROR_CODE"
+
+# Restore config
+LAB_SUPABASE_ORG_ID="$_SAVE_SB_ORG_ID"
+LAB_SUPABASE_ORG_NAME="$_SAVE_SB_ORG_NAME"
+LAB_SUPABASE_ORG_SLUG="$_SAVE_SB_ORG_SLUG"
+unset SUPABASE_ACCESS_TOKEN 2>/dev/null || true
+_reset_provider_stubs
+
+echo ""
+
+# ════════════════════════════════════════════════════════════════════════════
+# Section 8: Static safety checks
 # ════════════════════════════════════════════════════════════════════════════
 echo "── Static safety checks ──"
 
