@@ -242,6 +242,17 @@ validate_provider_context "github"
 rc=$?
 assert_return "validate github context optional fields absent" "0" "$rc"
 
+# 2d2. validate_provider_context — SCOPE_NAME empty succeeds (WP5A contract cleanup)
+GITHUB_CTX_PROVIDER="github"
+GITHUB_CTX_ACTOR_ID="12345"
+GITHUB_CTX_ACTOR_NAME="test-user"
+GITHUB_CTX_SCOPE_ID="254572218"
+GITHUB_CTX_SCOPE_NAME=""
+GITHUB_CTX_RESOLUTION_SOURCE="resolver"
+validate_provider_context "github"
+rc=$?
+assert_return "validate github context empty scope_name succeeds" "0" "$rc"
+
 clear_provider_context "github"
 
 # 2e. All three providers now have resolvers (WP2-WP4).

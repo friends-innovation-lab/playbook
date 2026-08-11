@@ -374,10 +374,13 @@ validate_provider_context() {
     local provider
     provider=$(echo "$1" | tr '[:lower:]' '[:upper:]')
 
-    # Common required fields only. Provider-specific resolvers may
+    # Common required fields only. SCOPE_NAME, SCOPE_SLUG, and PERMISSION
+    # are optional at the common level — provider-specific resolvers may
     # enforce additional requirements.
+    # SCOPE_NAME is optional because GitHub's org.name may be null even
+    # when canonical scope resolution fully succeeds (WP4 live observation).
     local field val
-    for field in PROVIDER ACTOR_ID ACTOR_NAME SCOPE_ID SCOPE_NAME RESOLUTION_SOURCE; do
+    for field in PROVIDER ACTOR_ID ACTOR_NAME SCOPE_ID RESOLUTION_SOURCE; do
         eval "val=\${${provider}_CTX_${field}:-}"
         if [[ -z "$val" ]]; then
             return 1
