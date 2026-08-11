@@ -666,6 +666,36 @@ This is architecturally significant:
 
 This validates the spec's design: resolvers must select by canonical ID and verify the returned name/slug, never the reverse.
 
+### WP4 Live GitHub Smoke Observation (2026-08-11)
+
+OBSERVED: `GET /user/orgs` returned `org.name: null` for the canonical Friends Innovation Lab organization (ID `254572218`) during the healthy-path live smoke.
+
+Consequences:
+- `GITHUB_CTX_SCOPE_NAME` was populated from `org.login` (`friends-innovation-lab`) using the approved REPRESENTATION FALLBACK
+- This fallback was exercised on the normal live path, not only in a synthetic edge-case test
+- `org.name` must not be treated as authoritative or required GitHub identity metadata
+- The resulting `scope_name` value is a login-based representation, not an observed GitHub display name
+
+GitHub org settings observed:
+- `members_can_create_repositories: true`
+- `members_allowed_repository_creation_type: "all"`
+- `repo_create` classification: PARTIALLY EVALUABLE (enterprise policy not observable)
+
+### KNOWN CONTRACT LIMITATION: scope_name provider neutrality
+
+The common ProviderContext validator (`validate_provider_context`) currently requires `scope_name` to be non-empty.
+
+WP4 live evidence demonstrates that a provider's display name (`org.name`) may legitimately be null even when canonical scope ID, login/slug, actor access, and permission evaluation all succeed.
+
+The current requirement is not provider-neutral. WP5 planning must decide whether to:
+- A: Make `scope_name` optional in the common contract
+- B: Replace with explicit `scope_identifier`/`scope_slug` + optional `scope_display_name`
+
+Until the contract is cleaned up:
+- The GitHub login fallback may remain for compatibility
+- It must stay labeled REPRESENTATION FALLBACK
+- Consumers must not infer display-name semantics from `GITHUB_CTX_SCOPE_NAME`
+
 ### Second-Person Review
 
 Second-person review waived by Lapedra on 2026-08-11 for this single-operator session.
