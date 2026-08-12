@@ -696,6 +696,25 @@ Until the contract is cleaned up:
 - It must stay labeled REPRESENTATION FALLBACK
 - Consumers must not infer display-name semantics from `GITHUB_CTX_SCOPE_NAME`
 
+### Vercel Legacy Defect (d2974b9, 2026-08-11)
+
+**Defect:** `validate_vercel_token` read `.username` from the top-level `/v2/user` response. The current Vercel API returns `{ user: { username: "..." } }` with top-level `.username` as `null`. A valid, correctly-scoped token returned `rc=1, VERCEL_VALIDATE_ERROR="api_error"`, and `print_vercel_token_help` instructed the user to regenerate a working token.
+
+**Impact:** Every call to `validate_vercel_token` in `spinup-typed.sh`, `spinup.sh`, and `teardown.sh` was failing on valid tokens. This affected all users.
+
+**Root-cause analysis:** The Vercel API changed its response shape at some point. The `.username` field moved from top-level to `.user.username`. The legacy function was never updated because no test exercised the successful-token path against the real response structure.
+
+**Incident correlation — CONSISTENT WITH SAME DEFECT:**
+- Confirmed defect behavior: legacy Vercel parser failed against the current nested `/v2/user` response shape.
+- Observed live impact: valid tokens produced `api_error` in current callers (`spinup-typed.sh`, `spinup.sh`, `teardown.sh`).
+- Incident correlation: symptoms are consistent with the same defect, but direct incident logs are insufficient to prove sole causation.
+
+**Fix (d2974b9):** Read `.user.username // .username` (nested first, fallback to top-level). Also fixed `.invalidToken` path to check `.error.invalidToken // .invalidToken` (matching the observed WP0 error response shape `{ error: { invalidToken: true } }`).
+
+**Disposition:** Kept on main (Option 3) with governance waiver for the unapproved commit. Regression tests added to prevent recurrence.
+
+**Process note:** d2974b9 was committed without explicit approval. This violated the standing working contract. The fix was correct but the process violation is recorded. See feedback_no_unapproved_commits.md.
+
 ### Second-Person Review
 
 Second-person review waived by Lapedra on 2026-08-11 for this single-operator session.

@@ -385,6 +385,69 @@ rc=$?
 assert_return "legacy validate_supabase_token returns 1 when unset" "1" "$rc"
 assert_eq "legacy SUPABASE_VALIDATE_ERROR" "not_set" "$SUPABASE_VALIDATE_ERROR"
 
+# ── Regression tests for d2974b9 (Vercel /v2/user response parsing fix) ──
+# These tests mock curl to return known response shapes and verify
+# validate_vercel_token handles the current nested API shape.
+
+# Save real curl and restore after
+_real_curl=$(which curl 2>/dev/null || echo "curl")
+
+# 4a. Nested response shape: { user: { username: "..." } } -> success
+export VERCEL_TOKEN="test-token"
+curl() {
+    echo '{"user":{"id":"uid123","username":"test-user","name":"Test"}}'
+}
+export -f curl
+validate_vercel_token
+rc=$?
+assert_return "d2974b9: nested .user.username returns 0" "0" "$rc"
+assert_eq "d2974b9: nested .user.username populates user" "test-user" "$VERCEL_VALIDATE_USER"
+assert_empty "d2974b9: nested success clears error" "$VERCEL_VALIDATE_ERROR"
+
+# 4b. Top-level fallback shape: { username: "..." } -> still works
+curl() {
+    echo '{"username":"legacy-user"}'
+}
+export -f curl
+validate_vercel_token
+rc=$?
+assert_return "d2974b9: top-level .username fallback returns 0" "0" "$rc"
+assert_eq "d2974b9: top-level fallback populates user" "legacy-user" "$VERCEL_VALIDATE_USER"
+
+# 4c. Nested error shape: { error: { invalidToken: true } } -> invalid_token
+curl() {
+    echo '{"error":{"code":"forbidden","message":"Not authorized","invalidToken":true}}'
+}
+export -f curl
+validate_vercel_token
+rc=$?
+assert_return "d2974b9: nested .error.invalidToken returns 1" "1" "$rc"
+assert_eq "d2974b9: nested invalidToken sets error" "invalid_token" "$VERCEL_VALIDATE_ERROR"
+
+# 4d. Top-level invalidToken fallback
+curl() {
+    echo '{"invalidToken":true}'
+}
+export -f curl
+validate_vercel_token
+rc=$?
+assert_return "d2974b9: top-level invalidToken fallback returns 1" "1" "$rc"
+assert_eq "d2974b9: top-level invalidToken sets error" "invalid_token" "$VERCEL_VALIDATE_ERROR"
+
+# 4e. Neither username nor invalidToken -> api_error
+curl() {
+    echo '{"user":{"id":"uid123"}}'
+}
+export -f curl
+validate_vercel_token
+rc=$?
+assert_return "d2974b9: no username no invalidToken returns 1" "1" "$rc"
+assert_eq "d2974b9: no username no invalidToken sets api_error" "api_error" "$VERCEL_VALIDATE_ERROR"
+
+# Restore curl
+unset -f curl 2>/dev/null || true
+unset VERCEL_TOKEN 2>/dev/null || true
+
 echo ""
 
 # ════════════════════════════════════════════════════════════════════════════
