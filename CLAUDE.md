@@ -294,3 +294,69 @@ Before marking any feature complete:
   - Operations: [reference/operations/](reference/operations/)
   - Development: [reference/development/](reference/development/)
   - Products: [reference/products/](reference/products/)
+
+---
+
+## Credential Safety Controls
+
+These controls govern how Claude Code handles credentials in this repo.
+They are execution-safety rules, not a credential-storage policy.
+
+### Never expose credential values
+
+- Never print, echo, paste, hash, or expose credential values or fragments
+- Never dump full contents of files known or suspected to contain credentials
+  (shell profiles, `.env*` files, credential configs, provider-auth files)
+- Inspect secret-bearing files only by targeted variable name, pattern, or
+  line number — not by dumping contents
+- When proposing edits to secret-bearing files, replace values with
+  `<REDACTED>` or `<SECRET>`
+- Never place real credential values into shell commands, examples,
+  proposed diffs, commit messages, documentation drafts, or any other
+  generated content
+
+### Pre-report secret scan
+
+Before returning any response, scan BOTH retrieved/materialized content
+AND CC-generated content for credential material:
+
+**Retrieved content:**
+- Diffs, file excerpts, command output, environment information
+
+**Generated content:**
+- Shell commands, proposed edits, example snippets, remediation
+  instructions, prose summaries, commit messages, documentation drafts
+
+If suspected secret material is detected in either category:
+
+- Do not return the offending content
+- Replace with `<REDACTED>` or `<SECRET>`
+- Report only the credential class and source/context, never the value
+
+Every response must include exactly one of:
+
+```text
+pre_report_secret_scan=clean
+```
+
+or:
+
+```text
+pre_report_secret_scan=blocked
+```
+
+### Credential verification
+
+- Do not use credential length, substring, or hash as evidence of validity
+- Verify credentials using presence checks (`[ -n "$VAR" ]`) and
+  provider API status calls only
+
+### Sensitive variable names
+
+At minimum, treat these as secret:
+
+- `VERCEL_TOKEN`
+- `SUPABASE_ACCESS_TOKEN`
+- `GH_TOKEN` / `GITHUB_TOKEN`
+- Any variable containing `KEY`, `SECRET`, `PASSWORD`, or `TOKEN`
+  in its name that holds a provider credential
