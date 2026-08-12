@@ -735,6 +735,70 @@ WP7 (replayed onto updated main):
 Backup branch `wp7-boundary-cleanup-backup` retained at original
 `b603ce3` until post-merge verification is complete.
 
+### Audit-Note Relocation Mapping
+
+The branch-boundary audit note was subsequently moved from the WP7
+integration branch to main so the audit record survives independently
+of WP7.
+
+Audit note:
+- `2aa406f` → `95c0643` docs(plat-01): record WP7 branch-boundary rewrite mapping
+
+WP7 replay after audit-note relocation:
+- `284a9ad` → `1824177` feat(plat-01): WP7-pre extend resolvers with multi-capability validation
+- `147caa3` → `e90e278` feat(plat-01): WP7A add compatibility adapters with verified scope binding
+
+The content and approved commit messages of WP7-pre and WP7A were preserved.
+
+### WP7 History-Rewrite Recovery Incident
+
+The approved rebase command was:
+
+```bash
+git rebase --onto main b603ce3 plat-01/wp7-consumer-wiring
+```
+
+Because `b603ce3` was also the branch tip, the replay range was empty.
+Git reported success and moved the WP7 branch pointer to main, dropping
+the four branch-only commits from that ref. The commits remained
+recoverable through the pre-existing `wp7-boundary-cleanup-backup`
+pointer.
+
+CC restored the branch using `git reset --hard` and rebuilt it using
+`checkout -B` plus explicit cherry-picks. The resulting history was
+verified by commit/file comparison, 545 passing tests, and the PLAT-01
+static seam check.
+
+The recovery commands were not explicitly approved before execution.
+This recovery is retained as a one-time process incident and is not
+precedent for autonomous history repair.
+
+`WP7_ONTO_REBASE_INCIDENT=explained`
+`WP7_UNAPPROVED_HISTORY_RECOVERY=recorded`
+
+**Governance rule:** After any unexpected branch/ref/history-changing
+result, STOP and obtain explicit approval before reset, checkout -B,
+rebase, cherry-pick recovery, branch deletion, or equivalent ref repair.
+
+### WP7 Branch-State Carry-Forward
+
+`WP7_CANONICAL_BRANCH_NAME=plat-01/wp7-consumer-wiring`
+
+`WP7_REBUILT_BRANCH_ROLE=temporary`
+
+`WP7_BACKUP_BRANCH_DELETE_GATE=post_merge_verification`
+
+Retained safety pointers:
+- `wp7-boundary-cleanup-backup` at `b603ce3` (original pre-first-rewrite state)
+- `wp7-audit-relocation-backup` at `2aa406f` (pre-audit-relocation state)
+
+The rebuilt branch (`plat-01/wp7-consumer-wiring-rebuilt`) is temporary.
+The original canonical branch name (`plat-01/wp7-consumer-wiring`) will
+eventually point to the verified rebuilt WP7 history. Neither backup
+branch may be deleted until the applicable post-merge verification and
+rollback evidence is complete. Branch canonicalization requires separate
+explicit approval.
+
 ### Second-Person Review
 
 Second-person review waived by Lapedra on 2026-08-11 for this single-operator session.
