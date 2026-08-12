@@ -715,6 +715,26 @@ Until the contract is cleaned up:
 
 **Process note:** d2974b9 was committed without explicit approval. This violated the standing working contract. The fix was correct but the process violation is recorded. See feedback_no_unapproved_commits.md.
 
+### Branch-Boundary Rewrite Mapping
+
+Non-PLAT maintenance commits were moved onto main so the gated
+`plat-01/wp7-consumer-wiring` branch contains only WP7 work.
+WP7-pre and WP7A were replayed with identical content and commit
+messages on top of the corrected main baseline.
+
+Maintenance (moved to main):
+- `6b0baf2` → `6b44c04` fix: use printf instead of echo for credential stdin piping
+- `b603ce3` → `dbd01f5` fix: reject skip-supabase during resume
+
+WP7 (replayed onto updated main):
+- `7e46715` → `284a9ad` feat(plat-01): WP7-pre extend resolvers with multi-capability validation
+- `1ec9459` → `147caa3` feat(plat-01): WP7A add compatibility adapters with verified scope binding
+
+`WP7_BRANCH_BOUNDARY_CLEAN=yes`
+
+Backup branch `wp7-boundary-cleanup-backup` retained at original
+`b603ce3` until post-merge verification is complete.
+
 ### Second-Person Review
 
 Second-person review waived by Lapedra on 2026-08-11 for this single-operator session.
