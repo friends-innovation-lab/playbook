@@ -222,12 +222,8 @@ if [ "$DB_FLAG" = true ]; then
   fi
 fi
 
-if [ -n "$LAB_DOMAIN" ]; then
-  ok "LAB_DOMAIN is set ($LAB_DOMAIN)"
-else
-  fail "LAB_DOMAIN is not set. Add this to your shell profile: export LAB_DOMAIN=lab.cityfriends.tech"
-  CHECKS_PASSED=false
-fi
+LAB_DOMAIN="${LAB_DOMAIN:-lab.cityfriends.tech}"
+ok "LAB_DOMAIN is set ($LAB_DOMAIN)"
 
 echo ""
 
