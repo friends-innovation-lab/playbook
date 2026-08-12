@@ -163,6 +163,13 @@ else
     EXTENSIONS=""
 fi
 
+# Reject invalid flag combinations
+if $RESUME && $SKIP_SUPABASE; then
+    echo "Error: --skip-supabase cannot be used with --resume." >&2
+    echo "Resume requires Supabase project access for project lookup, key retrieval, and credential propagation." >&2
+    exit 1
+fi
+
 # Default description
 if [[ -z "$DESCRIPTION" ]]; then
     DESCRIPTION="Friends Innovation Lab $PROJECT_TYPE project: $PROJECT_NAME"
