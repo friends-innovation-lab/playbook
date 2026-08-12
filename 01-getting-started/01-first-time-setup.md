@@ -636,12 +636,20 @@ Save the file in VS Code with **Command + S**, then reload Terminal:
 source ~/.zshrc
 ```
 
-**Verify it worked:**
+**Verify the variables are set:**
 ```bash
-echo $VERCEL_TOKEN
-echo $SUPABASE_ACCESS_TOKEN
+[ -n "$VERCEL_TOKEN" ] && echo "VERCEL_TOKEN is set" || echo "VERCEL_TOKEN is NOT set"
+[ -n "$SUPABASE_ACCESS_TOKEN" ] && echo "SUPABASE_ACCESS_TOKEN is set" || echo "SUPABASE_ACCESS_TOKEN is NOT set"
 ```
-Each command should print the token value — a long string of random characters. If either prints nothing (a blank line), the variable wasn't saved correctly. Open `~/.zshrc` in VS Code again, check that the value is on the same line as the `export` statement with no spaces around the `=` sign, save, and run `source ~/.zshrc` again.
+Both should print "is set." If either prints "is NOT set," the variable wasn't saved correctly. Check that your configured credential source is loading the variable correctly, then reload the shell and verify presence again.
+
+> [!WARNING]
+> **Never print credential values with `echo $TOKEN_NAME`.** Printed tokens
+> end up in terminal scrollback, shell history, logs, and screen recordings.
+> Use the presence checks above or the provider API status checks below to
+> verify credentials. A token being present (or being a certain length)
+> does not prove it is valid or unexpired — only a provider API call can
+> confirm that.
 
 > [!TIP]
 > Having trouble? See [Environment variable shows blank](../02-running-a-project/03-troubleshooting.md#environment-variable-shows-blank)
