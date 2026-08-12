@@ -7,11 +7,48 @@
 # Each function returns 0 on success, 1 on failure, and sets result variables.
 # Requires: curl, jq (or gh for GitHub validation).
 
+# ── WP5B exact-state save/restore helpers ───────────────────────────────────
+# Collision-free: separate value slot and set-flag slot — no sentinel value.
+# No eval. Bash 3.2 compatible. Safe under set -u.
+
+# _save_var VARNAME VALUE_SLOT SET_SLOT
+#   Captures the current state of VARNAME into two caller-local slots.
+_save_var() {
+    local varname="$1"
+    local value_slot="$2"
+    local set_slot="$3"
+
+    if [[ -n "${!varname+x}" ]]; then
+        printf -v "$set_slot" '%s' '1'
+        printf -v "$value_slot" '%s' "${!varname}"
+    else
+        printf -v "$set_slot" '%s' '0'
+        printf -v "$value_slot" '%s' ''
+    fi
+}
+
+# _restore_var VARNAME VALUE_SLOT SET_SLOT
+#   Restores VARNAME from saved state in the two slots.
+_restore_var() {
+    local varname="$1"
+    local value_slot="$2"
+    local set_slot="$3"
+
+    if [[ "${!set_slot}" == '1' ]]; then
+        printf -v "$varname" '%s' "${!value_slot}"
+    else
+        unset -v "$varname"
+    fi
+}
+
 # ── Vercel token validation ──────────────────────────────────────────────────
 
 # Validate VERCEL_TOKEN against the Vercel API.
 #   Sets VERCEL_VALIDATE_USER on success.
 #   Sets VERCEL_VALIDATE_ERROR on failure ("not_set" | "invalid_token" | "api_error").
+#
+# WP5B: Delegates to _provider_vercel_api seam. Preserves exact legacy
+# public contract including post-d2974b9 nested+fallback response parsing.
 validate_vercel_token() {
     VERCEL_VALIDATE_USER=""
     VERCEL_VALIDATE_ERROR=""
@@ -21,30 +58,46 @@ validate_vercel_token() {
         return 1
     fi
 
-    local response
-    response=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
-        https://api.vercel.com/v2/user 2>/dev/null) || {
+    # ── Save PLAT-01 internal state ──
+    local _sv_rb _sf_rb _sv_rc _sf_rc
+    _save_var _RESP_BODY _sv_rb _sf_rb
+    _save_var _RESP_CODE _sv_rc _sf_rc
+
+    # ── Provider call via seam ──
+    local raw_response rc=0
+    raw_response=$(_provider_vercel_api GET /v2/user 2>/dev/null) || {
         VERCEL_VALIDATE_ERROR="api_error"
+        _restore_var _RESP_BODY _sv_rb _sf_rb
+        _restore_var _RESP_CODE _sv_rc _sf_rc
         return 1
     }
 
-    # Vercel /v2/user returns { user: { username: "..." } }.
-    # Try .user.username first (current API), fall back to .username (legacy).
+    _split_provider_response "$raw_response"
+    local body="$_RESP_BODY"
+
+    # ── Legacy response parsing (post-d2974b9) ──
+    # Nested first, top-level fallback — matches regression tests 4a–4e.
     local username
-    username=$(echo "$response" | jq -r '.user.username // .username // empty' 2>/dev/null)
+    username=$(echo "$body" | jq -r '.user.username // .username // empty' 2>/dev/null)
     if [[ -n "$username" ]]; then
         VERCEL_VALIDATE_USER="$username"
-        return 0
+        rc=0
+    else
+        local invalid
+        invalid=$(echo "$body" | jq -r '.error.invalidToken // .invalidToken // empty' 2>/dev/null)
+        if [[ "$invalid" == "true" ]]; then
+            VERCEL_VALIDATE_ERROR="invalid_token"
+        else
+            VERCEL_VALIDATE_ERROR="api_error"
+        fi
+        rc=1
     fi
 
-    local invalid
-    invalid=$(echo "$response" | jq -r '.error.invalidToken // .invalidToken // empty' 2>/dev/null)
-    if [[ "$invalid" == "true" ]]; then
-        VERCEL_VALIDATE_ERROR="invalid_token"
-    else
-        VERCEL_VALIDATE_ERROR="api_error"
-    fi
-    return 1
+    # ── Restore PLAT-01 internal state ──
+    _restore_var _RESP_BODY _sv_rb _sf_rb
+    _restore_var _RESP_CODE _sv_rc _sf_rc
+
+    return $rc
 }
 
 # Print standard error guidance for a failed VERCEL_TOKEN.
@@ -80,27 +133,71 @@ print_vercel_token_help() {
 
 # ── GitHub validation ────────────────────────────────────────────────────────
 
-# Validate GitHub auth with a real API call (gh api user).
+# Validate GitHub auth with a real API call.
 #   Sets GITHUB_VALIDATE_USER on success (the login name).
+#   Credential source: GH_TOKEN, GITHUB_TOKEN, or gh CLI stored auth
+#   (resolved by gh's own precedence — wrapper does not inspect or filter).
+#
+# WP5B: Delegates to _provider_github_api seam. Preserves exact legacy
+# public contract.
 validate_github_api() {
     GITHUB_VALIDATE_USER=""
 
-    local response
-    response=$(gh api user 2>/dev/null) || return 1
+    # ── Save PLAT-01 internal state ──
+    local _sv_gas _sf_gas _sv_gab _sf_gab _sv_gah _sf_gah _sv_gae _sf_gae
+    local _sv_gal _sf_gal _sv_garr _sf_garr _sv_gare _sf_gare _sv_gara _sf_gara
+    _save_var _GITHUB_API_STATUS              _sv_gas  _sf_gas
+    _save_var _GITHUB_API_BODY                _sv_gab  _sf_gab
+    _save_var _GITHUB_API_HEADERS             _sv_gah  _sf_gah
+    _save_var _GITHUB_API_EXIT                _sv_gae  _sf_gae
+    _save_var _GITHUB_API_LINK                _sv_gal  _sf_gal
+    _save_var _GITHUB_API_RATELIMIT_REMAINING _sv_garr _sf_garr
+    _save_var _GITHUB_API_RATELIMIT_RESET     _sv_gare _sf_gare
+    _save_var _GITHUB_API_RETRY_AFTER         _sv_gara _sf_gara
 
-    local login
-    login=$(echo "$response" | jq -r '.login // empty' 2>/dev/null)
-    if [[ -n "$login" ]]; then
-        GITHUB_VALIDATE_USER="$login"
-        return 0
+    # ── Provider call via seam ──
+    # Legacy suppressed stderr (gh api user 2>/dev/null); keep that boundary
+    # at the wrapper — do not change _provider_github_api globally.
+    _provider_github_api /user 2>/dev/null
+    local seam_rc=$?
+
+    local body="$_GITHUB_API_BODY"
+    local status="$_GITHUB_API_STATUS"
+    local rc=1
+
+    # ── Legacy-compatible parsing ──
+    # Legacy: gh api user 2>/dev/null || return 1; then jq .login
+    # Seam: gh api --include /user; success = exit 0 + HTTP 200 + .login present
+    if [[ $seam_rc -eq 0 && "$status" == "200" ]]; then
+        local login
+        login=$(echo "$body" | jq -r '.login // empty' 2>/dev/null)
+        if [[ -n "$login" ]]; then
+            GITHUB_VALIDATE_USER="$login"
+            rc=0
+        fi
     fi
-    return 1
+
+    # ── Restore PLAT-01 internal state ──
+    _restore_var _GITHUB_API_STATUS              _sv_gas  _sf_gas
+    _restore_var _GITHUB_API_BODY                _sv_gab  _sf_gab
+    _restore_var _GITHUB_API_HEADERS             _sv_gah  _sf_gah
+    _restore_var _GITHUB_API_EXIT                _sv_gae  _sf_gae
+    _restore_var _GITHUB_API_LINK                _sv_gal  _sf_gal
+    _restore_var _GITHUB_API_RATELIMIT_REMAINING _sv_garr _sf_garr
+    _restore_var _GITHUB_API_RATELIMIT_RESET     _sv_gare _sf_gare
+    _restore_var _GITHUB_API_RETRY_AFTER         _sv_gara _sf_gara
+
+    return $rc
 }
 
 # ── Supabase token validation ────────────────────────────────────────────────
 
 # Validate SUPABASE_ACCESS_TOKEN with a real API call.
 #   Sets SUPABASE_VALIDATE_ERROR on failure ("not_set" | "invalid_token" | "api_error").
+#   Endpoint: GET /v1/organizations. Success: response is a JSON array.
+#
+# WP5B: Delegates to _provider_supabase_api seam. Preserves exact legacy
+# public contract including /v1/organizations endpoint and JSON-array criterion.
 validate_supabase_token() {
     SUPABASE_VALIDATE_ERROR=""
 
@@ -109,19 +206,37 @@ validate_supabase_token() {
         return 1
     fi
 
-    local response
-    response=$(curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
-        https://api.supabase.com/v1/organizations 2>/dev/null) || {
+    # ── Save PLAT-01 internal state ──
+    local _sv_rb _sf_rb _sv_rc _sf_rc
+    _save_var _RESP_BODY _sv_rb _sf_rb
+    _save_var _RESP_CODE _sv_rc _sf_rc
+
+    # ── Provider call via seam ──
+    local raw_response rc=0
+    raw_response=$(_provider_supabase_api GET /v1/organizations 2>/dev/null) || {
         SUPABASE_VALIDATE_ERROR="api_error"
+        _restore_var _RESP_BODY _sv_rb _sf_rb
+        _restore_var _RESP_CODE _sv_rc _sf_rc
         return 1
     }
 
-    if echo "$response" | jq -e 'type == "array"' &>/dev/null; then
-        return 0
+    _split_provider_response "$raw_response"
+    local body="$_RESP_BODY"
+
+    # ── Legacy-compatible parsing ──
+    # Success criterion: body is a JSON array (same as legacy).
+    if echo "$body" | jq -e 'type == "array"' &>/dev/null; then
+        rc=0
+    else
+        SUPABASE_VALIDATE_ERROR="invalid_token"
+        rc=1
     fi
 
-    SUPABASE_VALIDATE_ERROR="invalid_token"
-    return 1
+    # ── Restore PLAT-01 internal state ──
+    _restore_var _RESP_BODY _sv_rb _sf_rb
+    _restore_var _RESP_CODE _sv_rc _sf_rc
+
+    return $rc
 }
 
 # ════════════════════════════════════════════════════════════════════════════

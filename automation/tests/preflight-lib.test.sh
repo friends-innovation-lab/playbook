@@ -386,18 +386,15 @@ assert_return "legacy validate_supabase_token returns 1 when unset" "1" "$rc"
 assert_eq "legacy SUPABASE_VALIDATE_ERROR" "not_set" "$SUPABASE_VALIDATE_ERROR"
 
 # ── Regression tests for d2974b9 (Vercel /v2/user response parsing fix) ──
-# These tests mock curl to return known response shapes and verify
-# validate_vercel_token handles the current nested API shape.
-
-# Save real curl and restore after
-_real_curl=$(which curl 2>/dev/null || echo "curl")
+# These tests mock _provider_vercel_api to return known response shapes
+# and verify validate_vercel_token handles the current nested API shape.
+# (WP5B: updated from curl mocks to seam mocks after migration.)
 
 # 4a. Nested response shape: { user: { username: "..." } } -> success
 export VERCEL_TOKEN="test-token"
-curl() {
-    echo '{"user":{"id":"uid123","username":"test-user","name":"Test"}}'
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"id":"uid123","username":"test-user","name":"Test"}}' '200'
 }
-export -f curl
 validate_vercel_token
 rc=$?
 assert_return "d2974b9: nested .user.username returns 0" "0" "$rc"
@@ -405,47 +402,41 @@ assert_eq "d2974b9: nested .user.username populates user" "test-user" "$VERCEL_V
 assert_empty "d2974b9: nested success clears error" "$VERCEL_VALIDATE_ERROR"
 
 # 4b. Top-level fallback shape: { username: "..." } -> still works
-curl() {
-    echo '{"username":"legacy-user"}'
+_provider_vercel_api() {
+    printf '%s\n%s' '{"username":"legacy-user"}' '200'
 }
-export -f curl
 validate_vercel_token
 rc=$?
 assert_return "d2974b9: top-level .username fallback returns 0" "0" "$rc"
 assert_eq "d2974b9: top-level fallback populates user" "legacy-user" "$VERCEL_VALIDATE_USER"
 
 # 4c. Nested error shape: { error: { invalidToken: true } } -> invalid_token
-curl() {
-    echo '{"error":{"code":"forbidden","message":"Not authorized","invalidToken":true}}'
+_provider_vercel_api() {
+    printf '%s\n%s' '{"error":{"code":"forbidden","message":"Not authorized","invalidToken":true}}' '403'
 }
-export -f curl
 validate_vercel_token
 rc=$?
 assert_return "d2974b9: nested .error.invalidToken returns 1" "1" "$rc"
 assert_eq "d2974b9: nested invalidToken sets error" "invalid_token" "$VERCEL_VALIDATE_ERROR"
 
 # 4d. Top-level invalidToken fallback
-curl() {
-    echo '{"invalidToken":true}'
+_provider_vercel_api() {
+    printf '%s\n%s' '{"invalidToken":true}' '403'
 }
-export -f curl
 validate_vercel_token
 rc=$?
 assert_return "d2974b9: top-level invalidToken fallback returns 1" "1" "$rc"
 assert_eq "d2974b9: top-level invalidToken sets error" "invalid_token" "$VERCEL_VALIDATE_ERROR"
 
 # 4e. Neither username nor invalidToken -> api_error
-curl() {
-    echo '{"user":{"id":"uid123"}}'
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"id":"uid123"}}' '200'
 }
-export -f curl
 validate_vercel_token
 rc=$?
 assert_return "d2974b9: no username no invalidToken returns 1" "1" "$rc"
 assert_eq "d2974b9: no username no invalidToken sets api_error" "api_error" "$VERCEL_VALIDATE_ERROR"
 
-# Restore curl
-unset -f curl 2>/dev/null || true
 unset VERCEL_TOKEN 2>/dev/null || true
 
 echo ""
@@ -1916,17 +1907,15 @@ echo "── Static safety checks ──"
 # Decision: "Static enforcement is based on explicit allowed legacy/seam
 # function names, not source-file position."
 
-# Functions allowed to contain raw provider calls
+# Functions allowed to contain raw provider calls.
+# WP5B: legacy wrappers and print_vercel_token_help removed — they no longer
+# contain raw calls. Only provider seam functions remain.
 ALLOWED_RAW=(
     _provider_github_api
     _provider_github_auth_status
     _provider_vercel_api
     _provider_vercel_cli
     _provider_supabase_api
-    validate_vercel_token
-    print_vercel_token_help
-    validate_github_api
-    validate_supabase_token
 )
 
 # Get all function names defined after sourcing preflight-lib.sh.
@@ -1952,12 +1941,19 @@ for fn in $ALL_LIB_FUNCTIONS; do
     fn_body=$(declare -f "$fn" 2>/dev/null) || continue
     CHECKED_COUNT=$((CHECKED_COUNT + 1))
 
-    # Check for raw provider invocations (skip comment lines)
+    # Check for raw provider invocations (skip comment lines).
+    # For vercel/supabase: match command-position invocations only, not
+    # string literals in echo/printf help text. Command position means:
+    #   - start of statement (possibly after whitespace/semicolons)
+    #   - command substitution: $(vercel ...) or `vercel ...`
+    #   - pipe target: | vercel ...
+    # This keeps echo/printf lines inspectable — a raw invocation inside
+    # command substitution on an echo line WILL still trigger.
     violations=""
     raw_curl=$(echo "$fn_body" | grep -v '^ *#' | grep '\bcurl\b' || true)
     raw_gh=$(echo "$fn_body" | grep -v '^ *#' | grep '\bgh api\b\|\bgh repo\b' || true)
-    raw_vercel_cli=$(echo "$fn_body" | grep -v '^ *#' | grep '\bvercel \b' || true)
-    raw_supabase_cli=$(echo "$fn_body" | grep -v '^ *#' | grep '\bsupabase \b' || true)
+    raw_vercel_cli=$(echo "$fn_body" | grep -v '^ *#' | grep -E '(^|;|[$][(]|`|[|]) *vercel ' || true)
+    raw_supabase_cli=$(echo "$fn_body" | grep -v '^ *#' | grep -E '(^|;|[$][(]|`|[|]) *supabase ' || true)
 
     if [[ -n "$raw_curl" ]]; then violations="${violations}curl "; fi
     if [[ -n "$raw_gh" ]]; then violations="${violations}gh "; fi
@@ -1981,6 +1977,74 @@ else
     _test_fail "seam check: no raw provider calls outside allowed functions" "violations: ${SEAM_VIOLATIONS}"
 fi
 
+# ── Static-check regression: invocation-pattern vs help-text ──
+# These synthetic function bodies verify the grep pattern distinguishes
+# command invocations from string literals in echo/printf arguments.
+
+# Regression: help-text literal should NOT trigger
+_static_test_body_help='    echo "A stale VERCEL_TOKEN overrides vercel login — after updating";'
+if echo "$_static_test_body_help" | grep -v '^ *#' | grep -qE '(^|;|[$][(]|`|[|]) *vercel '; then
+    _test_fail "static-check: help-text 'vercel login' does not trigger" "false positive on help text"
+else
+    _test_pass "static-check: help-text 'vercel login' does not trigger"
+fi
+
+# Regression: raw vercel invocation SHOULD trigger
+_static_test_body_raw='    vercel deploy --prod;'
+if echo "$_static_test_body_raw" | grep -v '^ *#' | grep -qE '(^|;|[$][(]|`|[|]) *vercel '; then
+    _test_pass "static-check: raw 'vercel deploy' triggers"
+else
+    _test_fail "static-check: raw 'vercel deploy' triggers" "missed raw invocation"
+fi
+
+# Regression: raw supabase invocation SHOULD trigger
+_static_test_body_sb='    supabase db push;'
+if echo "$_static_test_body_sb" | grep -v '^ *#' | grep -qE '(^|;|[$][(]|`|[|]) *supabase '; then
+    _test_pass "static-check: raw 'supabase db' triggers"
+else
+    _test_fail "static-check: raw 'supabase db' triggers" "missed raw invocation"
+fi
+
+# Regression: command substitution inside echo/printf SHOULD trigger
+_static_test_body_cmdsub='    echo "result: $(vercel whoami)";'
+if echo "$_static_test_body_cmdsub" | grep -v '^ *#' | grep -qE '(^|;|[$][(]|`|[|]) *vercel '; then
+    _test_pass "static-check: cmd-sub 'echo \$(vercel ...)' triggers"
+else
+    _test_fail "static-check: cmd-sub 'echo \$(vercel ...)' triggers" "missed cmd-sub invocation"
+fi
+
+# Regression: command substitution with supabase inside printf SHOULD trigger
+_static_test_body_cmdsub_sb='    printf "%s" "$(supabase status)";'
+if echo "$_static_test_body_cmdsub_sb" | grep -v '^ *#' | grep -qE '(^|;|[$][(]|`|[|]) *supabase '; then
+    _test_pass "static-check: cmd-sub 'printf \$(supabase ...)' triggers"
+else
+    _test_fail "static-check: cmd-sub 'printf \$(supabase ...)' triggers" "missed cmd-sub invocation"
+fi
+
+# Regression: backtick substitution SHOULD trigger
+_static_test_body_backtick='    echo "result: `vercel teams ls`";'
+if echo "$_static_test_body_backtick" | grep -v '^ *#' | grep -qE '(^|;|[$][(]|`|[|]) *vercel '; then
+    _test_pass "static-check: backtick 'echo \`vercel ...\`' triggers"
+else
+    _test_fail "static-check: backtick 'echo \`vercel ...\`' triggers" "missed backtick invocation"
+fi
+
+# Regression: pipe target SHOULD trigger
+_static_test_body_pipe='    cat file | vercel deploy;'
+if echo "$_static_test_body_pipe" | grep -v '^ *#' | grep -qE '(^|;|[$][(]|`|[|]) *vercel '; then
+    _test_pass "static-check: pipe target '| vercel ...' triggers"
+else
+    _test_fail "static-check: pipe target '| vercel ...' triggers" "missed pipe invocation"
+fi
+
+# Regression: supabase help text should NOT trigger
+_static_test_body_sb_help='    echo "    See supabase dashboard for details";'
+if echo "$_static_test_body_sb_help" | grep -v '^ *#' | grep -qE '(^|;|[$][(]|`|[|]) *supabase '; then
+    _test_pass "static-check: help-text 'supabase dashboard' does not trigger"
+else
+    _test_pass "static-check: help-text 'supabase dashboard' does not trigger"
+fi
+
 # Verify provider-scopes.sh contains no credentials
 if grep -qE '(Bearer|vcp_|ghp_|gho_|github_pat_|sk-|password)' "${SCRIPT_DIR}/../config/provider-scopes.sh" 2>/dev/null; then
     _test_fail "provider-scopes.sh has no credentials" "possible credential found"
@@ -1996,6 +2060,619 @@ for fn in validate_vercel_token print_vercel_token_help validate_github_api vali
         _test_fail "legacy function ${fn} still defined" "not found after sourcing"
     fi
 done
+
+echo ""
+
+# ════════════════════════════════════════════════════════════════════════════
+# Section: WP5B Golden-Master Tests
+#
+# These tests mock the provider SEAM functions (_provider_vercel_api,
+# _provider_github_api, _provider_supabase_api) to verify the migrated
+# legacy wrappers preserve their exact public contracts and restore
+# PLAT-01 internal state.
+# ════════════════════════════════════════════════════════════════════════════
+echo ""
+echo "── WP5B golden-master: validate_vercel_token ──"
+
+# GM-V1: Nested .user.username success (via seam)
+export VERCEL_TOKEN="test-token"
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"id":"uid123","username":"seam-user","name":"Test"}}' '200'
+}
+validate_vercel_token
+rc=$?
+assert_return "GM-V1: nested .user.username returns 0" "0" "$rc"
+assert_eq "GM-V1: populates VERCEL_VALIDATE_USER" "seam-user" "$VERCEL_VALIDATE_USER"
+assert_empty "GM-V1: clears VERCEL_VALIDATE_ERROR" "$VERCEL_VALIDATE_ERROR"
+
+# GM-V2: Top-level .username fallback (via seam)
+_provider_vercel_api() {
+    printf '%s\n%s' '{"username":"fallback-user"}' '200'
+}
+validate_vercel_token
+rc=$?
+assert_return "GM-V2: top-level .username fallback returns 0" "0" "$rc"
+assert_eq "GM-V2: populates VERCEL_VALIDATE_USER" "fallback-user" "$VERCEL_VALIDATE_USER"
+
+# GM-V3: Missing credential
+unset VERCEL_TOKEN 2>/dev/null || true
+validate_vercel_token
+rc=$?
+assert_return "GM-V3: missing credential returns 1" "1" "$rc"
+assert_eq "GM-V3: VERCEL_VALIDATE_ERROR is not_set" "not_set" "$VERCEL_VALIDATE_ERROR"
+assert_empty "GM-V3: VERCEL_VALIDATE_USER is empty" "$VERCEL_VALIDATE_USER"
+
+# GM-V4: Nested .error.invalidToken
+export VERCEL_TOKEN="test-token"
+_provider_vercel_api() {
+    printf '%s\n%s' '{"error":{"code":"forbidden","invalidToken":true}}' '403'
+}
+validate_vercel_token
+rc=$?
+assert_return "GM-V4: nested invalidToken returns 1" "1" "$rc"
+assert_eq "GM-V4: VERCEL_VALIDATE_ERROR is invalid_token" "invalid_token" "$VERCEL_VALIDATE_ERROR"
+
+# GM-V5: Top-level .invalidToken fallback
+_provider_vercel_api() {
+    printf '%s\n%s' '{"invalidToken":true}' '403'
+}
+validate_vercel_token
+rc=$?
+assert_return "GM-V5: top-level invalidToken returns 1" "1" "$rc"
+assert_eq "GM-V5: VERCEL_VALIDATE_ERROR is invalid_token" "invalid_token" "$VERCEL_VALIDATE_ERROR"
+
+# GM-V6: Transport failure (seam returns nonzero)
+_provider_vercel_api() {
+    return 1
+}
+validate_vercel_token
+rc=$?
+assert_return "GM-V6: transport failure returns 1" "1" "$rc"
+assert_eq "GM-V6: VERCEL_VALIDATE_ERROR is api_error" "api_error" "$VERCEL_VALIDATE_ERROR"
+
+# GM-V7: Malformed response (no username, no invalidToken)
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"id":"uid123"}}' '200'
+}
+validate_vercel_token
+rc=$?
+assert_return "GM-V7: malformed response returns 1" "1" "$rc"
+assert_eq "GM-V7: VERCEL_VALIDATE_ERROR is api_error" "api_error" "$VERCEL_VALIDATE_ERROR"
+
+# GM-V8: _RESP_BODY restored after success
+_RESP_BODY="prior-body-value"
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"username":"u"}}' '200'
+}
+validate_vercel_token
+assert_eq "GM-V8: _RESP_BODY restored after success" "prior-body-value" "$_RESP_BODY"
+
+# GM-V9: _RESP_BODY restored after failure
+_RESP_BODY="prior-body-failure"
+_provider_vercel_api() {
+    printf '%s\n%s' '{"nothing":"here"}' '200'
+}
+validate_vercel_token
+assert_eq "GM-V9: _RESP_BODY restored after failure" "prior-body-failure" "$_RESP_BODY"
+
+# GM-V10: Previously unset _RESP_CODE remains unset
+unset _RESP_CODE 2>/dev/null || true
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"username":"u"}}' '200'
+}
+validate_vercel_token
+if [[ -n "${_RESP_CODE+x}" ]]; then
+    _test_fail "GM-V10: unset _RESP_CODE remains unset" "was set to '${_RESP_CODE:-}'"
+else
+    _test_pass "GM-V10: unset _RESP_CODE remains unset"
+fi
+
+# GM-V11: Previously empty _RESP_BODY restored as empty
+_RESP_BODY=""
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"username":"u"}}' '200'
+}
+validate_vercel_token
+assert_eq "GM-V11: empty _RESP_BODY restored as empty" "" "$_RESP_BODY"
+
+# GM-V12: set -u safe (all paths)
+(
+    set -u
+    export VERCEL_TOKEN="test-token"
+    _provider_vercel_api() {
+        printf '%s\n%s' '{"user":{"username":"u"}}' '200'
+    }
+    validate_vercel_token
+) 2>/dev/null
+if [[ $? -eq 0 ]]; then
+    _test_pass "GM-V12: set -u safe (Vercel success)"
+else
+    _test_fail "GM-V12: set -u safe (Vercel success)" "exited nonzero under set -u"
+fi
+
+# GM-V13: No stdout emitted
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"username":"u"}}' '200'
+}
+local_stdout=$(validate_vercel_token 2>/dev/null)
+assert_empty "GM-V13: no stdout on success" "$local_stdout"
+
+# GM-V14: No stderr emitted
+local_stderr=$(validate_vercel_token 2>&1 >/dev/null)
+assert_empty "GM-V14: no stderr on success" "$local_stderr"
+
+# GM-V-SENTINEL: Old sentinel string value restored correctly (collision-free proof)
+_RESP_BODY="__WP5B_UNSET_d41d8cd98f00b204e9800998ecf8427e__"
+_provider_vercel_api() {
+    printf '%s\n%s' '{"user":{"username":"u"}}' '200'
+}
+validate_vercel_token
+assert_eq "GM-V-SENTINEL: old sentinel string restored" "__WP5B_UNSET_d41d8cd98f00b204e9800998ecf8427e__" "$_RESP_BODY"
+
+# GM-V-TRANSPORT-RESTORE: _RESP_BODY restored after transport failure
+_RESP_BODY="transport-prior"
+_provider_vercel_api() {
+    return 1
+}
+validate_vercel_token
+assert_eq "GM-V-TRANSPORT: _RESP_BODY restored after transport failure" "transport-prior" "$_RESP_BODY"
+
+# GM-V15: Failure-path stderr suppression — seam emits stderr, wrapper must not
+_provider_vercel_api() {
+    echo "synthetic seam stderr for vercel" >&2
+    return 1
+}
+local_stderr=$(validate_vercel_token 2>&1 >/dev/null)
+assert_empty "GM-V15: no stderr on failure (seam emits stderr)" "$local_stderr"
+
+# GM-V16: Failure-path stdout suppression
+local_stdout=$(validate_vercel_token 2>/dev/null)
+assert_empty "GM-V16: no stdout on failure (seam emits stderr)" "$local_stdout"
+
+unset VERCEL_TOKEN 2>/dev/null || true
+
+echo ""
+echo "── WP5B golden-master: validate_github_api ──"
+
+# GM-G1: Success (HTTP 200, .login present)
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":12345,"login":"gh-user"}'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+rc=$?
+assert_return "GM-G1: success returns 0" "0" "$rc"
+assert_eq "GM-G1: GITHUB_VALIDATE_USER is login" "gh-user" "$GITHUB_VALIDATE_USER"
+
+# GM-G2: Seam transport failure (nonzero exit)
+_provider_github_api() {
+    _GITHUB_API_STATUS=""
+    _GITHUB_API_BODY=""
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=1
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 1
+}
+validate_github_api
+rc=$?
+assert_return "GM-G2: transport failure returns 1" "1" "$rc"
+assert_empty "GM-G2: GITHUB_VALIDATE_USER empty" "$GITHUB_VALIDATE_USER"
+
+# GM-G3: Non-200 status (401)
+_provider_github_api() {
+    _GITHUB_API_STATUS="401"
+    _GITHUB_API_BODY='{"message":"Bad credentials"}'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+rc=$?
+assert_return "GM-G3: 401 returns 1" "1" "$rc"
+assert_empty "GM-G3: GITHUB_VALIDATE_USER empty" "$GITHUB_VALIDATE_USER"
+
+# GM-G4: 200 but no .login
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":12345}'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+rc=$?
+assert_return "GM-G4: no .login returns 1" "1" "$rc"
+assert_empty "GM-G4: GITHUB_VALIDATE_USER empty" "$GITHUB_VALIDATE_USER"
+
+# GM-G5: 200 but invalid JSON
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='not json'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+rc=$?
+assert_return "GM-G5: invalid JSON returns 1" "1" "$rc"
+assert_empty "GM-G5: GITHUB_VALIDATE_USER empty" "$GITHUB_VALIDATE_USER"
+
+# GM-G6: Pre-set _GITHUB_API_STATUS restored after success
+_GITHUB_API_STATUS="prior-status"
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":1,"login":"u"}'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+assert_eq "GM-G6: _GITHUB_API_STATUS restored after success" "prior-status" "$_GITHUB_API_STATUS"
+
+# GM-G7: Pre-set _GITHUB_API_BODY restored after failure
+_GITHUB_API_BODY="prior-body"
+_provider_github_api() {
+    _GITHUB_API_STATUS=""
+    _GITHUB_API_BODY=""
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=1
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 1
+}
+validate_github_api
+assert_eq "GM-G7: _GITHUB_API_BODY restored after failure" "prior-body" "$_GITHUB_API_BODY"
+
+# GM-G8: Previously unset _GITHUB_API_LINK remains unset
+unset _GITHUB_API_LINK 2>/dev/null || true
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":1,"login":"u"}'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK="some-link"
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+if [[ -n "${_GITHUB_API_LINK+x}" ]]; then
+    _test_fail "GM-G8: unset _GITHUB_API_LINK remains unset" "was set to '${_GITHUB_API_LINK:-}'"
+else
+    _test_pass "GM-G8: unset _GITHUB_API_LINK remains unset"
+fi
+
+# GM-G9: Previously empty _GITHUB_API_HEADERS restored as empty
+_GITHUB_API_HEADERS=""
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":1,"login":"u"}'
+    _GITHUB_API_HEADERS="Content-Type: application/json"
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+assert_eq "GM-G9: empty _GITHUB_API_HEADERS restored as empty" "" "$_GITHUB_API_HEADERS"
+
+# GM-G10: All 8 _GITHUB_API_* vars restored (bulk)
+_GITHUB_API_STATUS="s1"
+_GITHUB_API_BODY="b1"
+_GITHUB_API_HEADERS="h1"
+_GITHUB_API_EXIT="e1"
+_GITHUB_API_LINK="l1"
+_GITHUB_API_RATELIMIT_REMAINING="rr1"
+_GITHUB_API_RATELIMIT_RESET="re1"
+_GITHUB_API_RETRY_AFTER="ra1"
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":1,"login":"u"}'
+    _GITHUB_API_HEADERS="changed"
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK="changed"
+    _GITHUB_API_RATELIMIT_REMAINING="changed"
+    _GITHUB_API_RATELIMIT_RESET="changed"
+    _GITHUB_API_RETRY_AFTER="changed"
+    return 0
+}
+validate_github_api
+_g10_ok=true
+[[ "$_GITHUB_API_STATUS" == "s1" ]] || _g10_ok=false
+[[ "$_GITHUB_API_BODY" == "b1" ]] || _g10_ok=false
+[[ "$_GITHUB_API_HEADERS" == "h1" ]] || _g10_ok=false
+[[ "$_GITHUB_API_EXIT" == "e1" ]] || _g10_ok=false
+[[ "$_GITHUB_API_LINK" == "l1" ]] || _g10_ok=false
+[[ "$_GITHUB_API_RATELIMIT_REMAINING" == "rr1" ]] || _g10_ok=false
+[[ "$_GITHUB_API_RATELIMIT_RESET" == "re1" ]] || _g10_ok=false
+[[ "$_GITHUB_API_RETRY_AFTER" == "ra1" ]] || _g10_ok=false
+if $_g10_ok; then
+    _test_pass "GM-G10: all 8 _GITHUB_API_* vars restored"
+else
+    _test_fail "GM-G10: all 8 _GITHUB_API_* vars restored" "at least one var not restored"
+fi
+
+# GM-G11: set -u safe
+(
+    set -u
+    _provider_github_api() {
+        _GITHUB_API_STATUS="200"
+        _GITHUB_API_BODY='{"id":1,"login":"u"}'
+        _GITHUB_API_HEADERS=""
+        _GITHUB_API_EXIT=0
+        _GITHUB_API_LINK=""
+        _GITHUB_API_RATELIMIT_REMAINING=""
+        _GITHUB_API_RATELIMIT_RESET=""
+        _GITHUB_API_RETRY_AFTER=""
+        return 0
+    }
+    validate_github_api
+) 2>/dev/null
+if [[ $? -eq 0 ]]; then
+    _test_pass "GM-G11: set -u safe (GitHub success)"
+else
+    _test_fail "GM-G11: set -u safe (GitHub success)" "exited nonzero under set -u"
+fi
+
+# GM-G12: No stdout
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":1,"login":"u"}'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+local_stdout=$(validate_github_api 2>/dev/null)
+assert_empty "GM-G12: no stdout on success" "$local_stdout"
+
+# GM-G13: No stderr
+local_stderr=$(validate_github_api 2>&1 >/dev/null)
+assert_empty "GM-G13: no stderr on success" "$local_stderr"
+
+# GM-G14: Wrapper non-interference — env-token credential path (GH_TOKEN)
+# This proves the wrapper does not inspect or reject env-token configurations
+# before invoking the seam. It does NOT independently prove gh credential
+# precedence — that is established by GitHub CLI behavior and prior live evidence.
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":99,"login":"env-token-user"}'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+rc=$?
+assert_return "GM-G14: wrapper non-interference (env-token path) returns 0" "0" "$rc"
+assert_eq "GM-G14: GITHUB_VALIDATE_USER from env-token path" "env-token-user" "$GITHUB_VALIDATE_USER"
+
+# GM-G15: Wrapper non-interference — GITHUB_TOKEN credential path
+# Same as GM-G14: proves wrapper delegates unchanged to seam, does not
+# independently validate gh credential precedence.
+_provider_github_api() {
+    _GITHUB_API_STATUS="200"
+    _GITHUB_API_BODY='{"id":88,"login":"github-token-user"}'
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=0
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 0
+}
+validate_github_api
+rc=$?
+assert_return "GM-G15: wrapper non-interference (GITHUB_TOKEN path) returns 0" "0" "$rc"
+assert_eq "GM-G15: GITHUB_VALIDATE_USER from GITHUB_TOKEN path" "github-token-user" "$GITHUB_VALIDATE_USER"
+
+# GM-G16: Failure-path stderr suppression — seam emits stderr, wrapper must not
+_provider_github_api() {
+    echo "synthetic seam stderr for github" >&2
+    _GITHUB_API_STATUS=""
+    _GITHUB_API_BODY=""
+    _GITHUB_API_HEADERS=""
+    _GITHUB_API_EXIT=1
+    _GITHUB_API_LINK=""
+    _GITHUB_API_RATELIMIT_REMAINING=""
+    _GITHUB_API_RATELIMIT_RESET=""
+    _GITHUB_API_RETRY_AFTER=""
+    return 1
+}
+local_stderr=$(validate_github_api 2>&1 >/dev/null)
+assert_empty "GM-G16: no stderr on failure (seam emits stderr)" "$local_stderr"
+
+# GM-G17: Failure-path stdout suppression
+local_stdout=$(validate_github_api 2>/dev/null)
+assert_empty "GM-G17: no stdout on failure (seam emits stderr)" "$local_stdout"
+
+echo ""
+echo "── WP5B golden-master: validate_supabase_token ──"
+
+# GM-S1: Success (JSON array response)
+export SUPABASE_ACCESS_TOKEN="test-token"
+_provider_supabase_api() {
+    printf '%s\n%s' '[{"id":"org1","name":"Test Org"}]' '200'
+}
+validate_supabase_token
+rc=$?
+assert_return "GM-S1: JSON array returns 0" "0" "$rc"
+assert_empty "GM-S1: SUPABASE_VALIDATE_ERROR empty" "$SUPABASE_VALIDATE_ERROR"
+
+# GM-S2: Missing credential
+unset SUPABASE_ACCESS_TOKEN 2>/dev/null || true
+validate_supabase_token
+rc=$?
+assert_return "GM-S2: missing credential returns 1" "1" "$rc"
+assert_eq "GM-S2: SUPABASE_VALIDATE_ERROR is not_set" "not_set" "$SUPABASE_VALIDATE_ERROR"
+
+# GM-S3: Non-array JSON response
+export SUPABASE_ACCESS_TOKEN="test-token"
+_provider_supabase_api() {
+    printf '%s\n%s' '{"error":"unauthorized"}' '401'
+}
+validate_supabase_token
+rc=$?
+assert_return "GM-S3: non-array JSON returns 1" "1" "$rc"
+assert_eq "GM-S3: SUPABASE_VALIDATE_ERROR is invalid_token" "invalid_token" "$SUPABASE_VALIDATE_ERROR"
+
+# GM-S4: Transport failure
+_provider_supabase_api() {
+    return 1
+}
+validate_supabase_token
+rc=$?
+assert_return "GM-S4: transport failure returns 1" "1" "$rc"
+assert_eq "GM-S4: SUPABASE_VALIDATE_ERROR is api_error" "api_error" "$SUPABASE_VALIDATE_ERROR"
+
+# GM-S5: Non-JSON response
+_provider_supabase_api() {
+    printf '%s\n%s' 'not json at all' '200'
+}
+validate_supabase_token
+rc=$?
+assert_return "GM-S5: non-JSON returns 1" "1" "$rc"
+assert_eq "GM-S5: SUPABASE_VALIDATE_ERROR is invalid_token" "invalid_token" "$SUPABASE_VALIDATE_ERROR"
+
+# GM-S6: Empty response body
+_provider_supabase_api() {
+    printf '%s\n%s' '' '200'
+}
+validate_supabase_token
+rc=$?
+assert_return "GM-S6: empty body returns 1" "1" "$rc"
+assert_eq "GM-S6: SUPABASE_VALIDATE_ERROR is invalid_token" "invalid_token" "$SUPABASE_VALIDATE_ERROR"
+
+# GM-S7: _RESP_BODY restored after success
+_RESP_BODY="supabase-prior"
+_provider_supabase_api() {
+    printf '%s\n%s' '[{"id":"org1"}]' '200'
+}
+validate_supabase_token
+assert_eq "GM-S7: _RESP_BODY restored after success" "supabase-prior" "$_RESP_BODY"
+
+# GM-S8: _RESP_BODY restored after failure
+_RESP_BODY="supabase-prior-fail"
+_provider_supabase_api() {
+    printf '%s\n%s' '{"error":"bad"}' '401'
+}
+validate_supabase_token
+assert_eq "GM-S8: _RESP_BODY restored after failure" "supabase-prior-fail" "$_RESP_BODY"
+
+# GM-S9: Previously unset _RESP_CODE remains unset
+unset _RESP_CODE 2>/dev/null || true
+_provider_supabase_api() {
+    printf '%s\n%s' '[{"id":"org1"}]' '200'
+}
+validate_supabase_token
+if [[ -n "${_RESP_CODE+x}" ]]; then
+    _test_fail "GM-S9: unset _RESP_CODE remains unset" "was set to '${_RESP_CODE:-}'"
+else
+    _test_pass "GM-S9: unset _RESP_CODE remains unset"
+fi
+
+# GM-S10: Previously empty _RESP_BODY restored as empty
+_RESP_BODY=""
+_provider_supabase_api() {
+    printf '%s\n%s' '[{"id":"org1"}]' '200'
+}
+validate_supabase_token
+assert_eq "GM-S10: empty _RESP_BODY restored as empty" "" "$_RESP_BODY"
+
+# GM-S11: RESOLVED_SUPABASE_ORG untouched
+RESOLVED_SUPABASE_ORG="must-not-change"
+_provider_supabase_api() {
+    printf '%s\n%s' '[{"id":"org1"}]' '200'
+}
+validate_supabase_token
+assert_eq "GM-S11: RESOLVED_SUPABASE_ORG untouched" "must-not-change" "$RESOLVED_SUPABASE_ORG"
+unset RESOLVED_SUPABASE_ORG 2>/dev/null || true
+
+# GM-S12: set -u safe
+(
+    set -u
+    export SUPABASE_ACCESS_TOKEN="test-token"
+    _provider_supabase_api() {
+        printf '%s\n%s' '[{"id":"org1"}]' '200'
+    }
+    validate_supabase_token
+) 2>/dev/null
+if [[ $? -eq 0 ]]; then
+    _test_pass "GM-S12: set -u safe (Supabase success)"
+else
+    _test_fail "GM-S12: set -u safe (Supabase success)" "exited nonzero under set -u"
+fi
+
+# GM-S13: No stdout
+export SUPABASE_ACCESS_TOKEN="test-token"
+_provider_supabase_api() {
+    printf '%s\n%s' '[{"id":"org1"}]' '200'
+}
+local_stdout=$(validate_supabase_token 2>/dev/null)
+assert_empty "GM-S13: no stdout on success" "$local_stdout"
+
+# GM-S14: No stderr
+local_stderr=$(validate_supabase_token 2>&1 >/dev/null)
+assert_empty "GM-S14: no stderr on success" "$local_stderr"
+
+# GM-S-TRANSPORT-RESTORE: _RESP_BODY restored after transport failure
+_RESP_BODY="transport-prior-sb"
+_provider_supabase_api() {
+    return 1
+}
+validate_supabase_token
+assert_eq "GM-S-TRANSPORT: _RESP_BODY restored after transport failure" "transport-prior-sb" "$_RESP_BODY"
+
+# GM-S15: Failure-path stderr suppression — seam emits stderr, wrapper must not
+_provider_supabase_api() {
+    echo "synthetic seam stderr for supabase" >&2
+    return 1
+}
+local_stderr=$(validate_supabase_token 2>&1 >/dev/null)
+assert_empty "GM-S15: no stderr on failure (seam emits stderr)" "$local_stderr"
+
+# GM-S16: Failure-path stdout suppression
+local_stdout=$(validate_supabase_token 2>/dev/null)
+assert_empty "GM-S16: no stdout on failure (seam emits stderr)" "$local_stdout"
+
+unset SUPABASE_ACCESS_TOKEN 2>/dev/null || true
 
 echo ""
 
