@@ -445,11 +445,11 @@ EOF
 
     # ── Update GitHub secrets ──────────────────────────────────────────────
     info "Updating GitHub secrets..."
-    echo "$SUPABASE_URL_VALUE" | gh secret set NEXT_PUBLIC_SUPABASE_URL \
+    printf '%s' "$SUPABASE_URL_VALUE" | gh secret set NEXT_PUBLIC_SUPABASE_URL \
         --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
         ok "NEXT_PUBLIC_SUPABASE_URL" || warn "Could not set NEXT_PUBLIC_SUPABASE_URL secret"
 
-    echo "$SUPABASE_ANON_KEY" | gh secret set NEXT_PUBLIC_SUPABASE_ANON_KEY \
+    printf '%s' "$SUPABASE_ANON_KEY" | gh secret set NEXT_PUBLIC_SUPABASE_ANON_KEY \
         --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
         ok "NEXT_PUBLIC_SUPABASE_ANON_KEY" || warn "Could not set NEXT_PUBLIC_SUPABASE_ANON_KEY secret"
 
@@ -1086,7 +1086,7 @@ fi
 step "8" "GitHub secrets"
 
 if [[ -n "${VERCEL_TOKEN:-}" ]]; then
-    echo "$VERCEL_TOKEN" | gh secret set VERCEL_TOKEN \
+    printf '%s' "$VERCEL_TOKEN" | gh secret set VERCEL_TOKEN \
         --repo "${GITHUB_ORG}/${PROJECT_NAME}" 2>/dev/null && \
         ok "VERCEL_TOKEN" || warn "Could not set VERCEL_TOKEN secret"
 fi
