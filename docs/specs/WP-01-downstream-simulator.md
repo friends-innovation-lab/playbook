@@ -1,7 +1,10 @@
 # WP-01 Breakable Downstream Simulator — Canonical Specification
 
-Version: v2.0
+Version: v2.1
 Status: Canonical
+Change from v2.0: Added explicit admin auth header name, credential charset
+requirement, client/server HTTP status mapping for auth failures, and startup
+validation requirement.
 Supersedes: docs/WP-01-downstream-simulator.md (v1.1 draft)
 Depends on: None
 
@@ -507,6 +510,8 @@ of the malformed-response scenario.
 
 All control and administrative routes must require a shared-secret header.
 
+The admin authentication header is `X-Chaos-Token`.
+
 This includes routes that:
 
 - change global failure mode
@@ -519,12 +524,19 @@ This includes routes that:
 Requirements:
 
 - the secret is read from the `SIMULATOR_ADMIN_SECRET` environment variable
+- both client token and server secret must be ASCII-only for MVP; non-ASCII
+  values must fail closed
 - the secret must never be committed to source control
 - the secret must never be written to logs
-- missing or invalid secrets must be rejected with HTTP 401
+- a missing, empty, non-ASCII, or invalid client token must be rejected
+  with HTTP 401
+- an unset, empty, or non-ASCII `SIMULATOR_ADMIN_SECRET` server secret
+  must fail closed with HTTP 500 at the auth boundary
 - secret comparison must use `hmac.compare_digest` (constant-time) to
   prevent timing side-channels
 - simulated downstream routes (`/submit`, `/health`) remain unauthenticated
+- application startup must validate that the server secret is configured
+  and contains only ASCII characters
 
 The shared-secret mechanism is sufficient for WP-01 because this is a test
 dependency, not a production service.
@@ -548,7 +560,7 @@ WP-01 is accepted when all of the following can be demonstrated:
 13. Per-request overrides take precedence over global simulator mode.
 14. Parallel automated tests do not depend on mutating shared global failure state.
 15. Effective mode is visible in `effectiveMode` and `modeSource` response fields and in request history.
-16. Control routes reject missing or invalid shared-secret credentials with HTTP 401.
+16. Control routes reject a missing, empty, non-ASCII, or invalid client token with HTTP 401.
 17. Request history uses a bounded in-memory ring buffer with oldest-entry eviction.
 18. State can be reset via `POST /control/reset` without restarting or redeploying.
 19. The simulator runs successfully as a persistent Railway service.
@@ -556,6 +568,7 @@ WP-01 is accepted when all of the following can be demonstrated:
 21. README documentation explains how another application connects to, controls, observes, and resets the simulator.
 22. The application runs with a single Uvicorn worker and single Railway replica.
 23. In-memory state mutations are concurrency-safe under async request handling.
+24. An unset, empty, or non-ASCII `SIMULATOR_ADMIN_SECRET` fails closed: application startup rejects the configuration, and the auth dependency returns HTTP 500 if invoked with such a misconfiguration.
 
 ## Required Tests
 

@@ -1,8 +1,8 @@
 # WP-01 Implementation Plan
 
-Version: v1.0
+Version: v1.1
 Status: Draft
-Implements: docs/specs/WP-01-downstream-simulator.md (v2.0 Canonical)
+Implements: docs/specs/WP-01-downstream-simulator.md (v2.1 Canonical)
 
 ## Architecture Decisions Carried Forward
 
@@ -25,6 +25,8 @@ WP01_INTERMITTENT_SEMANTICS=deterministic_fail_n_then_success
 WP01_FAILED_ATTEMPTS_IDEMPOTENCY_CACHED=no
 WP01_SUCCESS_IDEMPOTENCY_CACHED=yes
 WP01_ADMIN_SECRET_COMPARE=hmac.compare_digest
+WP01_ADMIN_TOKEN_CHARSET=ascii
+WP01_ADMIN_SECRET_STARTUP_VALIDATION_MILESTONE=M4
 WP01_RETRY_AFTER_SERVER_SLEEP=no
 WP01_MODESOURCE_VALUES=default_global_override
 WP01_MVP_KEY_REGISTRIES=unbounded_until_reset
@@ -376,27 +378,67 @@ the history entry.
 ```python
 import hmac
 import os
+
 from fastapi import Header, HTTPException
 
-_ADMIN_SECRET = os.environ.get("SIMULATOR_ADMIN_SECRET", "")
+
+def _is_ascii(value: str) -> bool:
+    """Return True if value contains only ASCII characters."""
+    try:
+        value.encode("ascii")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
+def verify_token(token: str | None, secret: str) -> bool:
+    """Constant-time comparison. Returns False for missing, empty, or non-ASCII inputs."""
+    if not token:
+        return False
+    if not secret:
+        return False
+    if not _is_ascii(token) or not _is_ascii(secret):
+        return False
+    return hmac.compare_digest(token, secret)
+
 
 async def require_admin(
-    x_admin_token: str = Header(alias="X-Admin-Token"),
+    x_chaos_token: str | None = Header(default=None, alias="X-Chaos-Token"),
 ) -> None:
-    if not _ADMIN_SECRET:
+    admin_secret = os.environ.get("SIMULATOR_ADMIN_SECRET", "")
+    if not admin_secret or not _is_ascii(admin_secret):
         raise HTTPException(status_code=500, detail="Admin secret not configured")
-    if not hmac.compare_digest(x_admin_token, _ADMIN_SECRET):
+    if not verify_token(x_chaos_token, admin_secret):
         raise HTTPException(status_code=401, detail="Unauthorized")
 ```
 
-**Header name:** `X-Admin-Token`. Namespaced to avoid collision with
+**Header name:** `X-Chaos-Token`. Namespaced to avoid collision with
 `X-Simulator-*` override headers.
+
+**Two-layer structure:** `verify_token()` is a pure boolean function using
+`hmac.compare_digest`, independently testable without FastAPI. `require_admin()`
+is a thin FastAPI dependency wrapper that classifies failures (500 for server
+misconfiguration, 401 for client authentication failure).
+
+**Secret read dynamically:** The admin secret is read from `os.environ` on each
+request, not cached at module level.
 
 **Secret not logged:** The dependency never logs, prints, or includes the
 secret value in any response or error detail.
 
-**Empty secret rejection:** If `SIMULATOR_ADMIN_SECRET` is empty or unset,
-all control routes return 500. This prevents running without authentication.
+**Secret misconfiguration rejection:** If `SIMULATOR_ADMIN_SECRET` is empty,
+unset, or contains non-ASCII characters, all control routes return 500.
+This prevents running without valid authentication.
+
+**Credential charset:** MVP credential charset is ASCII. Non-ASCII client
+tokens return 401; non-ASCII server secrets return 500. `hmac.compare_digest`
+with `str` inputs requires ASCII-only strings; the `_is_ascii` guard prevents
+`TypeError` from reaching callers.
+
+**Startup validation:** Application startup (M4) must validate that
+`SIMULATOR_ADMIN_SECRET` is present, non-empty, and ASCII-only.
+
+`WP01_ADMIN_SECRET_STARTUP_VALIDATION_MILESTONE=M4`
 
 ### 3.5 app.py — Route Registration
 
@@ -559,7 +601,7 @@ async def client(admin_secret):
 
 @pytest.fixture
 def admin_headers():
-    return {"X-Admin-Token": "test-secret"}
+    return {"X-Chaos-Token": "test-secret"}
 ```
 
 **Application factory:** `create_app()` returns a fresh FastAPI instance
