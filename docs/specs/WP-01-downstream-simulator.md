@@ -1,10 +1,9 @@
 # WP-01 Breakable Downstream Simulator — Canonical Specification
 
-Version: v2.1
+Version: v2.2
 Status: Canonical
-Change from v2.0: Added explicit admin auth header name, credential charset
-requirement, client/server HTTP status mapping for auth failures, and startup
-validation requirement.
+Change from v2.1: Added SIMULATOR_HISTORY_SIZE startup validation contract
+(positive integer required, fail-closed on zero/negative/non-integer).
 Supersedes: docs/WP-01-downstream-simulator.md (v1.1 draft)
 Depends on: None
 
@@ -478,6 +477,19 @@ PORT — listening port (default: 8000)
 SIMULATOR_ADMIN_SECRET — shared secret for control routes (required)
 SIMULATOR_HISTORY_SIZE — ring buffer capacity (default: 1000)
 ```
+
+### SIMULATOR_HISTORY_SIZE Startup Validation
+
+Application startup must validate `SIMULATOR_HISTORY_SIZE`:
+
+- unset: use default (1000)
+- positive integer: accepted
+- zero: reject (startup failure)
+- negative: reject (startup failure)
+- non-integer: reject (startup failure)
+
+Invalid values must prevent the service from accepting requests. The
+supplied value must not be echoed in error output.
 
 ## Safety
 

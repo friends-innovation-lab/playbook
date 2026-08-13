@@ -1,8 +1,12 @@
 # WP-01 Implementation Plan
 
-Version: v1.1
+Version: v1.2
 Status: Draft
-Implements: docs/specs/WP-01-downstream-simulator.md (v2.1 Canonical)
+Implements: docs/specs/WP-01-downstream-simulator.md (v2.2 Canonical)
+Change from v1.1: Updated to reflect actual M4 implementation — config
+validation module (simulator/config.py), app factory with lifespan, locked
+health state access, importlib.metadata version source, history size startup
+validation.
 
 ## Architecture Decisions Carried Forward
 
@@ -31,6 +35,11 @@ WP01_RETRY_AFTER_SERVER_SLEEP=no
 WP01_MODESOURCE_VALUES=default_global_override
 WP01_MVP_KEY_REGISTRIES=unbounded_until_reset
 WP01_STATE_SNAPSHOT_LOCKING=required
+WP01_CONFIG_VALIDATION_OWNER=simulator/config.py
+WP01_VERSION_SOURCE=importlib.metadata
+WP01_PACKAGE_METADATA_INSTALL_REQUIRED=yes
+WP01_HEALTH_STATE_ACCESS=locked_snapshot
+WP01_HISTORY_SIZE_VALIDATION=positive_integer_or_default_1000
 ```
 
 ---
@@ -40,15 +49,17 @@ WP01_STATE_SNAPSHOT_LOCKING=required
 ```
 downstream-simulator/
 ├── simulator/
-│   ├── __init__.py          # Package marker, exports __version__
-│   ├── app.py               # FastAPI application, route registration
+│   ├── __init__.py          # Package marker, __version__ via importlib.metadata
+│   ├── app.py               # FastAPI application factory, lifespan, route registration
+│   ├── config.py            # Shared config validation (is_ascii, startup validators)
 │   ├── models.py            # Pydantic request/response models, enums
 │   ├── state.py             # SimulatorState: config, history, registries
 │   ├── modes.py             # Failure-mode dispatch and execution
-│   └── auth.py              # Admin secret dependency (hmac.compare_digest)
+│   └── auth.py              # Admin secret dependency (imports is_ascii from config)
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py          # Shared fixtures: async client, state reset
+│   ├── conftest.py          # Shared fixtures: app factory, lifespan, async client
+│   ├── test_config.py       # Config validation: is_ascii, secret, history size
 │   ├── test_submission.py   # Healthy, error modes, malformed, delayed
 │   ├── test_overrides.py    # Per-request overrides, precedence, isolation
 │   ├── test_intermittent.py # Fail-N-then-succeed, counter keying
@@ -72,13 +83,14 @@ downstream-simulator/
 
 | Module | Responsibility | Imports from |
 |---|---|---|
-| `app.py` | Route definitions, lifespan, FastAPI instance | `models`, `state`, `modes`, `auth` |
+| `app.py` | Application factory, lifespan, route definitions | `config`, `models`, `state`, `modes`, `auth` |
+| `config.py` | Shared config validation (`is_ascii`, `validate_admin_secret`, `parse_history_size`, `ConfigurationError`) | stdlib only |
 | `models.py` | Pydantic models, `SimulatorMode` enum, type contracts | stdlib only |
 | `state.py` | `SimulatorState` class, lock, history deque, registries | `models` |
 | `modes.py` | `execute_mode()` dispatch, delay/timeout/malformed logic | `models`, `state` |
-| `auth.py` | `require_admin` FastAPI dependency | stdlib `hmac`, `os` |
+| `auth.py` | `require_admin` FastAPI dependency | `config`, stdlib `hmac`, `os` |
 
-No circular imports. Dependency flows one direction: `app` → `modes` → `state` → `models`.
+No circular imports. Dependency flows one direction: `app` → `modes` → `state` → `models`, with `config` as a shared leaf dependency.
 
 ---
 
@@ -268,11 +280,9 @@ access that requires a consistent snapshot or compound mutation.
 - `GET /control/history` — acquires the lock while copying the history
   entries to return.
 
-**Routes that do NOT acquire the lock:**
-
-- `GET /health` — reads only `global_config.mode` for the `currentMode`
-  field. This is an informational display, not a state-dependent decision.
-  A momentarily stale value is acceptable for a health check.
+- `GET /health` — acquires the lock via `SimulatorState.get_mode()` to
+  obtain a consistent `ModeSnapshot` for the `currentMode` field. Lock
+  contention is accepted for MVP single-worker/single-replica scope.
 
 **Reset behavior:**
 
@@ -373,7 +383,42 @@ If a caller disconnects during a timeout sleep, FastAPI/Starlette may raise
 a disconnect exception. The implementation should catch this and still record
 the history entry.
 
-### 3.4 auth.py — Admin Authentication
+### 3.4 config.py — Shared Configuration Validation
+
+```python
+class ConfigurationError(Exception):
+    """Raised when startup configuration is invalid."""
+
+def is_ascii(value: str) -> bool:
+    """Return True if value contains only ASCII characters."""
+
+def validate_admin_secret(secret: str | None) -> str:
+    """Validate SIMULATOR_ADMIN_SECRET. Raises ConfigurationError if
+    None, empty, or non-ASCII. Never includes the secret value in errors."""
+
+def parse_history_size(raw: str | None) -> int:
+    """Parse SIMULATOR_HISTORY_SIZE. Returns 1000 if None. Raises
+    ConfigurationError for zero, negative, or non-integer values.
+    Never echoes the supplied value in errors."""
+```
+
+Pure functions with no FastAPI or framework dependencies. Used by both
+`auth.py` (ASCII check for tokens and secrets) and `app.py` (startup
+validation in lifespan).
+
+**SIMULATOR_HISTORY_SIZE startup validation:**
+
+| Input | Result |
+|---|---|
+| unset (None) | 1000 (default) |
+| positive integer | accepted |
+| zero | `ConfigurationError` |
+| negative | `ConfigurationError` |
+| non-integer | `ConfigurationError` |
+
+Supplied values are never echoed in error messages.
+
+### 3.5 auth.py — Admin Authentication
 
 ```python
 import hmac
@@ -381,14 +426,7 @@ import os
 
 from fastapi import Header, HTTPException
 
-
-def _is_ascii(value: str) -> bool:
-    """Return True if value contains only ASCII characters."""
-    try:
-        value.encode("ascii")
-    except UnicodeEncodeError:
-        return False
-    return True
+from simulator.config import is_ascii
 
 
 def verify_token(token: str | None, secret: str) -> bool:
@@ -397,7 +435,7 @@ def verify_token(token: str | None, secret: str) -> bool:
         return False
     if not secret:
         return False
-    if not _is_ascii(token) or not _is_ascii(secret):
+    if not is_ascii(token) or not is_ascii(secret):
         return False
     return hmac.compare_digest(token, secret)
 
@@ -406,11 +444,14 @@ async def require_admin(
     x_chaos_token: str | None = Header(default=None, alias="X-Chaos-Token"),
 ) -> None:
     admin_secret = os.environ.get("SIMULATOR_ADMIN_SECRET", "")
-    if not admin_secret or not _is_ascii(admin_secret):
+    if not admin_secret or not is_ascii(admin_secret):
         raise HTTPException(status_code=500, detail="Admin secret not configured")
     if not verify_token(x_chaos_token, admin_secret):
         raise HTTPException(status_code=401, detail="Unauthorized")
 ```
+
+**Change from v1.1:** `_is_ascii()` is no longer defined in this module.
+The shared `is_ascii()` helper is imported from `simulator.config`.
 
 **Header name:** `X-Chaos-Token`. Namespaced to avoid collision with
 `X-Simulator-*` override headers.
@@ -432,30 +473,55 @@ This prevents running without valid authentication.
 
 **Credential charset:** MVP credential charset is ASCII. Non-ASCII client
 tokens return 401; non-ASCII server secrets return 500. `hmac.compare_digest`
-with `str` inputs requires ASCII-only strings; the `_is_ascii` guard prevents
-`TypeError` from reaching callers.
+with `str` inputs requires ASCII-only strings; the `is_ascii` guard (from
+`simulator.config`) prevents `TypeError` from reaching callers.
 
-**Startup validation:** Application startup (M4) must validate that
-`SIMULATOR_ADMIN_SECRET` is present, non-empty, and ASCII-only.
+**Startup validation:** Application startup validates that
+`SIMULATOR_ADMIN_SECRET` is present, non-empty, and ASCII-only using
+`validate_admin_secret()` from `simulator.config` in the lifespan function.
 
 `WP01_ADMIN_SECRET_STARTUP_VALIDATION_MILESTONE=M4`
 
-### 3.5 app.py — Route Registration
+### 3.6 app.py — Application Factory and Route Registration
+
+**Application factory:** `create_app()` returns a fresh `FastAPI` instance
+with an `asynccontextmanager` lifespan that:
+
+1. Reads and validates `SIMULATOR_ADMIN_SECRET` via `validate_admin_secret()`
+2. Parses and validates `SIMULATOR_HISTORY_SIZE` via `parse_history_size()`
+3. Creates `SimulatorState(history_size=...)` and attaches it to
+   `app.state.simulator_state`
+4. Yields (application runs)
+
+Invalid configuration raises `ConfigurationError` before the app accepts
+requests. The admin secret value is not stored on `app.state` and is not
+logged.
 
 ```python
-app = FastAPI(title="Downstream Simulator", version=__version__)
-state = SimulatorState(history_size=int(os.environ.get("SIMULATOR_HISTORY_SIZE", "1000")))
+def create_app() -> FastAPI:
+    app = FastAPI(title="Downstream Simulator", version=simulator.__version__, lifespan=lifespan)
 
-# Public routes
-@app.get("/health")           -> HealthResponse
-@app.post("/submit")          -> SubmissionResponse | ErrorResponse
+    # Public routes
+    @app.get("/health")           -> HealthResponse
+    @app.post("/submit")          -> SubmissionResponse | ErrorResponse
 
-# Admin routes (require_admin dependency)
-@app.put("/control/mode",     dependencies=[Depends(require_admin)])
-@app.get("/control/mode",     dependencies=[Depends(require_admin)])
-@app.post("/control/reset",   dependencies=[Depends(require_admin)])
-@app.get("/control/history",  dependencies=[Depends(require_admin)])
+    # Admin routes (require_admin dependency)
+    @app.put("/control/mode",     dependencies=[Depends(require_admin)])
+    @app.get("/control/mode",     dependencies=[Depends(require_admin)])
+    @app.post("/control/reset",   dependencies=[Depends(require_admin)])
+    @app.get("/control/history",  dependencies=[Depends(require_admin)])
+
+    return app
 ```
+
+**Version source:** `simulator.__version__` is read from
+`importlib.metadata.version("downstream-simulator")` at import time.
+`pyproject.toml` is the single source of truth. No hard-coded fallback.
+Package installation is a supported-runtime prerequisite.
+
+**State ownership:** Each `create_app()` call produces an independent app
+with independent `SimulatorState`. State is owned by the app instance at
+`app.state.simulator_state`, not by module globals.
 
 **`/submit` handler algorithm:**
 
@@ -563,7 +629,7 @@ No actual secret values in the example file.
 
 ## 6. Health / Readiness
 
-`GET /health` returns 200 immediately with:
+`GET /health` returns 200 with:
 
 ```json
 {
@@ -577,8 +643,12 @@ No actual secret values in the example file.
 This is the readiness signal for Railway health checks. The health endpoint
 does not require authentication.
 
-The `currentMode` field reflects the current global mode setting, not
-individual request outcomes.
+The `currentMode` field reflects the current global mode setting, obtained
+via `await SimulatorState.get_mode()` (locked snapshot). Lock contention
+is accepted for MVP single-worker scope.
+
+The `version` field is read from `simulator.__version__`, which resolves
+from `importlib.metadata.version("downstream-simulator")` at import time.
 
 ---
 
@@ -592,9 +662,13 @@ def admin_secret(monkeypatch):
     monkeypatch.setenv("SIMULATOR_ADMIN_SECRET", "test-secret")
 
 @pytest.fixture
-async def client(admin_secret):
-    from simulator.app import create_app
-    app = create_app()
+async def app(admin_secret):
+    application = create_app()
+    async with application.router.lifespan_context(application):
+        yield application
+
+@pytest.fixture
+async def client(app):
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
@@ -604,14 +678,22 @@ def admin_headers():
     return {"X-Chaos-Token": "test-secret"}
 ```
 
-**Application factory:** `create_app()` returns a fresh FastAPI instance
-with fresh `SimulatorState` each time. This ensures test isolation — no
-shared state leaks between test modules.
+**Application factory:** `create_app()` returns a fresh FastAPI instance.
+The `app` fixture exercises the real production lifespan (startup validation,
+state initialization) via `application.router.lifespan_context`. Each test
+gets an independent app with independent `SimulatorState`. No `asgi-lifespan`
+dependency is required.
+
+**Startup rejection tests** (in `test_health.py`) invoke the lifespan
+directly with `pytest.raises(ConfigurationError)` to exercise real startup
+failure paths without bypassing validation.
 
 ### Test File Mapping to Spec Requirements
 
 | Test File | Spec Required Tests |
 |---|---|
+| `test_config.py` | is_ascii validation, admin secret validation (none/empty/non-ASCII), history size parsing (default/valid/zero/negative/non-integer), error message leak prevention |
+| `test_health.py` | startup validation (valid/missing/empty/non-ASCII secret, invalid history size), health endpoint (200, unauthenticated, response model, version, currentMode), state isolation, production-route secret leak assertions |
 | `test_submission.py` | healthy submission, 500 response, 429 + Retry-After, timeout, malformed 200, delayed success, correlation-ID preservation, correlation-ID generation, simulator-marker presence |
 | `test_overrides.py` | per-request override precedence, global-mode behavior, default-healthy behavior, parallel override isolation, modeSource accuracy |
 | `test_intermittent.py` | fail-N-then-succeed, effective-mode recording |
@@ -832,10 +914,15 @@ returns 500 if env var unset.
 
 ### M4: Health endpoint and app skeleton
 
-Files: `simulator/app.py` (health route only), `tests/conftest.py`
+Files: `simulator/app.py` (application factory, lifespan, health route),
+`simulator/config.py` (shared config validation), `simulator/__init__.py`
+(version source change), `simulator/auth.py` (import shared helper),
+`tests/conftest.py`, `tests/test_config.py`, `tests/test_health.py`
 
-Verification: `GET /health` returns 200 with correct schema. Test client
-fixture works.
+Verification: Startup validates admin secret and history size. `GET /health`
+returns 200 with correct schema using locked state snapshot. Test fixtures
+exercise real lifespan. Config validation and startup rejection tested.
+Version reads from `importlib.metadata`.
 
 ### M5: Control routes
 
